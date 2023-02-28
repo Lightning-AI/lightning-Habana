@@ -17,6 +17,7 @@ import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
 from pytorch_lightning.demos.boring_classes import BoringModel
 
+from lightning_habana import HPUAccelerator
 from lightning_habana.plugins import HPUPrecisionPlugin
 from lightning_habana.strategies import SingleHPUStrategy
 
@@ -46,7 +47,7 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
         plugins=[HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)],
         callbacks=TestCallback(),
@@ -71,7 +72,7 @@ def test_pure_half_precision(tmpdir, hmp_params: dict):
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
         plugins=[HPUPrecisionPlugin(precision="16-mixed", **hmp_params)],
         callbacks=TestCallback(),

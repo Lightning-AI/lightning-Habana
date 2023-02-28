@@ -33,13 +33,8 @@ def test_device_name():
     assert HPUAccelerator.get_device_name() == "GAUDI"
 
 
-def test_fail_if_no_hpus():
-    with pytest.raises(MisconfigurationException, match="HPUAccelerator` can not run on your system"):
-        Trainer(accelerator="hpu", devices=1)
-
-
 def test_accelerator_selected():
-    trainer = Trainer(accelerator="hpu")
+    trainer = Trainer(accelerator=HPUAccelerator())
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
@@ -50,7 +45,7 @@ def test_all_stages(tmpdir, hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=hpus,
         precision="16-mixed",
     )
@@ -67,7 +62,7 @@ def test_optimization(tmpdir):
     dm = ClassifDataModule(length=1024)
     model = ClassificationModel()
 
-    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, accelerator="hpu", devices=1)
+    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, accelerator=HPUAccelerator(), devices=1)
 
     # fit model
     trainer.fit(model, dm)
@@ -91,7 +86,7 @@ def test_optimization(tmpdir):
 
     model = ClassificationModel.load_from_checkpoint(model_path)
 
-    trainer = Trainer(default_root_dir=tmpdir, accelerator="hpu", devices=1)
+    trainer = Trainer(default_root_dir=tmpdir, accelerator=HPUAccelerator(), devices=1)
 
     result = trainer.test(model, datamodule=dm)
     saved_result = result[0]["test_acc"]
@@ -141,7 +136,7 @@ def test_stages_correct(tmpdir):
 
     model = StageModel()
     trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator="hpu", devices=1, callbacks=TestCallback()
+        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=1, callbacks=TestCallback()
     )
     trainer.fit(model)
     trainer.test(model)
@@ -150,11 +145,11 @@ def test_stages_correct(tmpdir):
 
 
 def test_accelerator_hpu():
-    trainer = Trainer(accelerator="hpu", devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 1
 
-    trainer = Trainer(accelerator="hpu")
+    trainer = Trainer(accelerator=HPUAccelerator())
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 8
 
@@ -164,14 +159,14 @@ def test_accelerator_hpu():
 
 
 def test_accelerator_hpu_with_single_device():
-    trainer = Trainer(accelerator="hpu", devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
 
     assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 def test_accelerator_hpu_with_multiple_devices():
-    trainer = Trainer(accelerator="hpu", devices=8)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
 
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
@@ -184,20 +179,20 @@ def test_accelerator_auto_with_devices_hpu():
 
 
 def test_strategy_choice_hpu_strategy():
-    trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator="hpu", devices=1)
+    trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
-    trainer = Trainer(accelerator="hpu", devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
 
 def test_strategy_choice_hpu_parallel_strategy():
     trainer = Trainer(
-        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8), accelerator="hpu", devices=8
+        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8), accelerator=HPUAccelerator(), devices=8
     )
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
-    trainer = Trainer(accelerator="hpu", devices=8)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
@@ -210,7 +205,7 @@ def test_devices_auto_choice_hpu():
 def test_inference_only(tmpdir, hpus):
     model = BoringModel()
 
-    trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=True, accelerator="hpu", devices=hpus)
+    trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus)
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)
@@ -222,7 +217,7 @@ def test_hpu_auto_device_count():
 
 def test_hpu_unsupported_device_type():
     with pytest.raises(MisconfigurationException, match="`devices` for `HPUAccelerator` must be int, string or None."):
-        Trainer(accelerator="hpu", devices=[1])
+        Trainer(accelerator=HPUAccelerator(), devices=[1])
 
 
 def test_strategy_params_with_hpu_parallel_strategy():
@@ -265,7 +260,7 @@ def test_multi_optimizers_with_hpu(tmpdir):
     model.val_dataloader = None
     trainer = Trainer(
         default_root_dir=tmpdir,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
         limit_train_batches=2,
         limit_val_batches=2,
