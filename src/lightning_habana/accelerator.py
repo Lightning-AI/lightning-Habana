@@ -14,31 +14,20 @@
 
 from typing import Any, Dict, List, Optional, Union
 
+import habana_frameworks.torch.hpu as torch_hpu
 import torch
-from lightning_utilities.core.imports import package_available
-
-from lightning.fabric.utilities.types import _DEVICE
-from lightning.pytorch.accelerators.accelerator import Accelerator
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
-from lightning.pytorch.utilities.rank_zero import rank_zero_debug
-
-_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-if _HABANA_FRAMEWORK_AVAILABLE:
-    from habana_frameworks.torch.utils.library_loader import is_habana_available
-
-    _HPU_AVAILABLE = is_habana_available()
-else:
-    _HPU_AVAILABLE = False
-
-if _HPU_AVAILABLE:
-    import habana_frameworks.torch.hpu as torch_hpu
+from lightning_fabric.utilities.types import _DEVICE
+from pytorch_lightning.accelerators.accelerator import Accelerator
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from pytorch_lightning.utilities.rank_zero import rank_zero_debug
 
 
 class HPUAccelerator(Accelerator):
     """Accelerator for HPU devices."""
 
     def setup_device(self, device: torch.device) -> None:
-        """
+        """Set up the device.
+
         Raises:
             MisconfigurationException:
                 If the selected device is not HPU.
@@ -47,7 +36,7 @@ class HPUAccelerator(Accelerator):
             raise MisconfigurationException(f"Device should be HPU, got {device} instead.")
 
     def get_device_stats(self, device: _DEVICE) -> Dict[str, Any]:
-        """Returns a map of the following metrics with their values:
+        """Return a map of the following metrics with their values.
 
         - Limit: amount of total memory on HPU device.
         - InUse: amount of allocated memory at any instance.
@@ -76,12 +65,12 @@ class HPUAccelerator(Accelerator):
 
     @staticmethod
     def get_parallel_devices(devices: int) -> List[torch.device]:
-        """Gets parallel devices for the Accelerator."""
+        """Get parallel devices for the Accelerator."""
         return [torch.device("hpu")] * devices
 
     @staticmethod
     def auto_device_count() -> int:
-        """Returns the number of HPU devices when the devices is set to auto."""
+        """Return the number of HPU devices when the devices is set to auto."""
         try:
             return torch_hpu.device_count()
         except (AttributeError, NameError):
@@ -90,7 +79,7 @@ class HPUAccelerator(Accelerator):
 
     @staticmethod
     def is_available() -> bool:
-        """Returns a bool indicating if HPU is currently available."""
+        """Return a bool indicating if HPU is currently available."""
         try:
             return torch_hpu.is_available()
         except (AttributeError, NameError):
@@ -98,25 +87,15 @@ class HPUAccelerator(Accelerator):
 
     @staticmethod
     def get_device_name() -> str:
-        """Returns the name of the HPU device."""
+        """Return the name of the HPU device."""
         try:
             return torch_hpu.get_device_name()
         except (AttributeError, NameError):
             return ""
 
-    @classmethod
-    def register_accelerators(cls, accelerator_registry: Dict) -> None:
-        accelerator_registry.register(
-            "hpu",
-            cls,
-            description=cls.__class__.__name__,
-        )
-
 
 def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
-    """
-    Parses the hpus given in the format as accepted by the
-    :class:`~lightning.pytorch.trainer.Trainer` for the `devices` flag.
+    """Parse the HPUs given in the format as accepted by the ``Trainer`` for the ``devices`` flag.
 
     Args:
         devices: An integer that indicates the number of Gaudi devices to be used

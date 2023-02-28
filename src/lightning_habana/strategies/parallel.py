@@ -15,24 +15,20 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import habana_frameworks.torch.core as htcore
+import habana_frameworks.torch.distributed.hccl  # noqa: F401
 import torch.distributed
+from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
+from lightning_fabric.utilities.distributed import group as _group
+from pytorch_lightning import LightningModule
+from pytorch_lightning.accelerators import Accelerator
+from pytorch_lightning.overrides.torch_distributed import broadcast_object_list
+from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
+from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
+from pytorch_lightning.plugins.precision import PrecisionPlugin
+from pytorch_lightning.strategies.ddp import DDPStrategy
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
-
-import lightning.pytorch as pl
-from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-from lightning.fabric.utilities.distributed import group as _group
-from lightning.pytorch.accelerators.hpu import _HPU_AVAILABLE
-from lightning.pytorch.overrides.torch_distributed import broadcast_object_list
-from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
-from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
-from lightning.pytorch.plugins.precision import PrecisionPlugin
-from lightning.pytorch.strategies.ddp import DDPStrategy
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
-
-if _HPU_AVAILABLE:
-    import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +40,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     def __init__(
         self,
-        accelerator: Optional["pl.accelerators.Accelerator"] = None,
+        accelerator: Optional[Accelerator] = None,
         parallel_devices: Optional[List[torch.device]] = None,
         cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
@@ -56,10 +52,6 @@ class HPUParallelStrategy(DDPStrategy):
         process_group_backend: Optional[str] = "hccl",
         **kwargs: Any,
     ) -> None:
-
-        if not _HPU_AVAILABLE:
-            raise MisconfigurationException("`HPUParallelStrategy` requires HPU devices to run")
-
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -88,7 +80,6 @@ class HPUParallelStrategy(DDPStrategy):
         self._checkpoint_io = io
 
     def setup_environment(self) -> None:
-
         os.environ["ID"] = str(self.local_rank)
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
@@ -114,7 +105,7 @@ class HPUParallelStrategy(DDPStrategy):
         self,
         optimizer: Optimizer,
         closure: Callable[[], Any],
-        model: Optional[Union["pl.LightningModule", Module]] = None,
+        model: Optional[Union[LightningModule, Module]] = None,
         **kwargs: Any,
     ) -> Any:
         optimizer_output = super().optimizer_step(optimizer, closure, model, **kwargs)

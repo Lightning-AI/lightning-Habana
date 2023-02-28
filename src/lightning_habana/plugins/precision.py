@@ -11,16 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import cast, Literal, Optional
+from typing import Literal, Optional, cast
 
+from habana_frameworks.torch.hpex import hmp
+from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
 from typing_extensions import get_args
-
-from lightning.pytorch.accelerators.hpu import _HPU_AVAILABLE
-from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
-
-if _HPU_AVAILABLE:
-    from habana_frameworks.torch.hpex import hmp
 
 _PRECISION_INPUT = Literal["32-true", "16-mixed", "bf16-mixed"]
 
@@ -44,8 +39,6 @@ class HPUPrecisionPlugin(PrecisionPlugin):
         fp32_file_path: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
-        if not _HPU_AVAILABLE:
-            raise MisconfigurationException("HPU precision plugin requires HPU devices.")
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(

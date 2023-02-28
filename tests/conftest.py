@@ -11,23 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-import signal
-import threading
-from functools import partial
-from http.server import SimpleHTTPRequestHandler
 from pathlib import Path
-from typing import List
 
 import pytest
-import torch.distributed
 
-import lightning.fabric
-import lightning.pytorch
-from lightning.fabric.plugins.environments.lightning import find_free_network_port
-from lightning.fabric.utilities.imports import _IS_WINDOWS, _TORCH_GREATER_EQUAL_1_12
-from lightning.pytorch.trainer.connectors.signal_connector import SignalConnector
-from tests_pytorch import _PATH_DATASETS
+from tests import _PATH_DATASETS
 
 
 @pytest.fixture(scope="session")
@@ -45,7 +33,6 @@ def pytest_addoption(parser):
     )
 
 
-@pytest.fixture
+@pytest.fixture()
 def hpus(request):
-    hpus = request.config.getoption("--hpus")
-    return hpus
+    return request.config.getoption("--hpus")

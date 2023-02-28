@@ -14,21 +14,18 @@
 
 from typing import Any, Callable, Dict, Optional, Union
 
+import habana_frameworks.torch.core as htcore
+import pytorch_lightning as pl
+from lightning_fabric.plugins import CheckpointIO
+from lightning_fabric.utilities.types import _DEVICE
+from pytorch_lightning import Trainer
+from pytorch_lightning.accelerators import Accelerator
+from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
+from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
+from pytorch_lightning.plugins.precision import PrecisionPlugin
+from pytorch_lightning.strategies.single_device import SingleDeviceStrategy
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
-
-import lightning.pytorch as pl
-from lightning.fabric.plugins import CheckpointIO
-from lightning.fabric.utilities.types import _DEVICE
-from lightning.pytorch.accelerators.hpu import _HPU_AVAILABLE
-from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
-from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
-from lightning.pytorch.plugins.precision import PrecisionPlugin
-from lightning.pytorch.strategies.single_device import SingleDeviceStrategy
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
-
-if _HPU_AVAILABLE:
-    import habana_frameworks.torch.core as htcore
 
 
 class SingleHPUStrategy(SingleDeviceStrategy):
@@ -39,14 +36,10 @@ class SingleHPUStrategy(SingleDeviceStrategy):
     def __init__(
         self,
         device: _DEVICE = "hpu",
-        accelerator: Optional["pl.accelerators.Accelerator"] = None,
+        accelerator: Optional[Accelerator] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
         precision_plugin: Optional[PrecisionPlugin] = None,
     ):
-
-        if not _HPU_AVAILABLE:
-            raise MisconfigurationException("`SingleHPUStrategy` requires HPU devices to run")
-
         super().__init__(
             accelerator=accelerator,
             device=device,
@@ -71,11 +64,11 @@ class SingleHPUStrategy(SingleDeviceStrategy):
     def is_distributed(self) -> bool:
         return False
 
-    def setup(self, trainer: "pl.Trainer") -> None:
+    def setup(self, trainer: Trainer) -> None:
         self.model_to_device()
         super().setup(trainer)
 
-    def setup_optimizers(self, trainer: "pl.Trainer") -> None:
+    def setup_optimizers(self, trainer: Trainer) -> None:
         super().setup_optimizers(trainer)
 
     def model_to_device(self) -> None:

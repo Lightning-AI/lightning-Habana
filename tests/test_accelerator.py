@@ -16,42 +16,34 @@ from unittest import mock
 
 import pytest
 import torch
+from pytorch_lightning import Callback, Trainer, seed_everything
+from pytorch_lightning.accelerators import HPUAccelerator
+from pytorch_lightning.demos.boring_classes import BoringModel
+from pytorch_lightning.strategies.hpu_parallel import HPUParallelStrategy
+from pytorch_lightning.strategies.single_hpu import SingleHPUStrategy
+from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from lightning.pytorch import Callback, seed_everything, Trainer
-from lightning.pytorch.accelerators import HPUAccelerator
-from lightning.pytorch.accelerators.hpu import _HPU_AVAILABLE
-from lightning.pytorch.demos.boring_classes import BoringModel
-from lightning.pytorch.strategies.hpu_parallel import HPUParallelStrategy
-from lightning.pytorch.strategies.single_hpu import SingleHPUStrategy
-from lightning.pytorch.utilities.exceptions import MisconfigurationException
-from tests_pytorch.helpers.datamodules import ClassifDataModule
-from tests_pytorch.helpers.runif import RunIf
-from tests_pytorch.helpers.simple_models import ClassificationModel
+from tests.helpers import ClassifDataModule, ClassificationModel
 
 
-@RunIf(hpu=True)
 def test_availability():
     assert HPUAccelerator.is_available()
 
 
-@RunIf(hpu=True)
 def test_device_name():
     assert HPUAccelerator.get_device_name() == "GAUDI"
 
 
-@pytest.mark.skipif(_HPU_AVAILABLE, reason="test requires non-HPU machine")
 def test_fail_if_no_hpus():
     with pytest.raises(MisconfigurationException, match="HPUAccelerator` can not run on your system"):
         Trainer(accelerator="hpu", devices=1)
 
 
-@RunIf(hpu=True)
 def test_accelerator_selected():
     trainer = Trainer(accelerator="hpu")
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-@RunIf(hpu=True)
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -69,7 +61,6 @@ def test_all_stages(tmpdir, hpus):
     trainer.predict(model)
 
 
-@RunIf(hpu=True, sklearn=True)
 @mock.patch.dict(os.environ, os.environ.copy(), clear=True)
 def test_optimization(tmpdir):
     seed_everything(42)
@@ -108,7 +99,6 @@ def test_optimization(tmpdir):
     assert saved_result == test_result
 
 
-@RunIf(hpu=True)
 def test_stages_correct(tmpdir):
     """Ensure all stages correctly are traced correctly by asserting the output for each stage."""
 
@@ -160,9 +150,7 @@ def test_stages_correct(tmpdir):
     trainer.predict(model)
 
 
-@RunIf(hpu=True)
 def test_accelerator_hpu():
-
     trainer = Trainer(accelerator="hpu", devices=1)
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 1
@@ -176,33 +164,26 @@ def test_accelerator_hpu():
     assert trainer.num_devices == 8
 
 
-@RunIf(hpu=True)
 def test_accelerator_hpu_with_single_device():
-
     trainer = Trainer(accelerator="hpu", devices=1)
 
     assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-@RunIf(hpu=True)
 def test_accelerator_hpu_with_multiple_devices():
-
     trainer = Trainer(accelerator="hpu", devices=8)
 
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-@RunIf(hpu=True)
 def test_accelerator_auto_with_devices_hpu():
-
     trainer = Trainer(accelerator="auto", devices=8)
 
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
-@RunIf(hpu=True)
 def test_strategy_choice_hpu_strategy():
     trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator="hpu", devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
@@ -211,7 +192,6 @@ def test_strategy_choice_hpu_strategy():
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
 
-@RunIf(hpu=True)
 def test_strategy_choice_hpu_parallel_strategy():
     trainer = Trainer(
         strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8), accelerator="hpu", devices=8
@@ -222,13 +202,11 @@ def test_strategy_choice_hpu_parallel_strategy():
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
-@RunIf(hpu=True)
 def test_devices_auto_choice_hpu():
     trainer = Trainer(accelerator="auto", devices="auto")
     assert trainer.num_devices == 8
 
 
-@RunIf(hpu=True)
 @pytest.mark.parametrize("hpus", [1])
 def test_inference_only(tmpdir, hpus):
     model = BoringModel()
@@ -239,18 +217,15 @@ def test_inference_only(tmpdir, hpus):
     trainer.predict(model)
 
 
-@RunIf(hpu=True)
 def test_hpu_auto_device_count():
     assert HPUAccelerator.auto_device_count() == 8
 
 
-@RunIf(hpu=True)
 def test_hpu_unsupported_device_type():
     with pytest.raises(MisconfigurationException, match="`devices` for `HPUAccelerator` must be int, string or None."):
         Trainer(accelerator="hpu", devices=[1])
 
 
-@RunIf(hpu=True)
 def test_strategy_params_with_hpu_parallel_strategy():
     bucket_cap_mb = 100
     gradient_as_bucket_view = True
@@ -268,7 +243,6 @@ def test_strategy_params_with_hpu_parallel_strategy():
     assert strategy._ddp_kwargs["find_unused_parameters"] == find_unused_parameters
 
 
-@RunIf(hpu=True)
 def test_multi_optimizers_with_hpu(tmpdir):
     class MultiOptimizerModel(BoringModel):
         def configure_optimizers(self):
@@ -303,9 +277,7 @@ def test_multi_optimizers_with_hpu(tmpdir):
     trainer.fit(model)
 
 
-@RunIf(hpu=True)
 def test_hpu_device_stats_monitor():
-
     hpu_stats = HPUAccelerator().get_device_stats("hpu")
     fields = [
         "Limit",
@@ -320,4 +292,4 @@ def test_hpu_device_stats_monitor():
         "TotalActiveAllocs",
     ]
     for f in fields:
-        assert any(f in h for h in hpu_stats.keys())
+        assert any(f in h for h in hpu_stats)

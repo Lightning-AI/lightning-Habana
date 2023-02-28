@@ -14,15 +14,13 @@
 
 import pytest
 import torch
-
-from lightning.pytorch import Callback, LightningModule, Trainer
-from lightning.pytorch.demos.boring_classes import BoringModel
-from lightning.pytorch.plugins import HPUPrecisionPlugin
-from lightning.pytorch.strategies.single_hpu import SingleHPUStrategy
-from tests_pytorch.helpers.runif import RunIf
+from pytorch_lightning import Callback, LightningModule, Trainer
+from pytorch_lightning.demos.boring_classes import BoringModel
+from pytorch_lightning.plugins import HPUPrecisionPlugin
+from pytorch_lightning.strategies.single_hpu import SingleHPUStrategy
 
 
-@pytest.fixture
+@pytest.fixture()
 def hmp_params(request):
     return {
         "opt_level": "O1",
@@ -32,13 +30,11 @@ def hmp_params(request):
     }
 
 
-@RunIf(hpu=True)
 def test_precision_plugin(hmp_params):
     plugin = HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)
     assert plugin.precision == "bf16-mixed"
 
 
-@RunIf(hpu=True)
 def test_mixed_precision(tmpdir, hmp_params: dict):
     class TestCallback(Callback):
         def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
@@ -61,7 +57,6 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
         trainer.fit(model)
 
 
-@RunIf(hpu=True)
 def test_pure_half_precision(tmpdir, hmp_params: dict):
     class TestCallback(Callback):
         def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
@@ -89,7 +84,6 @@ def test_pure_half_precision(tmpdir, hmp_params: dict):
         trainer.fit(model)
 
 
-@RunIf(hpu=True)
 def test_unsupported_precision_plugin():
     with pytest.raises(ValueError, match=r"accelerator='hpu', precision='mixed'\)` is not supported."):
         HPUPrecisionPlugin(precision="mixed")

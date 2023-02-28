@@ -52,9 +52,7 @@ exclude = "(.eggs|.git|.hg|.mypy_cache|.venv|_build|buck-out|build|dist)"
 [tool.isort]
 known_first_party = [
     "lightning_habana",
-    "integrations",
-    "unittests",
-    "integrations",
+    "tests",
 ]
 skip_glob = []
 profile = "black"
@@ -116,6 +114,9 @@ ignore-init-module-imports = true
 "setup.py" = ["D100", "SIM115"]
 "__about__.py" = ["D100"]
 "__init__.py" = ["D100"]
+"src/**" = ["D100", "D102", "D104", "D107"]  # TODO: fix all of these
+"examples/**" = ["D100", "D101", "D102", "D104", "D107"]  # TODO: fix all of these
+"tests/**" = ["D100", "D101", "D102", "D103", "D104", "D107"]
 
 [tool.ruff.pydocstyle]
 # Use Google-style docstrings.

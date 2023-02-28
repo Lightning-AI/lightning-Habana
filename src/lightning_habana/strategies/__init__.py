@@ -11,6 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from lightning.pytorch.strategies.hpu_parallel import HPUParallelStrategy  # noqa: F401
-from lightning.pytorch.strategies.single_hpu import SingleHPUStrategy  # noqa: F401
-
+from pytorch_lightning.strategies.hpu_parallel import HPUParallelStrategy  # noqa: F401
+from pytorch_lightning.strategies.single_hpu import SingleHPUStrategy  # noqa: F401
