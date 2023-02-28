@@ -61,7 +61,7 @@ To train a Lightning model using multiple HPU nodes, set the ``num_nodes`` param
 
     trainer = Trainer(accelerator="hpu", devices=8, strategy="hpu_parallel", num_nodes=2)
 
-In addition to this, the following environment variables need to be set to establish communication across nodes. Check out the documentation on :doc:`Cluster Environment <../clouds/cluster>` for more details.
+In addition to this, the following environment variables need to be set to establish communication across nodes.
 
 - *MASTER_PORT* - required; has to be a free port on machine with NODE_RANK 0
 - *MASTER_ADDR* - required (except for NODE_RANK 0); address of NODE_RANK 0 node
