@@ -188,7 +188,9 @@ def test_strategy_choice_hpu_strategy():
 
 def test_strategy_choice_hpu_parallel_strategy():
     trainer = Trainer(
-        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8), accelerator=HPUAccelerator(), devices=8
+        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8),
+        accelerator=HPUAccelerator(),
+        devices=8,
     )
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 

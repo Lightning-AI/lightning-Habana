@@ -13,9 +13,13 @@
 # limitations under the License.
 from typing import Literal, Optional, cast
 
-from habana_frameworks.torch.hpex import hmp
 from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
 from typing_extensions import get_args
+
+from lightning_habana import _HPU_AVAILABLE
+
+if _HPU_AVAILABLE:
+    from habana_frameworks.torch.hpex import hmp
 
 _PRECISION_INPUT = Literal["32-true", "16-mixed", "bf16-mixed"]
 

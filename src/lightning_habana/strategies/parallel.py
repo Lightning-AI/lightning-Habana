@@ -15,8 +15,6 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
-import habana_frameworks.torch.core as htcore
-import habana_frameworks.torch.distributed.hccl  # noqa: F401
 import torch.distributed
 from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
 from lightning_fabric.utilities.distributed import group as _group
@@ -29,6 +27,12 @@ from pytorch_lightning.plugins.precision import PrecisionPlugin
 from pytorch_lightning.strategies.ddp import DDPStrategy
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
+
+from lightning_habana import _HPU_AVAILABLE
+
+if _HPU_AVAILABLE:
+    import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
 
