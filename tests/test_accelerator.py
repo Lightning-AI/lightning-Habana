@@ -17,12 +17,11 @@ from unittest import mock
 import pytest
 import torch
 from pytorch_lightning import Callback, Trainer, seed_everything
-from pytorch_lightning.accelerators import HPUAccelerator
 from pytorch_lightning.demos.boring_classes import BoringModel
-from pytorch_lightning.strategies.hpu_parallel import HPUParallelStrategy
-from pytorch_lightning.strategies.single_hpu import SingleHPUStrategy
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from lightning_habana.accelerator import HPUAccelerator
+from lightning_habana.strategies import HPUParallelStrategy, SingleHPUStrategy
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
