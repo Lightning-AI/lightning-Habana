@@ -42,16 +42,18 @@ class HPUAccelerator(Accelerator):
     def get_device_stats(self, device: _DEVICE) -> Dict[str, Any]:
         """Return a map of the following metrics with their values.
 
-        - Limit: amount of total memory on HPU device.
-        - InUse: amount of allocated memory at any instance.
-        - MaxInUse: amount of total active memory allocated.
-        - NumAllocs: number of allocations.
-        - NumFrees: number of freed chunks.
-        - ActiveAllocs: number of active allocations.
-        - MaxAllocSize: maximum allocated size.
-        - TotalSystemAllocs: total number of system allocations.
-        - TotalSystemFrees: total number of system frees.
-        - TotalActiveAllocs: total number of active allocations.
+        Include:
+
+            - Limit: amount of total memory on HPU device.
+            - InUse: amount of allocated memory at any instance.
+            - MaxInUse: amount of total active memory allocated.
+            - NumAllocs: number of allocations.
+            - NumFrees: number of freed chunks.
+            - ActiveAllocs: number of active allocations.
+            - MaxAllocSize: maximum allocated size.
+            - TotalSystemAllocs: total number of system allocations.
+            - TotalSystemFrees: total number of system frees.
+            - TotalActiveAllocs: total number of active allocations.
         """
         try:
             return torch_hpu.hpu.memory_stats(device)
@@ -96,6 +98,14 @@ class HPUAccelerator(Accelerator):
             return torch_hpu.get_device_name()
         except (AttributeError, NameError):
             return ""
+
+    @classmethod
+    def register_accelerators(cls, accelerator_registry: Dict) -> None:
+        accelerator_registry.register(
+            "hpu",
+            cls,
+            description=cls.__class__.__name__,
+        )
 
 
 def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
