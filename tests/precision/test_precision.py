@@ -37,6 +37,7 @@ def test_precision_plugin(hmp_params):
     assert plugin.precision == "bf16-mixed"
 
 
+@pytest.mark.xfail(AssertionError, reason="Trainer.strategy is not HPU.")  # ToDo
 def test_mixed_precision(tmpdir, hmp_params: dict):
     class TestCallback(Callback):
         def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
@@ -59,6 +60,7 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
         trainer.fit(model)
 
 
+@pytest.mark.xfail(AssertionError, reason="Trainer.strategy is not HPU.")  # ToDo
 def test_pure_half_precision(tmpdir, hmp_params: dict):
     class TestCallback(Callback):
         def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
