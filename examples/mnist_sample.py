@@ -18,7 +18,7 @@ from pytorch_lightning.cli import LightningCLI
 from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 from torch.nn import functional as F  # noqa: N812
 
-from lightning_habana.plugins.precision import HPUPrecisionPlugin
+from lightning_habana.plugins.precision import PrecisionHPU
 
 
 class LitClassifier(LightningModule):
@@ -61,7 +61,7 @@ if __name__ == "__main__":
             "accelerator": "hpu",
             "devices": 1,
             "max_epochs": 1,
-            "plugins": lazy_instance(HPUPrecisionPlugin, precision="16-mixed"),
+            "plugins": lazy_instance(PrecisionHPU, precision="16-mixed"),
         },
         run=False,
         save_config_kwargs={"overwrite": True},

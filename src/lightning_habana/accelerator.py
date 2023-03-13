@@ -26,7 +26,7 @@ if _HPU_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
 
 
-class HPUAccelerator(Accelerator):
+class AcceleratorHPU(Accelerator):
     """Accelerator for HPU devices."""
 
     def setup_device(self, device: torch.device) -> None:

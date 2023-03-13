@@ -16,10 +16,16 @@ else:
     _HPU_AVAILABLE = False
 
 from lightning_habana.__about__ import *  # noqa: E402, F401, F403
-from lightning_habana.accelerator import HPUAccelerator  # noqa: E402
+from lightning_habana.accelerator import AcceleratorHPU  # noqa: E402
 from lightning_habana.plugins.io_plugin import HPUCheckpointIO  # noqa: E402
-from lightning_habana.plugins.precision import HPUPrecisionPlugin  # noqa: E402
-from lightning_habana.strategies.parallel import HPUParallelStrategy  # noqa: E402
-from lightning_habana.strategies.single import SingleHPUStrategy  # noqa: E402
+from lightning_habana.plugins.precision import PrecisionHPU  # noqa: E402
+from lightning_habana.strategies.parallel import StrategyParallelHPU  # noqa: E402
+from lightning_habana.strategies.single import StrategySingleHPU  # noqa: E402
 
-__all__ = ["HPUAccelerator", "HPUParallelStrategy", "SingleHPUStrategy", "HPUPrecisionPlugin", "HPUCheckpointIO"]
+__all__ = [
+    "AcceleratorHPU",
+    "StrategyParallelHPU",
+    "StrategySingleHPU",
+    "PrecisionHPU",
+    "HPUCheckpointIO",
+]

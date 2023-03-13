@@ -17,9 +17,9 @@ import torch
 from pytorch_lightning import Callback, LightningModule, Trainer
 from pytorch_lightning.demos.boring_classes import BoringModel
 
-from lightning_habana import HPUAccelerator
-from lightning_habana.plugins import HPUPrecisionPlugin
-from lightning_habana.strategies import SingleHPUStrategy
+from lightning_habana import AcceleratorHPU
+from lightning_habana.plugins import PrecisionHPU
+from lightning_habana.strategies import StrategySingleHPU
 
 
 @pytest.fixture()
@@ -33,7 +33,7 @@ def hmp_params(request):
 
 
 def test_precision_plugin(hmp_params):
-    plugin = HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)
+    plugin = PrecisionHPU(precision="bf16-mixed", **hmp_params)
     assert plugin.precision == "bf16-mixed"
 
 
@@ -48,13 +48,13 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
-        accelerator=HPUAccelerator(),
+        accelerator=AcceleratorHPU(),
         devices=1,
-        plugins=[HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)],
+        plugins=[PrecisionHPU(precision="bf16-mixed", **hmp_params)],
         callbacks=TestCallback(),
     )
-    assert isinstance(trainer.strategy, SingleHPUStrategy)
-    assert isinstance(trainer.strategy.precision_plugin, HPUPrecisionPlugin)
+    assert isinstance(trainer.strategy, StrategySingleHPU)
+    assert isinstance(trainer.strategy.precision_plugin, PrecisionHPU)
     assert trainer.strategy.precision_plugin.precision == "bf16-mixed"
     with pytest.raises(SystemExit):
         trainer.fit(model)
@@ -74,14 +74,14 @@ def test_pure_half_precision(tmpdir, hmp_params: dict):
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
-        accelerator=HPUAccelerator(),
+        accelerator=AcceleratorHPU(),
         devices=1,
-        plugins=[HPUPrecisionPlugin(precision="16-mixed", **hmp_params)],
+        plugins=[PrecisionHPU(precision="16-mixed", **hmp_params)],
         callbacks=TestCallback(),
     )
 
-    assert isinstance(trainer.strategy, SingleHPUStrategy)
-    assert isinstance(trainer.strategy.precision_plugin, HPUPrecisionPlugin)
+    assert isinstance(trainer.strategy, StrategySingleHPU)
+    assert isinstance(trainer.strategy.precision_plugin, PrecisionHPU)
     assert trainer.strategy.precision_plugin.precision == "16-mixed"
 
     with pytest.raises(RuntimeError, match=r"float16/half is not supported on Gaudi."):
@@ -90,4 +90,4 @@ def test_pure_half_precision(tmpdir, hmp_params: dict):
 
 def test_unsupported_precision_plugin():
     with pytest.raises(ValueError, match=r"accelerator='hpu', precision='mixed'\)` is not supported."):
-        HPUPrecisionPlugin(precision="mixed")
+        PrecisionHPU(precision="mixed")
