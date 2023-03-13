@@ -1,13 +1,14 @@
 # Lightning + Intel Habana
 
-This is starter project template which shall simplify initial steps for each new PL project...
+[![lightning](https://img.shields.io/badge/-Lightning_2.0+-792ee5?logo=pytorchlightning&logoColor=white)](https://lightning.ai/)
+[![PyPI Status](https://badge.fury.io/py/lightning-habana.svg)](https://badge.fury.io/py/lightning-habana)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lightning-habana)](https://pypi.org/project/lightning-habana/)
+[![PyPI Status](https://pepy.tech/badge/lightning-habana)](https://pepy.tech/project/lightning-habana)
+[![Deploy Docs](https://github.com/Lightning-AI/lightning-Habana/actions/workflows/docs-deploy.yml/badge.svg)](https://lightning-ai.github.io/lightning-Habana/)
 
-[![CI testing](https://github.com/Lightning-AI/lightning-habana/actions/workflows/ci-testing.yml/badge.svg?event=push)](https://github.com/Lightning-AI/lightning-habana/actions/workflows/ci-testing.yml)
 [![General checks](https://github.com/Lightning-AI/lightning-habana/actions/workflows/ci-checks.yml/badge.svg?event=push)](https://github.com/Lightning-AI/lightning-habana/actions/workflows/ci-checks.yml)
-[![Documentation Status](https://readthedocs.org/projects/lightning-habana/badge/?version=latest)](https://lightning-habana.readthedocs.io/en/latest/?badge=latest)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Lightning-AI/lightning-habana/main.svg?badge_token=mqheL1-cTn-280Vx4cJUdg)](https://results.pre-commit.ci/latest/github/Lightning-AI/lightning-habana/main?badge_token=mqheL1-cTn-280Vx4cJUdg)
-
-\* the Read-The-Docs is failing as this one leads to the public domain which requires the repo to be public too
+[![Build Status](https://dev.azure.com/Lightning-AI/compatibility/_apis/build/status/Lightning-AI.lightning-Habana?branchName=main)](https://dev.azure.com/Lightning-AI/compatibility/_build/latest?definitionId=45&branchName=main)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Lightning-AI/lightning-Habana/main.svg)](https://results.pre-commit.ci/latest/github/Lightning-AI/lightning-Habana/main)
 
 ## To be Done aka cross-check
 
