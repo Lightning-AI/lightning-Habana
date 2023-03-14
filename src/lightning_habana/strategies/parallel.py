@@ -37,7 +37,7 @@ if _HPU_AVAILABLE:
 log = logging.getLogger(__name__)
 
 
-class StrategyParallelHPU(DDPStrategy):
+class HPUParallelStrategy(DDPStrategy):
     """Strategy for distributed training on multiple HPU devices."""
 
     strategy_name = "hpu_parallel"

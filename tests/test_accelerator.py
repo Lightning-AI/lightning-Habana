@@ -20,22 +20,22 @@ from pytorch_lightning import Callback, Trainer, seed_everything
 from pytorch_lightning.demos.boring_classes import BoringModel
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
-from lightning_habana.accelerator import AcceleratorHPU
-from lightning_habana.strategies import StrategyParallelHPU, StrategySingleHPU
+from lightning_habana.accelerator import HPUAccelerator
+from lightning_habana.strategies import HPUParallelStrategy, HPUSingleStrategy
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
 def test_availability():
-    assert AcceleratorHPU.is_available()
+    assert HPUAccelerator.is_available()
 
 
 def test_device_name():
-    assert AcceleratorHPU.get_device_name() == "GAUDI"
+    assert HPUAccelerator.get_device_name() == "GAUDI"
 
 
 def test_accelerator_selected():
-    trainer = Trainer(accelerator=AcceleratorHPU())
-    assert isinstance(trainer.accelerator, AcceleratorHPU)
+    trainer = Trainer(accelerator=HPUAccelerator())
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
@@ -46,7 +46,7 @@ def test_all_stages(tmpdir, hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
-        accelerator=AcceleratorHPU(),
+        accelerator=HPUAccelerator(),
         devices=hpus,
         precision="16-mixed",
     )
@@ -64,7 +64,7 @@ def test_optimization(tmpdir):
     dm = ClassifDataModule(length=1024)
     model = ClassificationModel()
 
-    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, accelerator=AcceleratorHPU(), devices=1)
+    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, accelerator=HPUAccelerator(), devices=1)
 
     # fit model
     trainer.fit(model, dm)
@@ -88,7 +88,7 @@ def test_optimization(tmpdir):
 
     model = ClassificationModel.load_from_checkpoint(model_path)
 
-    trainer = Trainer(default_root_dir=tmpdir, accelerator=AcceleratorHPU(), devices=1)
+    trainer = Trainer(default_root_dir=tmpdir, accelerator=HPUAccelerator(), devices=1)
 
     result = trainer.test(model, datamodule=dm)
     saved_result = result[0]["test_acc"]
@@ -139,7 +139,7 @@ def test_stages_correct(tmpdir):
 
     model = StageModel()
     trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator=AcceleratorHPU(), devices=1, callbacks=TestCallback()
+        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=1, callbacks=TestCallback()
     )
     trainer.fit(model)
     trainer.test(model)
@@ -149,62 +149,62 @@ def test_stages_correct(tmpdir):
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator():
-    trainer = Trainer(accelerator=AcceleratorHPU(), devices=1)
-    assert isinstance(trainer.accelerator, AcceleratorHPU)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 1
 
-    trainer = Trainer(accelerator=AcceleratorHPU())
-    assert isinstance(trainer.accelerator, AcceleratorHPU)
+    trainer = Trainer(accelerator=HPUAccelerator())
+    assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 8
 
     trainer = Trainer(accelerator="auto", devices=8)
-    assert isinstance(trainer.accelerator, AcceleratorHPU)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 8
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator_with_single_device():
-    trainer = Trainer(accelerator=AcceleratorHPU(), devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
 
-    assert isinstance(trainer.strategy, StrategySingleHPU)
-    assert isinstance(trainer.accelerator, AcceleratorHPU)
+    assert isinstance(trainer.strategy, HPUSingleStrategy)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator_with_multiple_devices():
-    trainer = Trainer(accelerator=AcceleratorHPU(), devices=8)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
 
-    assert isinstance(trainer.strategy, StrategyParallelHPU)
-    assert isinstance(trainer.accelerator, AcceleratorHPU)
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator_auto_with_devices_hpu():
     trainer = Trainer(accelerator="auto", devices=8)
 
-    assert isinstance(trainer.strategy, StrategyParallelHPU)
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_strategy_choice_single_strategy():
-    trainer = Trainer(strategy=StrategySingleHPU(device=torch.device("hpu")), accelerator=AcceleratorHPU(), devices=1)
-    assert isinstance(trainer.strategy, StrategySingleHPU)
+    trainer = Trainer(strategy=HPUSingleStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
+    assert isinstance(trainer.strategy, HPUSingleStrategy)
 
-    trainer = Trainer(accelerator=AcceleratorHPU(), devices=1)
-    assert isinstance(trainer.strategy, StrategySingleHPU)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
+    assert isinstance(trainer.strategy, HPUSingleStrategy)
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_strategy_choice_parallel_strategy():
     trainer = Trainer(
-        strategy=StrategyParallelHPU(parallel_devices=[torch.device("hpu")] * 8),
-        accelerator=AcceleratorHPU(),
+        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8),
+        accelerator=HPUAccelerator(),
         devices=8,
     )
-    assert isinstance(trainer.strategy, StrategyParallelHPU)
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
 
-    trainer = Trainer(accelerator=AcceleratorHPU(), devices=8)
-    assert isinstance(trainer.strategy, StrategyParallelHPU)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
 def test_devices_auto_choice_hpu():
@@ -217,19 +217,19 @@ def test_devices_auto_choice_hpu():
 def test_inference_only(tmpdir, hpus):
     model = BoringModel()
 
-    trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=True, accelerator=AcceleratorHPU(), devices=hpus)
+    trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus)
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)
 
 
 def test_hpu_auto_device_count():
-    assert AcceleratorHPU.auto_device_count() == 8
+    assert HPUAccelerator.auto_device_count() == 8
 
 
 def test_hpu_unsupported_device_type():
     with pytest.raises(MisconfigurationException, match="`devices` for `HPUAccelerator` must be int, string or None."):
-        Trainer(accelerator=AcceleratorHPU(), devices=[1])
+        Trainer(accelerator=HPUAccelerator(), devices=[1])
 
 
 def test_strategy_params_with_hpu_parallel_strategy():
@@ -237,7 +237,7 @@ def test_strategy_params_with_hpu_parallel_strategy():
     gradient_as_bucket_view = True
     static_graph = True
     find_unused_parameters = True
-    strategy = StrategyParallelHPU(
+    strategy = HPUParallelStrategy(
         bucket_cap_mb=bucket_cap_mb,
         gradient_as_bucket_view=gradient_as_bucket_view,
         static_graph=static_graph,
@@ -273,7 +273,7 @@ def test_multi_optimizers_with_hpu(tmpdir):
     model.val_dataloader = None
     trainer = Trainer(
         default_root_dir=tmpdir,
-        accelerator=AcceleratorHPU(),
+        accelerator=HPUAccelerator(),
         devices=1,
         limit_train_batches=2,
         limit_val_batches=2,
@@ -285,7 +285,7 @@ def test_multi_optimizers_with_hpu(tmpdir):
 
 
 def test_hpu_device_stats_monitor():
-    hpu_stats = AcceleratorHPU().get_device_stats("hpu")
+    hpu_stats = HPUAccelerator().get_device_stats("hpu")
     fields = [
         "Limit",
         "InUse",

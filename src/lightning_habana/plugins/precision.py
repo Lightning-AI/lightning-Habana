@@ -24,7 +24,7 @@ if _HPU_AVAILABLE:
 _PRECISION_INPUT = Literal["32-true", "16-mixed", "bf16-mixed"]
 
 
-class PrecisionHPU(PrecisionPlugin):
+class HPUPrecisionPlugin(PrecisionPlugin):
     """Plugin that enables bfloat/half support on HPUs.
 
     Args:
