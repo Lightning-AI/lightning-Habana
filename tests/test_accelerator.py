@@ -16,9 +16,16 @@ from unittest import mock
 
 import pytest
 import torch
-from pytorch_lightning import Callback, Trainer, seed_everything
-from pytorch_lightning.demos.boring_classes import BoringModel
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.pytorch import Callback, Trainer, seed_everything
+    from lightning.pytorch.demos.boring_classes import BoringModel
+    from lightning.pytorch.utilities.exceptions import MisconfigurationException
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning import Callback, Trainer, seed_everything
+    from pytorch_lightning.demos.boring_classes import BoringModel
+    from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.accelerator import HPUAccelerator
 from lightning_habana.strategies import HPUParallelStrategy, SingleHPUStrategy

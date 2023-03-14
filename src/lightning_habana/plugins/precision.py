@@ -13,8 +13,15 @@
 # limitations under the License.
 from typing import Literal, Optional, cast
 
-from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
+from lightning_utilities import module_available
 from typing_extensions import get_args
+
+if module_available("lightning"):
+    from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
+elif module_available("pytorch_lightning"):
+    from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana import _HPU_AVAILABLE
 
