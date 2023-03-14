@@ -21,7 +21,7 @@ from pytorch_lightning.demos.boring_classes import BoringModel
 from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.accelerator import HPUAccelerator
-from lightning_habana.strategies import HPUParallelStrategy, HPUSingleStrategy
+from lightning_habana.strategies import HPUParallelStrategy, SingleHPUStrategy
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
@@ -166,7 +166,7 @@ def test_accelerator():
 def test_accelerator_with_single_device():
     trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
 
-    assert isinstance(trainer.strategy, HPUSingleStrategy)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
@@ -187,11 +187,11 @@ def test_accelerator_auto_with_devices_hpu():
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_strategy_choice_single_strategy():
-    trainer = Trainer(strategy=HPUSingleStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
-    assert isinstance(trainer.strategy, HPUSingleStrategy)
+    trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
 
     trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
-    assert isinstance(trainer.strategy, HPUSingleStrategy)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
 
 
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo

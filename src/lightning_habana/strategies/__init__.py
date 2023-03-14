@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from lightning_habana.strategies.parallel import HPUParallelStrategy
-from lightning_habana.strategies.single import HPUSingleStrategy
+from lightning_habana.strategies.single import SingleHPUStrategy
 
-__all__ = ["HPUParallelStrategy", "HPUSingleStrategy"]
+__all__ = ["HPUParallelStrategy", "SingleHPUStrategy"]

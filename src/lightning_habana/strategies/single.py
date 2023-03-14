@@ -31,7 +31,7 @@ if _HPU_AVAILABLE:
     import habana_frameworks.torch.core as htcore
 
 
-class HPUSingleStrategy(SingleDeviceStrategy):
+class SingleHPUStrategy(SingleDeviceStrategy):
     """Strategy for training on single HPU device."""
 
     strategy_name = "hpu_single"

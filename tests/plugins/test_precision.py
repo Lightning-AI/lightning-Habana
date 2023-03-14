@@ -19,7 +19,7 @@ from pytorch_lightning.demos.boring_classes import BoringModel
 
 from lightning_habana import HPUAccelerator
 from lightning_habana.plugins import HPUPrecisionPlugin
-from lightning_habana.strategies import HPUSingleStrategy
+from lightning_habana.strategies import SingleHPUStrategy
 
 
 @pytest.fixture()
@@ -53,7 +53,7 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
         plugins=[HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)],
         callbacks=TestCallback(),
     )
-    assert isinstance(trainer.strategy, HPUSingleStrategy)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.strategy.precision_plugin, HPUPrecisionPlugin)
     assert trainer.strategy.precision_plugin.precision == "bf16-mixed"
     with pytest.raises(SystemExit):
@@ -80,7 +80,7 @@ def test_pure_half_precision(tmpdir, hmp_params: dict):
         callbacks=TestCallback(),
     )
 
-    assert isinstance(trainer.strategy, HPUSingleStrategy)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.strategy.precision_plugin, HPUPrecisionPlugin)
     assert trainer.strategy.precision_plugin.precision == "16-mixed"
 

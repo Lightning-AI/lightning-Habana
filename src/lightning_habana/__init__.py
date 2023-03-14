@@ -20,12 +20,12 @@ from lightning_habana.accelerator import HPUAccelerator  # noqa: E402
 from lightning_habana.plugins.io_plugin import HPUCheckpointIO  # noqa: E402
 from lightning_habana.plugins.precision import HPUPrecisionPlugin  # noqa: E402
 from lightning_habana.strategies.parallel import HPUParallelStrategy  # noqa: E402
-from lightning_habana.strategies.single import HPUSingleStrategy  # noqa: E402
+from lightning_habana.strategies.single import SingleHPUStrategy  # noqa: E402
 
 __all__ = [
     "HPUAccelerator",
     "HPUParallelStrategy",
-    "HPUSingleStrategy",
+    "SingleHPUStrategy",
     "HPUPrecisionPlugin",
     "HPUCheckpointIO",
 ]
