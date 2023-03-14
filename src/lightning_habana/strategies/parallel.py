@@ -85,7 +85,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:
+        if self._checkpoint_io is None:  # type: ignore[has-type]
             self._checkpoint_io = HPUCheckpointIO()
         elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
             self._checkpoint_io.checkpoint_io = HPUCheckpointIO()
@@ -94,7 +94,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
+        self._checkpoint_io = io  # type: ignore[assignment]
 
     def setup_environment(self) -> None:
         os.environ["ID"] = str(self.local_rank)
@@ -106,7 +106,7 @@ class HPUParallelStrategy(DDPStrategy):
     def determine_ddp_device_ids(self) -> None:
         return None
 
-    def broadcast(self, obj: object, src: int = 0) -> object:  # type: ignore
+    def broadcast(self, obj: object, src: int = 0) -> object:
         obj = [obj]
         if self.global_rank != src:
             obj = [None]

@@ -65,7 +65,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:
+        if self._checkpoint_io is None:  # type: ignore[has-type]
             self._checkpoint_io = HPUCheckpointIO()
         elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
             self._checkpoint_io.checkpoint_io = HPUCheckpointIO()
@@ -74,7 +74,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
+        self._checkpoint_io = io  # type: ignore[assignment]
 
     @property
     def is_distributed(self) -> bool:
@@ -88,7 +88,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         super().setup_optimizers(trainer)
 
     def model_to_device(self) -> None:
-        self.model.to(self.root_device)  # type: ignore
+        self.model.to(self.root_device)
 
     def on_after_backward(self) -> None:
         # Break lazy accumulation of graph after fwd+bwd
