@@ -25,8 +25,8 @@ if module_available("lightning"):
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.single_device import SingleDeviceStrategy
 elif module_available("pytorch_lightning"):
-    from lightning.fabric.plugins import CheckpointIO
-    from lightning.fabric.utilities.types import _DEVICE
+    from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.utilities.types import _DEVICE
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
@@ -35,6 +35,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.strategies.single_device import SingleDeviceStrategy
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
