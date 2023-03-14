@@ -24,7 +24,6 @@ concurrency:
 
 env:
   PUSH_NIGHTLY: ${{ github.event_name == 'schedule' }}
-  PUSH_RELEASE: ${{ github.event_name == 'release' }}
 
 jobs:
 
