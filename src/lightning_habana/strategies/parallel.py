@@ -23,8 +23,6 @@ if module_available("lightning"):
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
-    from lightning.pytorch.overrides.torch_distributed import broadcast_object_list
-    from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy

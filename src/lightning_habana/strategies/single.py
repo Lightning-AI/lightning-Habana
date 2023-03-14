@@ -17,14 +17,13 @@ from typing import Any, Callable, Dict, Optional, Union
 from lightning_utilities import module_available
 
 if module_available("lightning"):
+    from lightning.fabric.plugins import CheckpointIO
+    from lightning.fabric.utilities.types import _DEVICE
     from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
-    from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.single_device import SingleDeviceStrategy
-    from lightning_fabric.plugins import CheckpointIO
-    from lightning_fabric.utilities.types import _DEVICE
 elif module_available("pytorch_lightning"):
     from lightning.fabric.plugins import CheckpointIO
     from lightning.fabric.utilities.types import _DEVICE
