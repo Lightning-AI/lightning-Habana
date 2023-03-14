@@ -14,8 +14,14 @@
 
 import pytest
 import torch
-from pytorch_lightning import Callback, LightningModule, Trainer
-from pytorch_lightning.demos.boring_classes import BoringModel
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.pytorch import Callback, LightningModule, Trainer
+    from lightning.pytorch.demos.boring_classes import BoringModel
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning import Callback, LightningModule, Trainer
+    from pytorch_lightning.demos.boring_classes import BoringModel
 
 from lightning_habana import HPUAccelerator
 from lightning_habana.plugins import HPUPrecisionPlugin

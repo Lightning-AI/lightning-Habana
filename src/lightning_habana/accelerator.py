@@ -15,10 +15,20 @@
 from typing import Any, Dict, List, Optional, Union
 
 import torch
-from lightning_fabric.utilities.types import _DEVICE
-from pytorch_lightning.accelerators.accelerator import Accelerator
-from pytorch_lightning.utilities.exceptions import MisconfigurationException
-from pytorch_lightning.utilities.rank_zero import rank_zero_debug
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.fabric.utilities.types import _DEVICE
+    from lightning.pytorch.accelerators.accelerator import Accelerator
+    from lightning.pytorch.utilities.exceptions import MisconfigurationException
+    from lightning.pytorch.utilities.rank_zero import rank_zero_debug
+elif module_available("pytorch_lightning"):
+    from lightning_fabric.utilities.types import _DEVICE
+    from pytorch_lightning.accelerators.accelerator import Accelerator
+    from pytorch_lightning.utilities.exceptions import MisconfigurationException
+    from pytorch_lightning.utilities.rank_zero import rank_zero_debug
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana import _HPU_AVAILABLE
 

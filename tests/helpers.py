@@ -15,7 +15,12 @@ from typing import Tuple
 
 import torch
 import torch.nn.functional as F  # noqa: N812
-from pytorch_lightning import LightningDataModule, LightningModule
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.pytorch import LightningDataModule, LightningModule
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning import LightningDataModule, LightningModule
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Accuracy

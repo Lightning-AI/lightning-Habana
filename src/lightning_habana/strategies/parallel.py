@@ -16,15 +16,28 @@ import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch.distributed
-from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-from lightning_fabric.utilities.distributed import group as _group
-from pytorch_lightning import LightningModule
-from pytorch_lightning.accelerators import Accelerator
-from pytorch_lightning.overrides.torch_distributed import broadcast_object_list
-from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
-from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
-from pytorch_lightning.plugins.precision import PrecisionPlugin
-from pytorch_lightning.strategies.ddp import DDPStrategy
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
+    from lightning.fabric.utilities.distributed import group as _group
+    from lightning.pytorch import LightningModule
+    from lightning.pytorch.accelerators import Accelerator
+    from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
+    from lightning.pytorch.plugins.precision import PrecisionPlugin
+    from lightning.pytorch.strategies.ddp import DDPStrategy
+elif module_available("pytorch_lightning"):
+    from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
+    from lightning_fabric.utilities.distributed import group as _group
+    from pytorch_lightning import LightningModule
+    from pytorch_lightning.accelerators import Accelerator
+    from pytorch_lightning.overrides.torch_distributed import broadcast_object_list
+    from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
+    from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
+    from pytorch_lightning.plugins.precision import PrecisionPlugin
+    from pytorch_lightning.strategies.ddp import DDPStrategy
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
@@ -72,7 +85,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:
+        if self._checkpoint_io is None:  # type: ignore[has-type]
             self._checkpoint_io = HPUCheckpointIO()
         elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
             self._checkpoint_io.checkpoint_io = HPUCheckpointIO()
@@ -93,7 +106,7 @@ class HPUParallelStrategy(DDPStrategy):
     def determine_ddp_device_ids(self) -> None:
         return None
 
-    def broadcast(self, obj: object, src: int = 0) -> object:  # type: ignore
+    def broadcast(self, obj: object, src: int = 0) -> object:
         obj = [obj]
         if self.global_rank != src:
             obj = [None]
