@@ -17,6 +17,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch.distributed
 from lightning_utilities import module_available
+from torch.distributed import broadcast_object_list
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -31,7 +32,6 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.distributed import group as _group
     from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
-    from pytorch_lightning.overrides.torch_distributed import broadcast_object_list
     from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
@@ -94,7 +94,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
+        self._checkpoint_io = io  # type: ignore[assignment]
 
     def setup_environment(self) -> None:
         os.environ["ID"] = str(self.local_rank)
