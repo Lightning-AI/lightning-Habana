@@ -1,6 +1,39 @@
-[metadata]
-license_file = "LICENSE"
-description-file = "README.md"
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lai-textpred"
+authors = [
+    {name = "Lightning-AI", email = "name@lightning.ai"},
+]
+description = "LAI integration with Intel Habana"
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = ["deep learning", "machine learning", "pytorch", "AI"]
+license = {text = "Apache-2.0"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "numpy",
+    "lightning>=1.8.4",
+    "deepspeed==0.8.0",
+    "pynvml",
+    "lightning-gpt==0.1.0",
+    "tensorboardX",
+]
+dynamic = ["version"]
+
+[tool.setuptools.dynamic]
+version = {attr = "lai_textpred.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["lightning_habana*"]
+exclude = ["tests*"]
+
+[project.urls]
+repository = "https://github.com/Lightning-AI/lightning-Habana"
 
 [build-system]
 requires = [
