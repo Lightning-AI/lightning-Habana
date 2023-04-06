@@ -30,9 +30,11 @@ class RandomDataset(Dataset):
         self.data = torch.randn(length, size)
 
     def __getitem__(self, index: int) -> Tensor:
+        """Returns a sample."""
         return self.data[index]
 
     def __len__(self) -> int:
+        """Returns the size of dataset."""
         return self.len
 
 
@@ -42,6 +44,7 @@ class RandomIterableDataset(IterableDataset):
         self.size = size
 
     def __iter__(self) -> Iterator[Tensor]:
+        """RandomIterableDataset iterator."""
         for _ in range(self.count):
             yield torch.randn(self.size)
 
@@ -58,8 +61,7 @@ class BoringFabric(Fabric):
 
     def step(self, model: Module, batch: Any) -> Tensor:
         output = model(batch)
-        loss = torch.nn.functional.mse_loss(output, torch.ones_like(output))
-        return loss
+        return torch.nn.functional.mse_loss(output, torch.ones_like(output))
 
     def after_backward(self, model: Module, optimizer: Optimizer) -> None:
         pass

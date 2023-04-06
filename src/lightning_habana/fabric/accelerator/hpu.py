@@ -36,9 +36,11 @@ class HPUAccelerator(Accelerator):
     """Accelerator for HPU devices."""
 
     def setup_device(self, device: torch.device) -> None:
-        """Raises:
-        ValueError:
-        If the selected device is not HPU.
+        """Setup hpu accelerator.
+
+        Raises:
+            ValueError:
+                If the selected device is not HPU.
         """
         if device.type != "hpu":
             raise ValueError(f"Device should be HPU, got {device} instead.")
@@ -91,7 +93,9 @@ class HPUAccelerator(Accelerator):
 
 
 def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
-    """Parses the hpus given in the format as accepted by the
+    """Parse hpu devices.
+
+    Parses the hpus given in the format as accepted by the
     :class:`~lightning.pytorch.trainer.Trainer` for the `devices` flag.
 
     Args:

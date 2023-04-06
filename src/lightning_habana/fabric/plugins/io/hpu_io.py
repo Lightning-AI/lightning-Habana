@@ -18,8 +18,7 @@ from typing import Any, Dict, Optional
 import torch
 from lightning.fabric.plugins import TorchCheckpointIO
 from lightning.fabric.utilities import move_data_to_device
-from lightning.fabric.utilities.cloud_io import _atomic_save
-from lightning.fabric.utilities.cloud_io import get_filesystem
+from lightning.fabric.utilities.cloud_io import _atomic_save, get_filesystem
 from lightning.fabric.utilities.rank_zero import rank_zero_warn
 from lightning.fabric.utilities.types import _PATH
 

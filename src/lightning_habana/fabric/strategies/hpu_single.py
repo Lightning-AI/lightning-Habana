@@ -53,7 +53,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:
+        if self._checkpoint_io is None:  # type: ignore
             self._checkpoint_io = TorchCheckpointIO()
 
         return self._checkpoint_io
