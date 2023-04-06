@@ -16,30 +16,27 @@ import os
 from typing import Any, Dict, Optional
 
 import torch
-
 from lightning.fabric.plugins import TorchCheckpointIO
+from lightning.fabric.utilities import move_data_to_device
 from lightning.fabric.utilities.cloud_io import _atomic_save
-from lightning.fabric.utilities.cloud_io import _load as pl_load
 from lightning.fabric.utilities.cloud_io import get_filesystem
 from lightning.fabric.utilities.rank_zero import rank_zero_warn
 from lightning.fabric.utilities.types import _PATH
-from lightning.fabric.utilities import move_data_to_device
-
 
 
 class HPUCheckpointIO(TorchCheckpointIO):
-    """CheckpointIO to save checkpoints for HPU training strategies.
-    """
+    """CheckpointIO to save checkpoints for HPU training strategies."""
 
     def save_checkpoint(self, checkpoint: Dict[str, Any], path: _PATH, storage_options: Optional[Any] = None) -> None:
         """Save model/training states as a checkpoint file through state-dump and file-write.
+
         Args:
             checkpoint: dict containing model and trainer state
             path: write-target path
             storage_options: not used in ``TorchCheckpointIO.save_checkpoint``
         Raises:
             TypeError:
-                If ``storage_options`` arg is passed in
+                If ``storage_options`` arg is passed in.
         """
         if storage_options is not None:
             raise TypeError(

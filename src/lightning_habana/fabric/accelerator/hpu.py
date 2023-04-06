@@ -12,20 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import torch
 from lightning_utilities import module_available
 
 if module_available("lightning"):
-    from lightning.fabric.utilities.types import _DEVICE
     from lightning.pytorch.accelerators.accelerator import Accelerator
-    from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.rank_zero import rank_zero_debug
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.utilities.types import _DEVICE
     from pytorch_lightning.accelerators.accelerator import Accelerator
-    from pytorch_lightning.utilities.exceptions import MisconfigurationException
     from pytorch_lightning.utilities.rank_zero import rank_zero_debug
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
@@ -40,10 +36,9 @@ class HPUAccelerator(Accelerator):
     """Accelerator for HPU devices."""
 
     def setup_device(self, device: torch.device) -> None:
-        """
-        Raises:
-            ValueError:
-                If the selected device is not HPU.
+        """Raises:
+        ValueError:
+        If the selected device is not HPU.
         """
         if device.type != "hpu":
             raise ValueError(f"Device should be HPU, got {device} instead.")
@@ -96,16 +91,16 @@ class HPUAccelerator(Accelerator):
 
 
 def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
-    """
-    Parses the hpus given in the format as accepted by the
+    """Parses the hpus given in the format as accepted by the
     :class:`~lightning.pytorch.trainer.Trainer` for the `devices` flag.
+
     Args:
         devices: An integer that indicates the number of Gaudi devices to be used
     Returns:
         Either an integer or ``None`` if no devices were requested
     Raises:
         ValueError:
-            If devices aren't of type `int` or `str`
+            If devices aren't of type `int` or `str`.
     """
     if devices is not None and not isinstance(devices, (int, str)):
         raise ValueError("`devices` for `HPUAccelerator` must be int, string or None.")

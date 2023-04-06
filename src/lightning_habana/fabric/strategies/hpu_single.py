@@ -14,18 +14,16 @@
 
 from typing import Any, Dict, Optional
 
+from lightning.fabric.accelerators import Accelerator
+from lightning.fabric.plugins import CheckpointIO
+from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
+from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+from lightning.fabric.utilities.types import _DEVICE, Optimizable
 from torch import Tensor
 from torch.nn import Module
 
-from lightning_habana.fabric.utils.imports import _TORCH_LESSER_EQUAL_1_13_1, _HPU_AVAILABLE
 from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
-
-from lightning.fabric.accelerators import Accelerator
-from lightning.fabric.plugins import CheckpointIO
-from lightning.fabric.utilities.types import _DEVICE
-from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-from lightning.fabric.utilities.types import Optimizable
+from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HPU_AVAILABLE:
     import habana_frameworks.torch.core as htcore
@@ -43,7 +41,6 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         checkpoint_io: Optional[CheckpointIO] = None,
         precision: Optional[HPUPrecision] = None,
     ):
-
         if not _HPU_AVAILABLE:
             raise ValueError("`SingleHPUStrategy` requires HPU devices to run")
 

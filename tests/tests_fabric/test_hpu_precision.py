@@ -16,13 +16,13 @@
 import pytest
 import torch
 import torch.nn as nn
+from lightning.fabric import Fabric, seed_everything
 
 from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
 from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
 from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
-
-from lightning.fabric import Fabric, seed_everything
 from tests.tests_fabric.fabric_helpers import BoringFabric
+
 
 class MixedPrecisionModule(nn.Module):
     def __init__(self, expected_dtype):
@@ -38,7 +38,6 @@ class MixedPrecisionModule(nn.Module):
 
 
 class MixedPrecisionBoringFabric(BoringFabric):
-
     expected_dtype: torch.dtype
 
     def get_model(self):
@@ -58,7 +57,7 @@ class MixedPrecisionBoringFabric(BoringFabric):
 
 
 @pytest.mark.parametrize(
-    "precision, expected_dtype",
+    ("precision", "expected_dtype"),
     [
         pytest.param("bf16-mixed", torch.float32),
         pytest.param("32", torch.float32),
@@ -66,14 +65,25 @@ class MixedPrecisionBoringFabric(BoringFabric):
     ],
 )
 def test_hpu(precision, expected_dtype):
-    fabric = MixedPrecisionBoringFabric(accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy(), plugins=[HPUPrecision(precision=precision)])
+    fabric = MixedPrecisionBoringFabric(
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=[HPUPrecision(precision=precision)],
+    )
     fabric.expected_dtype = expected_dtype
     fabric.run()
+
 
 def test_hpu_fused_optimizer():
     def run():
         seed_everything(1234)
-        fabric = Fabric(accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy(), plugins=[HPUPrecision(precision="bf16")])
+        fabric = Fabric(
+            accelerator=HPUAccelerator(),
+            devices=1,
+            strategy=SingleHPUStrategy(),
+            plugins=[HPUPrecision(precision="bf16")],
+        )
 
         model = nn.Linear(10, 10).to(fabric.device)
         optimizer = torch.optim.SGD(model.parameters(), lr=1.0)
@@ -95,10 +105,16 @@ def test_hpu_fused_optimizer():
 
     def run_fused():
         seed_everything(1234)
-        fabric = Fabric(accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy(), plugins=[HPUPrecision(precision="bf16")])
+        fabric = Fabric(
+            accelerator=HPUAccelerator(),
+            devices=1,
+            strategy=SingleHPUStrategy(),
+            plugins=[HPUPrecision(precision="bf16")],
+        )
 
         model = nn.Linear(10, 10).to(fabric.device)
         from habana_frameworks.torch.hpex.optimizers import FusedSGD
+
         optimizer = FusedSGD(model.parameters(), lr=1.0)
 
         model, optimizer = fabric.setup(model, optimizer)

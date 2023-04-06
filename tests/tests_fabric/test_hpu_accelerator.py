@@ -17,18 +17,22 @@ import torch
 
 from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
 
+
 def test_auto_device_count():
     assert HPUAccelerator.auto_device_count() != 0
 
+
 def test_availability():
     assert HPUAccelerator.is_available()
+
 
 def test_init_device_with_wrong_device_type():
     with pytest.raises(ValueError, match="Device should be HPU"):
         HPUAccelerator().setup_device(torch.device("cpu"))
 
+
 @pytest.mark.parametrize(
-    "devices,expected",
+    ("devices", "expected"),
     [
         (1, [torch.device("hpu")]),
         (2, [torch.device("hpu")] * 2),

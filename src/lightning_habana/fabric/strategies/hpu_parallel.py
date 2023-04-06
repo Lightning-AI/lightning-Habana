@@ -13,20 +13,12 @@
 # limitations under the License.
 
 
-from contextlib import contextmanager
-from datetime import timedelta
 import logging
 import os
+from datetime import timedelta
 from typing import Any, Dict, List, Literal, Optional
 
-from torch import Tensor
 import torch.distributed
-from torch.nn import Module
-
-from lightning_habana.fabric.utils.imports import _TORCH_LESSER_EQUAL_1_13_1, _HPU_AVAILABLE
-from lightning_habana.fabric.plugins.precision import HPUPrecision
-from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
-
 from lightning.fabric.accelerators import Accelerator
 from lightning.fabric.plugins import CheckpointIO
 from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
@@ -34,6 +26,12 @@ from lightning.fabric.plugins.environments.cluster_environment import ClusterEnv
 from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
 from lightning.fabric.strategies.ddp import DDPStrategy
 from lightning.fabric.utilities.types import Optimizable
+from torch import Tensor
+from torch.nn import Module
+
+from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
+from lightning_habana.fabric.plugins.precision import HPUPrecision
+from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HPU_AVAILABLE:
     import habana_frameworks.torch.core as htcore
@@ -59,7 +57,6 @@ class HPUParallelStrategy(DDPStrategy):
         start_method: Literal["popen", "spawn", "fork", "forkserver"] = "popen",
         **kwargs: Any,
     ) -> None:
-
         if not _HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
 
@@ -92,7 +89,6 @@ class HPUParallelStrategy(DDPStrategy):
         return self._process_group_backend
 
     def setup_environment(self) -> None:
-
         os.environ["ID"] = str(self.local_rank)
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated

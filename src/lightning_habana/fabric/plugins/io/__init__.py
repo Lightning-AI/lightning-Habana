@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.fabric.plugins.io.hpu_io import HPUCheckpointIO  # noqa: E402
+from lightning_habana.fabric.plugins.io.hpu_io import HPUCheckpointIO
 
 __all__ = ["HPUCheckpointIO"]

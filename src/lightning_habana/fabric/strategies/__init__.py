@@ -1,4 +1,3 @@
-
 # Copyright (c) 2023 Habana Labs, Ltd. an Intel Company
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy  # noqa: E402
-from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy  # noqa: E402
+from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy
+from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
 
 __all__ = ["HPUParallelStrategy", "SingleHPUStrategy"]

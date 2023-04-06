@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import cast, Literal, Optional, Union
+from typing import Literal, Optional, Union, cast
 
+from lightning.fabric.plugins.precision.precision import Precision
 from typing_extensions import get_args
 
 from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE
-from lightning.fabric.plugins.precision.precision import Precision
 
 if _HPU_AVAILABLE:
     from habana_frameworks.torch.hpex import hmp
@@ -29,6 +29,7 @@ _PRECISION_INPUT = Union[_PRECISION_INPUT_INT, _PRECISION_INPUT_STR]
 
 class HPUPrecision(Precision):
     """Plugin that enables bfloat support on HPUs.
+
     Args:
         precision: The precision to use.
         opt_level: Choose optimization level for hmp.

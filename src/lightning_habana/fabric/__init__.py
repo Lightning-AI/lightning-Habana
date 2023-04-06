@@ -13,11 +13,11 @@
 # limitations under the License.
 
 
-from lightning_habana.fabric.accelerator.hpu import HPUAccelerator  # noqa: E402
-from lightning_habana.fabric.plugins.io.hpu_io import HPUCheckpointIO  # noqa: E402
-from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision  # noqa: E402
-from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy  # noqa: E402
-from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy  # noqa: E402
+from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
+from lightning_habana.fabric.plugins.io.hpu_io import HPUCheckpointIO
+from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
+from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy
+from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
 
 __all__ = [
     "HPUAccelerator",

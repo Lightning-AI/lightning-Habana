@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import operator
-import sys
+import os
 
-import torch
 
 _PACKAGE_ROOT = os.path.dirname(__file__)
 _PROJECT_ROOT = os.path.dirname(_PACKAGE_ROOT)
 
-from lightning_utilities.core.imports import compare_version, package_available, RequirementCache  # noqa: E402
+from lightning_utilities.core.imports import compare_version, package_available  # noqa: E402
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
 if _HABANA_FRAMEWORK_AVAILABLE:
