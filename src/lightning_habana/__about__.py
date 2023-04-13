@@ -17,22 +17,24 @@ import sys
 
 
 def get_version():
+    """Construct the release version and returns it."""
     version = os.getenv("RELEASE_VERSION")
     if not version:
         version = "0.0.0"
     build_number = os.getenv("RELEASE_BUILD_NUMBER")
     if build_number:
-        return version + "." + build_number
+        rval = version + "." + build_number
     else:
         try:
             import subprocess
 
             root = os.environ["PYTORCH_MODULES_ROOT_PATH"]
             sha = subprocess.check_output(["git", "-C", root, "rev-parse", "--short", "HEAD"]).decode("ascii").strip()
-            return f"{version}+git{sha}"
+            rval = f"{version}+git{sha}"
         except Exception as e:
             print(f"Error getting version: {e}", file=sys.stderr)
-            return f"{version}+unknown"
+            rval = f"{version}+unknown"
+    return rval
 
 
 __version__ = get_version()
