@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-import torch
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -55,7 +54,7 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         devices=1,
-        strategy=SingleHPUStrategy(), #TBD- set default in accelertor
+        strategy=SingleHPUStrategy(),  # TBD- set default in accelertor
         plugins=[HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)],
         callbacks=TestCallback(),
     )

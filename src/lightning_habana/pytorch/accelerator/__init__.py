@@ -12,5 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.pytorch.accelerator.hpu import HPUAccelerator  # noqa: E402
+from lightning_habana.pytorch.accelerator.hpu import HPUAccelerator
+
 __all__ = ["HPUAccelerator"]

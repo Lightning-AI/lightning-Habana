@@ -51,14 +51,14 @@ def test_all_stages(tmpdir, hpus):
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
-    _plugins=[HPUPrecisionPlugin(precision="16-mixed")]
+    _plugins = [HPUPrecisionPlugin(precision="16-mixed")]
     if hpus > 1:
         _strategy = HPUParallelStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
-        strategy = _strategy,
+        strategy=_strategy,
         plugins=_plugins,
         devices=hpus,
         precision="16-mixed",
@@ -77,9 +77,11 @@ def test_optimization(tmpdir):
     model = ClassificationModel()
 
     _strategy = SingleHPUStrategy()
-    #_plugins=[HPUPrecisionPlugin(precision="16-mixed")]
+    # _plugins=[HPUPrecisionPlugin(precision="16-mixed")]
 
-    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, max_steps=10, accelerator=HPUAccelerator(), devices=1, strategy=_strategy)
+    trainer = Trainer(
+        default_root_dir=tmpdir, max_epochs=1, max_steps=10, accelerator=HPUAccelerator(), devices=1, strategy=_strategy
+    )
 
     # fit model
     trainer.fit(model, dm)
@@ -111,7 +113,7 @@ def test_optimization(tmpdir):
     # assert saved_result == test_result
 
 
-#@pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
+# @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_stages_correct(tmpdir):
     """Ensure all stages correctly are traced correctly by asserting the output for each stage."""
 
@@ -156,7 +158,12 @@ def test_stages_correct(tmpdir):
     model = StageModel()
     _strategy = SingleHPUStrategy()
     trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=1, strategy=_strategy, callbacks=TestCallback()
+        default_root_dir=tmpdir,
+        fast_dev_run=True,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=_strategy,
+        callbacks=TestCallback(),
     )
     trainer.fit(model)
     trainer.test(model)
@@ -170,7 +177,7 @@ def test_accelerator_is_hpu():
     assert trainer.num_devices == 1
 
 
-#TBD: set default strategies from accelerator
+# TBD: set default strategies from accelerator
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator_with_single_device():
     trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
@@ -179,8 +186,8 @@ def test_accelerator_with_single_device():
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-#TBD: set default strategies from accelerator
-@pytest.mark.skipif(HPUAccelerator.auto_device_count()<=1, reason="Test requires multiple HPU devices")
+# TBD: set default strategies from accelerator
+@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator_with_multiple_devices():
     trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
@@ -198,8 +205,8 @@ def test_accelerator_with_multiple_devices():
     assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
 
-#TBD: set default strategies from accelerator
-@pytest.mark.skipif(HPUAccelerator.auto_device_count()<=1, reason="Test requires multiple HPU devices")
+# TBD: set default strategies from accelerator
+@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_accelerator_auto_with_devices_hpu():
     trainer = Trainer(accelerator="auto", devices=8)
@@ -211,7 +218,7 @@ def test_strategy_choice_single_strategy():
     trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
-    #TBD: set default strategies from accelerator
+    # TBD: set default strategies from accelerator
     # trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
     # assert isinstance(trainer.strategy, SingleHPUStrategy)
 
@@ -224,7 +231,7 @@ def test_strategy_choice_parallel_strategy():
     )
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
-    #TBD: set default strategies from accelerator
+    # TBD: set default strategies from accelerator
     # trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
     # assert isinstance(trainer.strategy, HPUParallelStrategy)
 
@@ -234,7 +241,7 @@ def test_devices_auto_choice_hpu():
     assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
 
-#@pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
+# @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 @pytest.mark.parametrize("hpus", [1])
 def test_inference_only(tmpdir, hpus):
     model = BoringModel()
@@ -242,7 +249,9 @@ def test_inference_only(tmpdir, hpus):
     _strategy = SingleHPUStrategy()
     if hpus > 1:
         _strategy = HPUParallelStrategy()
-    trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy)
+    trainer = Trainer(
+        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
+    )
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)

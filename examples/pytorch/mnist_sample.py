@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import torch
-from torch.nn import functional as F  # noqa: N812
 from jsonargparse import lazy_instance
-
 from lightning_utilities import module_available
+from torch.nn import functional as F  # noqa: N812
 
 if module_available("lightning"):
     from lightning.pytorch import LightningModule
@@ -26,7 +25,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule
     from pytorch_lightning.cli import LightningCLI
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
-
 
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 

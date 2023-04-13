@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.__about__ import *  # noqa: E402, F401, F403
-from lightning_habana.pytorch import *  # noqa: E402
-from lightning_habana.fabric import *  # noqa: E402
-from lightning_habana.utils import *  # noqa: E402
+from lightning_habana.__about__ import *  # noqa: F401, F403
+from lightning_habana.fabric import *
+from lightning_habana.pytorch import *
+from lightning_habana.utils import *
