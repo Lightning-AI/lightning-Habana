@@ -22,7 +22,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import Callback, LightningModule, Trainer
     from pytorch_lightning.demos.boring_classes import BoringModel
 
-from lightning_habana.pytorch.accelerator.accelerator import HPUAccelerator
+from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 

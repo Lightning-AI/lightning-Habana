@@ -15,7 +15,7 @@
 import pytest
 import torch
 
-from lightning_habana.fabric.accelerator.accelerator import HPUAccelerator
+from lightning_habana.fabric.accelerator import HPUAccelerator
 
 
 def test_auto_device_count():
