@@ -11,14 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import torch
 from jsonargparse import lazy_instance
-from pytorch_lightning import LightningModule
-from pytorch_lightning.cli import LightningCLI
-from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
+from lightning_utilities import module_available
 from torch.nn import functional as F  # noqa: N812
 
-from lightning_habana.plugins.precision import HPUPrecisionPlugin
+if module_available("lightning"):
+    from lightning.pytorch import LightningModule
+    from lightning.pytorch.cli import LightningCLI
+    from lightning.pytorch.demos.mnist_datamodule import MNISTDataModule
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning import LightningModule
+    from pytorch_lightning.cli import LightningCLI
+    from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
+
+from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 
 
 class LitClassifier(LightningModule):
@@ -61,7 +69,7 @@ if __name__ == "__main__":
             "accelerator": "hpu",
             "devices": 1,
             "max_epochs": 1,
-            "plugins": lazy_instance(HPUPrecisionPlugin, precision="16-mixed"),
+            "plugins": lazy_instance(HPUPrecisionPlugin, precision="bf16-mixed"),
         },
         run=False,
         save_config_kwargs={"overwrite": True},

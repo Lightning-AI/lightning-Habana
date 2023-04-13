@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.fabric.plugins.io.hpu_io import HPUCheckpointIO
-from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
+from lightning_habana.fabric.plugins.precision import HPUPrecision
 
 __all__ = ["HPUPrecision", "HPUCheckpointIO"]
