@@ -17,7 +17,7 @@ from typing import Literal, Optional, Union, cast
 from lightning.fabric.plugins.precision.precision import Precision
 from typing_extensions import get_args
 
-from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 if _HPU_AVAILABLE:
     from habana_frameworks.torch.hpex import hmp

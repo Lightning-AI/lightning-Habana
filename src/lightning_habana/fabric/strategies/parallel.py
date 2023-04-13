@@ -31,7 +31,7 @@ from torch.nn import Module
 
 from lightning_habana.fabric.accelerator.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.precision import HPUPrecision
-from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
+from lightning_habana.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HPU_AVAILABLE:
     import habana_frameworks.torch.core as htcore
