@@ -51,7 +51,7 @@ def test_all_stages(tmpdir, hpus):
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
-    _plugins = [HPUPrecisionPlugin(precision="16-mixed")]
+    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     if hpus > 1:
         _strategy = HPUParallelStrategy()
     trainer = Trainer(
@@ -61,7 +61,7 @@ def test_all_stages(tmpdir, hpus):
         strategy=_strategy,
         plugins=_plugins,
         devices=hpus,
-        precision="16-mixed",
+        precision="bf16-mixed",
     )
     trainer.fit(model)
     trainer.validate(model)
@@ -77,7 +77,7 @@ def test_optimization(tmpdir):
     model = ClassificationModel()
 
     _strategy = SingleHPUStrategy()
-    # _plugins=[HPUPrecisionPlugin(precision="16-mixed")]
+    # _plugins=[HPUPrecisionPlugin(precision="bf16-mixed")]
 
     trainer = Trainer(
         default_root_dir=tmpdir, max_epochs=1, max_steps=10, accelerator=HPUAccelerator(), devices=1, strategy=_strategy
