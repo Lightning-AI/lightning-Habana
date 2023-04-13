@@ -27,7 +27,7 @@ _PRECISION_INPUT_STR = Literal["32", "bf16", "32-true", "bf16-mixed"]
 _PRECISION_INPUT = Union[_PRECISION_INPUT_INT, _PRECISION_INPUT_STR]
 
 
-class HPUPrecision(Precision):
+class FabricHPUPrecision(Precision):
     """Plugin that enables bfloat support on HPUs.
 
     Args:

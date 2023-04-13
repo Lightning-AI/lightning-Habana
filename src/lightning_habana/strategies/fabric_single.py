@@ -22,14 +22,14 @@ from lightning.fabric.utilities.types import _DEVICE, Optimizable
 from torch import Tensor
 from torch.nn import Module
 
-from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
+from lightning_habana.fabric.plugins.precision.fabric_precision import HPUPrecision
 from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HPU_AVAILABLE:
     import habana_frameworks.torch.core as htcore
 
 
-class SingleHPUStrategy(SingleDeviceStrategy):
+class FabricSingleHPUStrategy(SingleDeviceStrategy):
     """Strategy for training on single HPU device."""
 
     strategy_name = "single_hpu"

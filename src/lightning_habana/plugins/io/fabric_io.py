@@ -23,7 +23,7 @@ from lightning.fabric.utilities.rank_zero import rank_zero_warn
 from lightning.fabric.utilities.types import _PATH
 
 
-class HPUCheckpointIO(TorchCheckpointIO):
+class FabricHPUCheckpointIO(TorchCheckpointIO):
     """CheckpointIO to save checkpoints for HPU training strategies."""
 
     def save_checkpoint(self, checkpoint: Dict[str, Any], path: _PATH, storage_options: Optional[Any] = None) -> None:

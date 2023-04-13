@@ -12,18 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import torch
+from lightning_habana.fabric.plugins.io.fabric_io import HPUCheckpointIO
 
-from lightning_habana.fabric.accelerator import HPUAccelerator
-from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy
-from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
-
-
-def test_single_device_default_device():
-    assert SingleHPUStrategy().root_device == torch.device("hpu")
-
-
-def test_hpu_parallel_strategy_defaults():
-    strategy = HPUParallelStrategy()
-    assert strategy.process_group_backend == "hccl"
-    assert len(strategy.parallel_devices) == HPUAccelerator.auto_device_count()
+__all__ = ["HPUCheckpointIO"]

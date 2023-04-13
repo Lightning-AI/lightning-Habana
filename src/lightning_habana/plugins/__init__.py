@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.plugins.precision import HPUPrecisionPlugin
+from lightning_habana.plugins.pl_io import HPUCheckpointIO
+from lightning_habana.plugins.pl_precision import HPUPrecisionPlugin
 
 __all__ = ["HPUPrecisionPlugin", "HPUCheckpointIO"]

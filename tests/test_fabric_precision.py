@@ -18,10 +18,10 @@ import torch
 import torch.nn as nn
 from lightning.fabric import Fabric, seed_everything
 
-from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
-from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
-from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
-from tests.tests_fabric.fabric_helpers import BoringFabric
+from lightning_habana.accelerators.fabric_accel import HPUAccelerator
+from lightning_habana.plugins.precision.fabric_precision import HPUPrecision
+from lightning_habana.strategies.fabric_single import SingleHPUStrategy
+from tests.helpers import BoringFabric
 
 
 class MixedPrecisionModule(nn.Module):

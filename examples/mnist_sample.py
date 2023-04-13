@@ -18,7 +18,7 @@ from pytorch_lightning.cli import LightningCLI
 from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 from torch.nn import functional as F  # noqa: N812
 
-from lightning_habana.plugins.precision import HPUPrecisionPlugin
+from lightning_habana.plugins import HPUPrecisionPlugin
 
 
 class LitClassifier(LightningModule):

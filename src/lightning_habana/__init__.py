@@ -17,10 +17,10 @@ else:
 
 from lightning_habana.__about__ import *  # noqa: E402, F401, F403
 from lightning_habana.accelerator import HPUAccelerator  # noqa: E402
-from lightning_habana.plugins.io_plugin import HPUCheckpointIO  # noqa: E402
-from lightning_habana.plugins.precision import HPUPrecisionPlugin  # noqa: E402
-from lightning_habana.strategies.parallel import HPUParallelStrategy  # noqa: E402
-from lightning_habana.strategies.single import SingleHPUStrategy  # noqa: E402
+from lightning_habana.plugins.pl_io import HPUCheckpointIO  # noqa: E402
+from lightning_habana.plugins.pl_precision import HPUPrecisionPlugin  # noqa: E402
+from lightning_habana.strategies.pl_parallel import HPUParallelStrategy  # noqa: E402
+from lightning_habana.strategies.pl_single import SingleHPUStrategy  # noqa: E402
 
 __all__ = [
     "HPUAccelerator",

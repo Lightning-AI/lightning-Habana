@@ -12,17 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from lightning_habana.fabric.plugins.precision.fabric_precision import HPUPrecision
 
-from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
-from lightning_habana.fabric.plugins.io.hpu_io import HPUCheckpointIO
-from lightning_habana.fabric.plugins.precision.hpu_precision import HPUPrecision
-from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy
-from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
-
-__all__ = [
-    "HPUAccelerator",
-    "HPUParallelStrategy",
-    "SingleHPUStrategy",
-    "HPUPrecision",
-    "HPUCheckpointIO",
-]
+__all__ = ["HPUPrecision"]

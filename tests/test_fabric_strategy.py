@@ -12,6 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE
+import torch
 
-assert _HPU_AVAILABLE
+from lightning_habana.accelerators.fabric_accel import HPUAccelerator
+from lightning_habana.strategies.fabric_parallel import HPUParallelStrategy
+from lightning_habana.strategies.fabric_single import SingleHPUStrategy
+
+
+def test_single_device_default_device():
+    assert SingleHPUStrategy().root_device == torch.device("hpu")
+
+
+def test_hpu_parallel_strategy_defaults():
+    strategy = HPUParallelStrategy()
+    assert strategy.process_group_backend == "hccl"
+    assert len(strategy.parallel_devices) == HPUAccelerator.auto_device_count()
