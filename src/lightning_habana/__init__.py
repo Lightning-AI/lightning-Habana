@@ -18,7 +18,7 @@ from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
-from lightning_habana.utils import is_habana_available
+from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 __all__ = [
     "HPUAccelerator",
@@ -26,5 +26,5 @@ __all__ = [
     "SingleHPUStrategy",
     "HPUPrecisionPlugin",
     "HPUCheckpointIO",
-    "is_habana_available",
+    "_HPU_AVAILABLE",
 ]
