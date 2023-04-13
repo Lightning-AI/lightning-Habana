@@ -94,7 +94,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io  # type: ignore[assignment]
+        self._checkpoint_io = io
 
     def setup_environment(self) -> None:
         os.environ["ID"] = str(self.local_rank)
