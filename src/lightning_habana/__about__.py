@@ -15,25 +15,25 @@
 import os
 import sys
 
+
 def get_version():
-    version = os.getenv('RELEASE_VERSION')
+    version = os.getenv("RELEASE_VERSION")
     if not version:
         version = "0.0.0"
-    build_number = os.getenv('RELEASE_BUILD_NUMBER')
+    build_number = os.getenv("RELEASE_BUILD_NUMBER")
     if build_number:
-        return version + '.' + build_number
+        return version + "." + build_number
     else:
         try:
             import subprocess
+
             root = os.environ["PYTORCH_MODULES_ROOT_PATH"]
-            sha = (
-                subprocess.check_output(
-                    ["git", "-C", root, "rev-parse", "--short", "HEAD"])
-                .decode("ascii").strip())
+            sha = subprocess.check_output(["git", "-C", root, "rev-parse", "--short", "HEAD"]).decode("ascii").strip()
             return f"{version}+git{sha}"
         except Exception as e:
-            print("Error getting version: {}".format(e), file=sys.stderr)
+            print(f"Error getting version: {e}", file=sys.stderr)
             return f"{version}+unknown"
+
 
 __version__ = get_version()
 __author__ = "Lightning-AI et al."
