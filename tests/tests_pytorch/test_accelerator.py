@@ -46,7 +46,6 @@ def test_accelerator_selected():
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-@pytest.mark.skip(reason="test is disabled for now and will be enabled after code restructure")
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
