@@ -53,7 +53,8 @@ def test_all_stages(tmpdir, hpus):
     _strategy = SingleHPUStrategy()
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     if hpus > 1:
-        _strategy = HPUParallelStrategy()
+        parallel_hpus = [torch.device('hpu')] * hpus
+        _strategy=HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
@@ -248,7 +249,8 @@ def test_inference_only(tmpdir, hpus):
 
     _strategy = SingleHPUStrategy()
     if hpus > 1:
-        _strategy = HPUParallelStrategy()
+        parallel_hpus = [torch.device('hpu')] * hpus
+        _strategy=HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
     )
