@@ -19,10 +19,11 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.pytorch import LightningDataModule, LightningModule
+    from lightning.pytorch.utilities.imports import _TORCHMETRICS_GREATER_EQUAL_0_11 as _TM_GE_0_11
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningDataModule, LightningModule
+    from pytorch_lightning.utilities.imports import _TORCHMETRICS_GREATER_EQUAL_0_11 as _TM_GE_0_11
 
-from lightning.pytorch.utilities.imports import _TORCHMETRICS_GREATER_EQUAL_0_11 as _TM_GE_0_11
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Accuracy
