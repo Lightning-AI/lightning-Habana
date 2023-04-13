@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.fabric.strategies.hpu_parallel import HPUParallelStrategy
-from lightning_habana.fabric.strategies.hpu_single import SingleHPUStrategy
+from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
+from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 
 __all__ = ["HPUParallelStrategy", "SingleHPUStrategy"]

@@ -29,7 +29,7 @@ from lightning.fabric.utilities.types import Optimizable
 from torch import Tensor
 from torch.nn import Module
 
-from lightning_habana.fabric.accelerator.hpu import HPUAccelerator
+from lightning_habana.fabric.accelerator.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.precision import HPUPrecision
 from lightning_habana.fabric.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
