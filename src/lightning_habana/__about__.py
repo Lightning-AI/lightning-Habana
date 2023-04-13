@@ -16,7 +16,7 @@ import os
 import sys
 
 
-def get_version():
+def get_version() -> str:
     """Construct the release version and returns it."""
     version = os.getenv("RELEASE_VERSION")
     if not version:
