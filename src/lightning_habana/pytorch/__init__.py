@@ -13,6 +13,16 @@
 # limitations under the License.
 
 from lightning_habana.__about__ import *  # noqa: E402, F401, F403
-from lightning_habana.pytorch import *  # noqa: E402
-from lightning_habana.fabric import *  # noqa: E402
-from lightning_habana.utils import *  # noqa: E402
+from lightning_habana.pytorch.accelerator import HPUAccelerator  # noqa: E402
+from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO  # noqa: E402
+from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin  # noqa: E402
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy  # noqa: E402
+from lightning_habana.pytorch.strategies.single import SingleHPUStrategy  # noqa: E402
+
+__all__ = [
+    "HPUAccelerator",
+    "HPUParallelStrategy",
+    "SingleHPUStrategy",
+    "HPUPrecisionPlugin",
+    "HPUCheckpointIO",
+]

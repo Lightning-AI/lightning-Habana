@@ -24,6 +24,7 @@ elif module_available("pytorch_lightning"):
 from torch import Tensor, nn
 from torch.utils.data import DataLoader, Dataset
 from torchmetrics import Accuracy
+from lightning.pytorch.utilities.imports import _TORCHMETRICS_GREATER_EQUAL_0_11 as _TM_GE_0_11
 
 
 class SklearnDataset(Dataset):
@@ -114,9 +115,9 @@ class ClassificationModel(LightningModule):
             setattr(self, f"layer_{i}a", torch.nn.ReLU())
         setattr(self, "layer_end", nn.Linear(num_features, 3))
 
-        self.train_acc = Accuracy()
-        self.valid_acc = Accuracy()
-        self.test_acc = Accuracy()
+        self.train_acc = Accuracy(task="multiclass", num_classes=num_classes) if _TM_GE_0_11 else Accuracy()
+        self.valid_acc = Accuracy(task="multiclass", num_classes=num_classes) if _TM_GE_0_11 else Accuracy()
+        self.test_acc = Accuracy(task="multiclass", num_classes=num_classes) if _TM_GE_0_11 else Accuracy()
 
     def forward(self, x):
         x = self.layer_0(x)

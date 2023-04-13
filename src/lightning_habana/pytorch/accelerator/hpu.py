@@ -30,7 +30,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 if _HPU_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu

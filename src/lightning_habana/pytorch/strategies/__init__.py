@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Habana Labs, Ltd. an Intel Company
+# Copyright The Lightning AI team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.__about__ import *  # noqa: E402, F401, F403
-from lightning_habana.pytorch import *  # noqa: E402
-from lightning_habana.fabric import *  # noqa: E402
-from lightning_habana.utils import *  # noqa: E402
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
+from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
+
+__all__ = ["HPUParallelStrategy", "SingleHPUStrategy"]

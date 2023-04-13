@@ -11,76 +11,58 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
-import os
-from typing import Any, Callable, Dict, List, Optional, Union
 
-import torch.distributed
+from typing import Any, Callable, Dict, Optional, Union
+
 from lightning_utilities import module_available
-from torch.distributed import broadcast_object_list
 
 if module_available("lightning"):
-    from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning.fabric.utilities.distributed import group as _group
-    from lightning.pytorch import LightningModule
+    from lightning.fabric.plugins import CheckpointIO
+    from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
+    from lightning.fabric.utilities.types import _DEVICE
+    from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
-    from lightning.pytorch.strategies.ddp import DDPStrategy
+    from lightning.pytorch.strategies.single_device import SingleDeviceStrategy
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning_fabric.utilities.distributed import group as _group
-    from pytorch_lightning import LightningModule
+    from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.utilities.types import _DEVICE
+    from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
-    from pytorch_lightning.strategies.ddp import DDPStrategy
+    from pytorch_lightning.strategies.single_device import SingleDeviceStrategy
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 if _HPU_AVAILABLE:
     import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl  # noqa: F401
-
-log = logging.getLogger(__name__)
 
 
-class HPUParallelStrategy(DDPStrategy):
-    """Strategy for distributed training on multiple HPU devices."""
+class SingleHPUStrategy(SingleDeviceStrategy):
+    """Strategy for training on single HPU device."""
 
-    strategy_name = "hpu_parallel"
+    strategy_name = "hpu_single"
 
     def __init__(
         self,
+        device: _DEVICE = "hpu",
         accelerator: Optional[Accelerator] = None,
-        parallel_devices: Optional[List[torch.device]] = None,
-        cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
         precision_plugin: Optional[PrecisionPlugin] = None,
-        ddp_comm_state: Optional[object] = None,
-        ddp_comm_hook: Optional[Callable] = None,
-        ddp_comm_wrapper: Optional[Callable] = None,
-        model_averaging_period: Optional[int] = None,
-        process_group_backend: Optional[str] = "hccl",
-        **kwargs: Any,
-    ) -> None:
+    ):
         super().__init__(
             accelerator=accelerator,
-            parallel_devices=parallel_devices,
-            cluster_environment=cluster_environment,
+            device=device,
             checkpoint_io=checkpoint_io,
             precision_plugin=precision_plugin,
-            ddp_comm_state=ddp_comm_state,
-            ddp_comm_hook=ddp_comm_hook,
-            ddp_comm_wrapper=ddp_comm_wrapper,
-            model_averaging_period=model_averaging_period,
-            process_group_backend=process_group_backend,
-            **kwargs,
         )
 
     @property
@@ -96,23 +78,19 @@ class HPUParallelStrategy(DDPStrategy):
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
         self._checkpoint_io = io  # type: ignore[assignment]
 
-    def setup_environment(self) -> None:
-        os.environ["ID"] = str(self.local_rank)
-        if self._process_group_backend == "hccl":
-            # this env is used in overrides to check the backend initiated
-            os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
-        super().setup_environment()
+    @property
+    def is_distributed(self) -> bool:
+        return False
 
-    def determine_ddp_device_ids(self) -> None:
-        return None
+    def setup(self, trainer: Trainer) -> None:
+        self.model_to_device()
+        super().setup(trainer)
 
-    def broadcast(self, obj: object, src: int = 0) -> object:
-        obj = [obj]
-        if self.global_rank != src:
-            obj = [None]
+    def setup_optimizers(self, trainer: Trainer) -> None:
+        super().setup_optimizers(trainer)
 
-        broadcast_object_list(obj, src, group=_group.WORLD)
-        return obj[0]
+    def model_to_device(self) -> None:
+        self.model.to(self.root_device)
 
     def on_after_backward(self) -> None:
         # Break lazy accumulation of graph after fwd+bwd
@@ -137,9 +115,3 @@ class HPUParallelStrategy(DDPStrategy):
             cls,
             description=f"{cls.__class__.__name__}",
         )
-
-    def teardown(self) -> None:
-        super().teardown()
-        # Was set to local rank
-        os.environ.pop("ID", None)
-        os.environ.pop("HCCL_DISTRIBUTED_BACKEND", None)

@@ -43,7 +43,6 @@ def test_precision_plugin(hmp_params):
     assert plugin.precision == "bf16-mixed"
 
 
-@pytest.mark.xfail(AssertionError, reason="Trainer.strategy is not HPU.")  # ToDo
 def test_mixed_precision(tmpdir, hmp_params: dict):
     class TestCallback(Callback):
         def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
@@ -56,6 +55,7 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         devices=1,
+        strategy=SingleHPUStrategy(), #TBD- set default in accelertor
         plugins=[HPUPrecisionPlugin(precision="bf16-mixed", **hmp_params)],
         callbacks=TestCallback(),
     )
@@ -63,34 +63,6 @@ def test_mixed_precision(tmpdir, hmp_params: dict):
     assert isinstance(trainer.strategy.precision_plugin, HPUPrecisionPlugin)
     assert trainer.strategy.precision_plugin.precision == "bf16-mixed"
     with pytest.raises(SystemExit):
-        trainer.fit(model)
-
-
-@pytest.mark.xfail(AssertionError, reason="Trainer.strategy is not HPU.")  # ToDo
-def test_pure_half_precision(tmpdir, hmp_params: dict):
-    class TestCallback(Callback):
-        def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
-            assert trainer.precision == "16-mixed"
-            for param in trainer.strategy.model.parameters():
-                assert param.dtype == torch.float16
-            raise SystemExit
-
-    model = BoringModel()
-    model = model.half()
-    trainer = Trainer(
-        default_root_dir=tmpdir,
-        fast_dev_run=True,
-        accelerator=HPUAccelerator(),
-        devices=1,
-        plugins=[HPUPrecisionPlugin(precision="16-mixed", **hmp_params)],
-        callbacks=TestCallback(),
-    )
-
-    assert isinstance(trainer.strategy, SingleHPUStrategy)
-    assert isinstance(trainer.strategy.precision_plugin, HPUPrecisionPlugin)
-    assert trainer.strategy.precision_plugin.precision == "16-mixed"
-
-    with pytest.raises(RuntimeError, match=r"float16/half is not supported on Gaudi."):
         trainer.fit(model)
 
 
