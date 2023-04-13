@@ -27,7 +27,7 @@ ______________________________________________________________________
 ## Installation
 
 ```bash
-pip install -U lightning lightning-habana
+pip install -U lightning-habana
 ```
 
 ## Usage
