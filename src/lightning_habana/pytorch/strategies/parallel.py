@@ -111,7 +111,7 @@ class HPUParallelStrategy(DDPStrategy):
         if self.global_rank != src:
             obj = [None]
 
-        broadcast_object_list(obj, src, group=_group.WORLD)
+        _hpu_broadcast_object_list(obj, src, group=_group.WORLD)
         return obj[0]
 
     def on_after_backward(self) -> None:
@@ -148,7 +148,7 @@ class HPUParallelStrategy(DDPStrategy):
 # The code underneath is taken from PyTorch `torch/distributed/distributed_c10d.py`
 # the distributed backend and tensor type updates for habana backend is done here before broadcast
 def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # type: ignore
-    from torch.distributed import Backend, _rank_not_in_group, broadcast, get_backend, get_rank
+    from torch.distributed import _rank_not_in_group, Backend, broadcast, get_backend, get_rank
     from torch.distributed.distributed_c10d import _object_to_tensor, _tensor_to_object
 
     if _rank_not_in_group(group):
