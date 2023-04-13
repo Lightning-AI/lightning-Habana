@@ -13,6 +13,4 @@
 # limitations under the License.
 
 from lightning_habana.__about__ import *  # noqa: F401, F403
-from lightning_habana.fabric import *
-from lightning_habana.pytorch import *
-from lightning_habana.utils import *
+from lightning_habana.utils import * # noqa: F401, F403

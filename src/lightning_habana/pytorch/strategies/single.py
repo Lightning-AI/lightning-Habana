@@ -76,7 +76,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io  # type: ignore[assignment]
+        self._checkpoint_io = io
 
     @property
     def is_distributed(self) -> bool:
