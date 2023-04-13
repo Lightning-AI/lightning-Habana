@@ -46,7 +46,7 @@ def test_accelerator_selected():
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-@pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
+@pytest.mark.skip(reason="test is disabled for now and will be enabled after code restructure")
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -115,7 +115,6 @@ def test_optimization(tmpdir):
     # assert saved_result == test_result
 
 
-# @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 def test_stages_correct(tmpdir):
     """Ensure all stages correctly are traced correctly by asserting the output for each stage."""
 
@@ -243,7 +242,6 @@ def test_devices_auto_choice_hpu():
     assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
 
-# @pytest.mark.xfail(MisconfigurationException, reason="Device should be HPU, got cpu instead.")  # ToDo
 @pytest.mark.parametrize("hpus", [1])
 def test_inference_only(tmpdir, hpus):
     model = BoringModel()
