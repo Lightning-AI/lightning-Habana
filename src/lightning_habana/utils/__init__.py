@@ -12,4 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.utils.imports import *  # noqa: F401, F403
+from lightning_habana.utils.imports import is_habana_available
+
+__all__ = ["is_habana_available"]
