@@ -102,8 +102,7 @@ class HPUProfiler(PyTorchProfiler):
         self.profiler: Optional[_PROFILER] = None
         self._profiler_kwargs["activities"] = self.profile_hpu_activities(self._profiler_kwargs.get("activities", None))
 
-    # type: ignore
-    def profile_hpu_activities(self, activities) -> List["ProfilerActivity"]:
+    def profile_hpu_activities(self, activities) -> List["ProfilerActivity"]: # type: ignore
         if not _KINETO_AVAILABLE:
             return activities
         activities.append(ProfilerActivity.HPU)
@@ -118,8 +117,8 @@ class HPUProfiler(PyTorchProfiler):
             return
 
         if self.profiler is not None and any(action_name.endswith(func) for func in self.STEP_FUNCTIONS):
-            if self._schedule is not None:
-                self._schedule.pre_step(action_name)
+            if self._schedule is not None: # type: ignore
+                self._schedule.pre_step(action_name) # type: ignore
 
             # the default schedule requires a minimum of 5 steps to properly work: `wait=1, warmup=1, active=3`.
             # otherwise, this will raise a `segmentation fault`.
