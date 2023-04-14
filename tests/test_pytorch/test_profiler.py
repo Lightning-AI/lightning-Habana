@@ -35,6 +35,8 @@ elif module_available("pytorch_lightning"):
 from pytorch_lightning.utilities.imports import _KINETO_AVAILABLE
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
+from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
+from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 
 if _KINETO_AVAILABLE:
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
@@ -69,9 +71,16 @@ def test_hpu_simple_profiler_instances(get_device_count):
 def test_hpu_simple_profiler_trainer_stages(tmpdir, get_device_count):
     model = BoringModel()
     profiler = SimpleProfiler(dirpath=os.path.join(tmpdir, "profiler_logs"), filename="profiler")
+    _strategy = SingleHPUStrategy()
+    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
+    hpus = get_device_count
+    if hpus > 1:
+        parallel_hpus = [torch.device("hpu")] * hpus
+        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         profiler=profiler,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
+        strategy=_strategy,
         devices=get_device_count,
         default_root_dir=tmpdir,
         fast_dev_run=True,
@@ -101,9 +110,15 @@ def test_hpu_advanced_profiler_instances(get_device_count):
 def test_hpu_advanced_profiler_trainer_stages(tmpdir, get_device_count):
     model = BoringModel()
     profiler = AdvancedProfiler(dirpath=os.path.join(tmpdir, "profiler_logs"), filename="profiler")
+    _strategy = SingleHPUStrategy()
+    hpus = get_device_count
+    if hpus > 1:
+        parallel_hpus = [torch.device("hpu")] * hpus
+        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         profiler=profiler,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
+        strategy=_strategy,
         devices=get_device_count,
         default_root_dir=tmpdir,
         fast_dev_run=True,
