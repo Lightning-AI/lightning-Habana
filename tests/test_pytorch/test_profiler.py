@@ -68,7 +68,6 @@ def test_hpu_simple_profiler_instances(get_device_count):
     assert isinstance(trainer.profiler, SimpleProfiler)
 
 
-@pytest.mark.skipif(get_device_count > 1, reason="TBD test not enabled with multicards")
 def test_hpu_simple_profiler_trainer_stages(tmpdir, get_device_count):
     model = BoringModel()
     profiler = SimpleProfiler(dirpath=os.path.join(tmpdir, "profiler_logs"), filename="profiler")
@@ -108,7 +107,6 @@ def test_hpu_advanced_profiler_instances(get_device_count):
     assert isinstance(trainer.profiler, AdvancedProfiler)
 
 
-@pytest.mark.skipif(get_device_count > 1, reason="TBD test not enabled with multicards")
 def test_hpu_advanced_profiler_trainer_stages(tmpdir, get_device_count):
     model = BoringModel()
     profiler = AdvancedProfiler(dirpath=os.path.join(tmpdir, "profiler_logs"), filename="profiler")
