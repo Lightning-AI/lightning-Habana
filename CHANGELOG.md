@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added HPU support for fabric ([#11](https://github.com/Lightning-AI/lightning-Habana/pull/11))
+- Added Pytorch HPU profiler support ([#15](https://github.com/Lightning-AI/lightning-Habana/pull/15))
 -
 ### Changed
 
