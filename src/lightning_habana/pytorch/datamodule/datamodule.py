@@ -130,7 +130,7 @@ class HPUDataModule(pl.LightningDataModule):
             if lightning_habana.pytorch.datamodule.utils.is_gaudi2():
                 self.data_loader_type = MediaApiDataLoader  # type: ignore
             else:
-                self.data_loader_type = habana_dataloader.HabanaDataLoader  # type: ignore
+                self.data_loader_type = habana_dataloader.HabanaDataLoader
 
     def setup(self, stage: Optional[str] = None):  # type: ignore[no-untyped-def]
         """Method to sanitize the input params."""
