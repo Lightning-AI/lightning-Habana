@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added HPU support for fabric ([#11](https://github.com/Lightning-AI/lightning-Habana/pull/11))
 - Added Pytorch HPU profiler support ([#15](https://github.com/Lightning-AI/lightning-Habana/pull/15))
-- Added Pytorch HPU datamodule support for imagenet dataset ([#16](https://github.com/Lightning-AI/lightning-Habana/pull/16))
+- Added Pytorch HPU datamodule support ([#16](https://github.com/Lightning-AI/lightning-Habana/pull/16))
 -
 ### Changed
 
