@@ -20,7 +20,7 @@ if _HPU_AVAILABLE:
 import torch.distributed as dist
 
 
-def is_dist_avail_and_initialized():
+def is_dist_avail_and_initialized() -> bool:
     """Check distributed backend is initialized or not."""
     if not dist.is_available():
         return False
@@ -29,36 +29,36 @@ def is_dist_avail_and_initialized():
     return True
 
 
-def get_world_size():
+def get_world_size() -> int:
     """Get World size."""
     if not is_dist_avail_and_initialized():
         return 1
     return dist.get_world_size()
 
 
-def get_rank():
+def get_rank() -> int:
     """Get the rank of the worker."""
     if not is_dist_avail_and_initialized():
         return 0
     return dist.get_rank()
 
 
-def is_main_process():
+def is_main_process() -> bool:
     """Check if this is the main process using rank."""
     return get_rank() == 0
 
 
-def is_gaudi():
+def is_gaudi() -> bool:
     """Check if device is of Gaudi type."""
     return torch_hpu.get_device_name() == "GAUDI"
 
 
-def is_gaudi2():
+def is_gaudi2() -> bool:
     """Check if device is of Gaudi2  type."""
     return torch_hpu.get_device_name() == "GAUDI2"
 
 
-def get_device_string():
+def get_device_string() -> str:
     """Get the device string name."""
     if is_gaudi():
         return "gaudi"

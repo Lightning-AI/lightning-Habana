@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import time
+from typing import Tuple, Any
 
 import numpy as np
 import torch.utils.data
 
 import lightning_habana.pytorch.datamodule.utils as utils
+from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 TRAIN_RESIZE_DIM = 224
 EVAL_RESIZE_DIM = 256
@@ -38,13 +40,15 @@ RGB_MULTIPLIER = 255
 EVAL_CROP_X = 0.5
 EVAL_CROP_Y = 0.5
 
-try:
-    from habana_frameworks.mediapipe import fn
-    from habana_frameworks.mediapipe.media_types import decoderStage, dtype, ftype, imgtype, randomCropType
-    from habana_frameworks.mediapipe.mediapipe import MediaPipe
-    from habana_frameworks.mediapipe.operators.cpu_nodes.cpu_nodes import media_function
-except ImportError:
-    raise ModuleNotFoundError("habana_dataloader package is not installed.")
+if _HPU_AVAILABLE:
+    try:
+        from habana_frameworks.mediapipe import fn
+        from habana_frameworks.mediapipe.media_types import decoderStage, dtype, ftype, imgtype, randomCropType
+        from habana_frameworks.mediapipe.mediapipe import MediaPipe
+        from habana_frameworks.mediapipe.operators.cpu_nodes.cpu_nodes import media_function
+        from habana_frameworks.mediapipe.plugins.iterator_pytorch import HPUResnetPytorchIterator
+    except ImportError:
+        raise ModuleNotFoundError("habana_dataloader package is not installed.")
 
 
 class ResnetMediaPipe(MediaPipe):
@@ -75,7 +79,7 @@ class ResnetMediaPipe(MediaPipe):
         instance_id=0,
         device=None,
         seed=None,
-    ):
+    ) -> None:
         self.is_training = is_training
         self.root = root
         self.shuffle = shuffle
@@ -151,7 +155,7 @@ class ResnetMediaPipe(MediaPipe):
                 dtype=dtype.FLOAT32,
             )
 
-    def definegraph(self):
+    def definegraph(self) -> Tuple[Any, Any]:
         """Defines the media graph for Resnet.
 
         :returns : output images, labels
@@ -185,7 +189,7 @@ class RandomFlipFunction(media_function):
         self.seed = params["seed"]
         self.rng = np.random.default_rng(self.seed)
 
-    def __call__(self):
+    def __call__(self) -> Any:
         """:returns : randomly generated binary output per image."""
         probabilities = [1.0 - FLIP_PROBABILITY, FLIP_PROBABILITY]
         random_flips = self.rng.choice([0, 1], p=probabilities, size=self.np_shape)
@@ -244,15 +248,13 @@ class MediaApiDataLoader(torch.utils.data.DataLoader):
             seed=seed,
         )
 
-        from habana_frameworks.mediapipe.plugins.iterator_pytorch import HPUResnetPytorchIterator
-
         self.iterator = HPUResnetPytorchIterator(mediapipe=pipeline)
         print("Running with Media API")
 
-    def __len__(self):
+    def __len__(self) -> Any:
         """Return length of the iterator."""
         return len(self.iterator)
 
-    def __iter__(self):
+    def __iter__(self) -> Any:
         """Returns iterator."""
         return iter(self.iterator)
