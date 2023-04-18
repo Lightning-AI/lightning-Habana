@@ -183,7 +183,7 @@ if _HPU_AVAILABLE:
                         seed: seed to be used
         """
 
-        def __init__(self, params) -> None:
+        def __init__(self, params: Any) -> None:
             self.np_shape = params["shape"][::-1]
             self.np_dtype = params["dtype"]
             self.seed = params["seed"]
@@ -206,7 +206,7 @@ if _HPU_AVAILABLE:
             batch_size: int,
             num_workers: int,
             pin_memory: bool = True,
-            pin_memory_device: bool = None,
+            pin_memory_device: Any = None,
             is_training: bool = False,
             seed: Any = None,
             shuffle: bool = False,
