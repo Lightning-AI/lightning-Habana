@@ -41,7 +41,6 @@ if _HPU_AVAILABLE:
 
 import lightning_habana.pytorch.datamodule.utils
 
-
 _DATASETS_PATH = "/tmp/data"
 
 
@@ -134,9 +133,8 @@ class HPUDataModule(pl.LightningDataModule):
                 self.data_loader_type = habana_dataloader.HabanaDataLoader
 
         if self.dl_type == "MP":
-            #users have the option to select native pytorch dataloader using "MP" type
+            # users have the option to select native pytorch dataloader using "MP" type
             self.data_loader_type = torch.utils.data.DataLoader
-
 
     def setup(self, stage: Optional[str] = None):  # type: ignore[no-untyped-def]
         """Method to sanitize the input params."""
