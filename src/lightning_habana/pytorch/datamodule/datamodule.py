@@ -103,8 +103,8 @@ class HPUDataModule(pl.LightningDataModule):
         pin_memory: bool = True,
         shuffle: bool = False,
         drop_last: bool = True,
-        dl_type: str ="MP",
-        distributed: bool =False,
+        dl_type: str = "MP",
+        distributed: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -128,9 +128,9 @@ class HPUDataModule(pl.LightningDataModule):
             self.data_loader_type = torch.utils.data.DataLoader
         else:
             if lightning_habana.pytorch.datamodule.utils.is_gaudi2():
-                self.data_loader_type = MediaApiDataLoader # type: ignore
+                self.data_loader_type = MediaApiDataLoader  # type: ignore
             else:
-                self.data_loader_type = habana_dataloader.HabanaDataLoader # type: ignore
+                self.data_loader_type = habana_dataloader.HabanaDataLoader  # type: ignore
 
     def setup(self, stage: Optional[str] = None):  # type: ignore[no-untyped-def]
         """Method to sanitize the input params."""

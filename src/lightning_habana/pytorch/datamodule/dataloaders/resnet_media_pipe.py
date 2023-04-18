@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import time
-from typing import Tuple, Any
+from typing import Any, Tuple
 
 import numpy as np
 import torch.utils.data
