@@ -68,16 +68,16 @@ if _HPU_AVAILABLE:
 
         def __init__(
             self,
-            is_training=False,
-            root=None,
-            batch_size=1,
-            shuffle=False,
-            drop_last=True,
-            queue_depth=1,
-            num_instances=1,
-            instance_id=0,
-            device=None,
-            seed=None,
+            is_training: bool = False,
+            root: Any = None,
+            batch_size: int = 1,
+            shuffle: bool = False,
+            drop_last: bool = True,
+            queue_depth: int = 1,
+            num_instances: int = 1,
+            instance_id: int = 0,
+            device: Any = None,
+            seed: Any = None,
         ) -> None:
             self.is_training = is_training
             self.root = root
@@ -201,22 +201,22 @@ if _HPU_AVAILABLE:
 
         def __init__(
             self,
-            dataset,
-            sampler,
-            batch_size,
-            num_workers,
-            pin_memory=True,
-            pin_memory_device=None,
-            is_training=False,
-            seed=None,
-            shuffle=False,
-            drop_last=False,
+            dataset: Any,
+            sampler: Any,
+            batch_size: int,
+            num_workers: int,
+            pin_memory: bool = True,
+            pin_memory_device: bool = None,
+            is_training: bool = False,
+            seed: Any = None,
+            shuffle: bool = False,
+            drop_last: bool = False,
         ) -> None:
             self.dataset = dataset
             self.sampler = sampler
             self.batch_size = batch_size
             self.num_workers = num_workers
-            self.collate_fn = None
+            self.collate_fn = None   # type: ignore
 
             self.shuffle = isinstance(self.sampler, torch.utils.data.RandomSampler) or (
                 isinstance(self.sampler, torch.utils.data.distributed.DistributedSampler)
