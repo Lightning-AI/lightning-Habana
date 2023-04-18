@@ -41,7 +41,6 @@ EVAL_CROP_X = 0.5
 EVAL_CROP_Y = 0.5
 
 if _HPU_AVAILABLE:
-
     try:
         from habana_frameworks.mediapipe import fn
         from habana_frameworks.mediapipe.media_types import decoderStage, dtype, ftype, imgtype, randomCropType
@@ -50,7 +49,6 @@ if _HPU_AVAILABLE:
         from habana_frameworks.mediapipe.plugins.iterator_pytorch import HPUResnetPytorchIterator
     except ImportError:
         raise ModuleNotFoundError("habana_dataloader package is not installed.")
-
 
     class ResnetMediaPipe(MediaPipe):
         """resnet classifier with media pipe.
@@ -141,7 +139,9 @@ if _HPU_AVAILABLE:
             normalized_std = np.array([1 / (s * RGB_MULTIPLIER) for s in RGB_STD_VALUES], dtype=np.float32)
 
             # Define Constant tensors
-            self.norm_mean = fn.MediaConst(data=normalized_mean, shape=[1, 1, normalized_mean.size], dtype=dtype.FLOAT32)
+            self.norm_mean = fn.MediaConst(
+                data=normalized_mean, shape=[1, 1, normalized_mean.size], dtype=dtype.FLOAT32
+            )
             self.norm_std = fn.MediaConst(data=normalized_std, shape=[1, 1, normalized_std.size], dtype=dtype.FLOAT32)
 
             if self.is_training is True:
@@ -174,7 +174,6 @@ if _HPU_AVAILABLE:
 
             return images, data
 
-
     class RandomFlipFunction(media_function):
         """Randomly generate input for RandomFlip media node.
 
@@ -196,7 +195,6 @@ if _HPU_AVAILABLE:
             random_flips = self.rng.choice([0, 1], p=probabilities, size=self.np_shape)
             random_flips = np.array(random_flips, dtype=self.np_dtype)
             return random_flips
-
 
     class MediaApiDataLoader(torch.utils.data.DataLoader):
         """Helper to construct resnet media pipe dataloader."""
@@ -221,7 +219,8 @@ if _HPU_AVAILABLE:
             self.collate_fn = None
 
             self.shuffle = isinstance(self.sampler, torch.utils.data.RandomSampler) or (
-                isinstance(self.sampler, torch.utils.data.distributed.DistributedSampler) and (self.sampler.shuffle is True)
+                isinstance(self.sampler, torch.utils.data.distributed.DistributedSampler)
+                and (self.sampler.shuffle is True)
             )
 
             root = self.dataset.root
