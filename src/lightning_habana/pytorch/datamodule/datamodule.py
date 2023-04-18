@@ -42,7 +42,6 @@ if _HPU_AVAILABLE:
 
     _DATASETS_PATH = "/tmp/data"
 
-
     def load_data(traindir, valdir, train_transforms, val_transforms):  # type: ignore[no-untyped-def]
         """Helper to initialize dataset and transforms."""
         # check supported transforms
@@ -83,7 +82,6 @@ if _HPU_AVAILABLE:
         dataset_val = torchvision.datasets.ImageFolder(valdir, val_transforms)
 
         return dataset_train, dataset_val
-
 
     class HPUDataModule(pl.LightningDataModule):
         """Datamodule helper class to load the right media pipe."""

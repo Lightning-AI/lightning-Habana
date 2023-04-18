@@ -216,7 +216,7 @@ if _HPU_AVAILABLE:
             self.sampler = sampler
             self.batch_size = batch_size
             self.num_workers = num_workers
-            self.collate_fn = None   # type: ignore
+            self.collate_fn = None  # type: ignore
 
             self.shuffle = isinstance(self.sampler, torch.utils.data.RandomSampler) or (
                 isinstance(self.sampler, torch.utils.data.distributed.DistributedSampler)
