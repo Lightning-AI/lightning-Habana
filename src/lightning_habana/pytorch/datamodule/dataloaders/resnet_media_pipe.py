@@ -85,7 +85,7 @@ class ResnetMediaPipe(MediaPipe):
         self.instance_id = instance_id
 
         ResnetMediaPipe.instance_count += 1
-        pipe_name = "{}:{}".format(self.__class__.__name__, ResnetMediaPipe.instance_count)
+        pipe_name = f"{self.__class__.__name__}:{ResnetMediaPipe.instance_count}"
         pipe_name = str(pipe_name)
 
         super().__init__(device=device, batch_size=batch_size, prefetch_depth=queue_depth, pipe_name=pipe_name)
