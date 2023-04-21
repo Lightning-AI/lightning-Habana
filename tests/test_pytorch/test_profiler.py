@@ -65,6 +65,7 @@ def test_hpu_simple_profiler_instances(get_device_count):
         profiler="simple",
         accelerator="hpu",
         devices=get_device_count,
+        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUParallelStrategy(),
     )
     assert isinstance(trainer.profiler, SimpleProfiler)
 
@@ -102,6 +103,7 @@ def test_hpu_advanced_profiler_instances(get_device_count):
         profiler="advanced",
         accelerator="hpu",
         devices=get_device_count,
+        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUParallelStrategy(),
     )
     assert isinstance(trainer.profiler, AdvancedProfiler)
 
@@ -141,12 +143,11 @@ def test_simple_profiler_distributed_files(tmpdir, get_device_count):
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
-        max_epochs=1,
         strategy="hpu_parallel",
         accelerator="hpu",
         devices=get_device_count,
         profiler=profiler,
-        logger=False,
+        fast_dev_run=True,
     )
     trainer.fit(model)
     trainer.validate(model)
@@ -186,12 +187,11 @@ def test_advanced_profiler_distributed_files(tmpdir, get_device_count):
         dirpath="/tmp/profiler_logs", filename="profiler")
     trainer = Trainer(
         default_root_dir=tmpdir,
-        max_epochs=1,
         strategy="hpu_parallel",
         accelerator="hpu",
         devices=get_device_count,
         profiler=profiler,
-        logger=False,
+        fast_dev_run=True,
     )
     trainer.fit(model)
     trainer.validate(model)
@@ -237,6 +237,7 @@ def test_hpu_trace_event_cpu_op(tmpdir):
     trainer = Trainer(
         accelerator="hpu",
         devices=1,
+        strategy=SingleHPUStrategy(),
         default_root_dir=tmpdir,
         profiler=HPUProfiler(dirpath=tmpdir),
         fast_dev_run=5,
@@ -272,6 +273,7 @@ def test_hpu_trace_event_runtime(tmpdir):
     trainer = Trainer(
         accelerator="hpu",
         devices=1,
+        strategy=SingleHPUStrategy(),
         default_root_dir=tmpdir,
         profiler=HPUProfiler(dirpath=tmpdir),
         fast_dev_run=5,
@@ -305,6 +307,7 @@ def test_hpu_trace_event_kernel(tmpdir):
     trainer = Trainer(
         accelerator="hpu",
         devices=1,
+        strategy=SingleHPUStrategy(),
         default_root_dir=tmpdir,
         profiler=HPUProfiler(dirpath=tmpdir),
         fast_dev_run=5,
