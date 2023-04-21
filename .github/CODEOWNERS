@@ -2,9 +2,9 @@
 
 # These owners will be the default owners for everything in the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for review when someone opens a pull request.
-* @borda @jerome-habana
+* @borda @jerome-habana @abhijeet-habana @raoakarsha
 
 # CI/CD and configs
-/.github/       @borda @abhijeet-habana @raoakarsha @jerome-habana
-/.azure/        @borda @abhijeet-habana @raoakarsha @jerome-habana
-*.yml           @borda @abhijeet-habana @raoakarsha @jerome-habana
+/.github/       @borda @jerome-habana
+/.azure/        @borda @jerome-habana
+*.yml           @borda @jerome-habana
