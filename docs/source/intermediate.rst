@@ -97,3 +97,115 @@ The below snippet shows how DeviceStatsMonitor can be enabled.
     trainer = Trainer(accelerator="hpu", callbacks=[device_stats])
 
 For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/latest/PyTorch/PyTorch_User_Guide/Python_Packages.html#memory-stats-apis>`__.
+
+----
+
+Working with HPUProfiler
+-------------------------
+
+HPUProfiler is a lightning implementation of PyTorch profiler for HPU devices. It aids in obtaining profiling summary of PyTorch functions. 
+It subclasses PyTorch Lightning's [PyTorch profiler](https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html#pytorch_lightning.profilers.PyTorchProfiler).
+
+Default Profiling
+^^^^^^^^^^^^^^^^^^
+For auto profiling, create a HPUProfiler instance and pass it to trainer.
+At the end of ``profiler.fit()``, it will generate a json trace for the run.
+In case ``accelerator = "hpu"`` is not used with HPUProfiler, then it will dump only CPU traces, similar to PyTorchProfiler.
+
+.. code-block:: python
+    # Import profiler
+    from lightning_habana.pytorch.profiler.profiler import HPUProfiler
+
+    # Create profiler object
+    profiler = HPUProfiler()
+    accelerator = "hpu"
+
+    # Pass profiler to the trainer
+        trainer = Trainer(
+            profiler=profiler,
+            accelerator=accelerator,
+        )
+
+Distributed Profiling
+^^^^^^^^^^^^^^^^^^^^^^
+
+To profile a distributed model, use the HPUProfiler with the filename argument which will save a report per rank:
+
+.. code-block:: python
+    from lightning_habana.pytorch.profiler.profiler import HPUProfiler
+
+    profiler = HPUProfiler(filename="perf-logs")
+    trainer = Trainer(profiler=profiler, accelerator="hpu")
+
+Custom Profiling
+^^^^^^^^^^^^^^^^^
+
+To [profile custom actions of interest](https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_expert.html#profile-custom-actions-of-interest), reference a profiler in the LightningModule:
+
+.. code-block:: python
+
+    from lightning_habana.pytorch.profiler.profiler import HPUProfiler
+
+    # Reference profiler in LightningModule
+    class MyModel(LightningModule):
+        def __init__(self, profiler=None):
+            self.profiler = profiler
+
+    # To profile in any part of your code, use the self.profiler.profile() function
+        def custom_processing_step_basic(self, data):
+            with self.profiler.profile("my_custom_action"):
+                print("do somthing")
+            return data
+
+    # Alternatively, use self.profiler.start("my_custom_action")
+    # and self.profiler.stop("my_custom_action") functions
+    # to enclose the part of code to be profiled.
+        def custom_processing_step_granular(self, data):
+            self.profiler.start("my_custom_action")
+            print("do somthing")
+            self.profiler.stop("my_custom_action")
+            return data
+
+    # Pass profiler instance to LightningModule
+    profiler = HPUProfiler()
+    model = MyModel(profiler)
+    trainer = Trainer(profiler=profiler, accelerator="hpu")
+
+For more details on profiler, refer to [PyTorchProfiler](https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_intermediate.html)
+
+Visualize Profiled Operations
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Profiler will dump traces in json format. The traces can be visualized in 2 ways:
+
+Using PyTorch TensorBoard Profiler
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+For further instructions see, https://github.com/pytorch/kineto/tree/master/tb_plugin.
+
+.. code-block:: bash
+    # Install tensorboard
+    python -um pip install tensorboard torch-tb-profiler
+
+    # Start the TensorBoard server (default at port 6006):
+    tensorboard --logdir ./tensorboard --port 6006
+
+    # Now open the following url on your browser
+    http://localhost:6006/#profile
+
+
+Using Chrome
+^^^^^^^^^^^^^
+
+    1. Open Chrome and copy/paste this URL: `chrome://tracing/`.
+    2. Once tracing opens, click on `Load` at the top-right and load one of the generated traces.
+
+Limitations
+^^^^^^^^^^^^
+
+- When using the HPUProfiler, wall clock time will not be representative of the true wall clock time. This is due to forcing profiled operations to be measured synchronously, when many HPU ops happen asynchronously.
+  It is recommended to use this Profiler to find bottlenecks/breakdowns, however for end to end wall clock time use the SimpleProfiler.
+
+- HPUProfiler.summary() is not supported
+
+- Passing profiler name as string "hpu" to the trainer is not supported.
