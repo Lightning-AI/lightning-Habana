@@ -113,11 +113,11 @@ At the end of ``profiler.fit()``, it will generate a json trace for the run.
 In case ``accelerator = "hpu"`` is not used with HPUProfiler, then it will dump only CPU traces, similar to PyTorchProfiler.
 
 .. code-block:: python
-    # Import profiler
+
+    from pytorch_lightning import Trainer
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
-    # Create & Pass profiler to the trainer
-    trainer = Trainer(profiler=HPUProfiler(), accelerator="hpu")
+    trainer = Trainer(accelerator="hpu", profiler=HPUProfiler())
 
 Distributed Profiling
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -125,6 +125,8 @@ Distributed Profiling
 To profile a distributed model, use the HPUProfiler with the filename argument which will save a report per rank:
 
 .. code-block:: python
+
+    from pytorch_lightning import Trainer
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
     profiler = HPUProfiler(filename="perf-logs")
@@ -137,6 +139,7 @@ To [profile custom actions of interest](https://pytorch-lightning.readthedocs.io
 
 .. code-block:: python
 
+    from pytorch_lightning import Trainer
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
     # Reference profiler in LightningModule
@@ -162,7 +165,7 @@ To [profile custom actions of interest](https://pytorch-lightning.readthedocs.io
     # Pass profiler instance to LightningModule
     profiler = HPUProfiler()
     model = MyModel(profiler)
-    trainer = Trainer(profiler=profiler, accelerator="hpu")
+    trainer = Trainer(accelerator="hpu", profiler=profiler)
 
 For more details on profiler, refer to [PyTorchProfiler](https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_intermediate.html)
 
