@@ -116,15 +116,8 @@ In case ``accelerator = "hpu"`` is not used with HPUProfiler, then it will dump 
     # Import profiler
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
-    # Create profiler object
-    profiler = HPUProfiler()
-    accelerator = "hpu"
-
-    # Pass profiler to the trainer
-        trainer = Trainer(
-            profiler=profiler,
-            accelerator=accelerator,
-        )
+    # Create & Pass profiler to the trainer
+    trainer = Trainer(profiler=HPUProfiler(), accelerator="hpu")
 
 Distributed Profiling
 ^^^^^^^^^^^^^^^^^^^^^^
