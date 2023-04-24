@@ -179,15 +179,17 @@ Using PyTorch TensorBoard Profiler
 
 For further instructions see, https://github.com/pytorch/kineto/tree/master/tb_plugin.
 
-.. code-block:: bash
-    # Install tensorboard
-    python -um pip install tensorboard torch-tb-profiler
+Install tensorboard
+"""""""""""""""""""""
+ python -um pip install tensorboard torch-tb-profiler
 
-    # Start the TensorBoard server (default at port 6006):
-    tensorboard --logdir ./tensorboard --port 6006
+Start the TensorBoard server (default at port 6006)
+""""""""""""""""""""""""""""""""""""""""""""""""""""""
+ tensorboard --logdir ./tensorboard --port 6006
 
-    # Now open the following url on your browser
-    http://localhost:6006/#profile
+Now open the following url on your browser
+""""""""""""""""""""""""""""""""""""""""""""
+ http://localhost:6006/#profile
 
 
 Using Chrome
