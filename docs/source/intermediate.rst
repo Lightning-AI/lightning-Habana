@@ -103,7 +103,7 @@ For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/
 Working with HPUProfiler
 -------------------------
 
-HPUProfiler is a lightning implementation of PyTorch profiler for HPU devices. It aids in obtaining profiling summary of PyTorch functions. 
+HPUProfiler is a lightning implementation of PyTorch profiler for HPU devices. It aids in obtaining profiling summary of PyTorch functions.
 It subclasses PyTorch Lightning's [PyTorch profiler](https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html#pytorch_lightning.profilers.PyTorchProfiler).
 
 Default Profiling
