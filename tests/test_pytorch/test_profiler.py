@@ -46,8 +46,7 @@ def get_device_count(pytestconfig):
     if not hpus:
         assert HPUAccelerator.auto_device_count() >= 1
         return 1
-    assert hpus <= HPUAccelerator.auto_device_count(
-    ), "More hpu devices asked than present"
+    assert hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
     return hpus
 
 
@@ -87,8 +86,7 @@ def test_hpu_simple_profiler_trainer_stages(tmpdir):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {
-        f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
     assert actual == expected
     for file in list(os.listdir(profiler.dirpath)):
         assert os.path.getsize(os.path.join(profiler.dirpath, file)) > 0
@@ -123,8 +121,7 @@ def test_hpu_advanced_profiler_trainer_stages(tmpdir):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {
-        f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
     assert actual == expected
     for file in list(os.listdir(profiler.dirpath)):
         assert os.path.getsize(os.path.join(profiler.dirpath, file)) > 0
@@ -149,8 +146,7 @@ def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {
-        f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
     assert actual == expected
     for profilerfile in os.listdir(trainer.profiler.dirpath):
         with open(os.path.join(trainer.profiler.dirpath, profilerfile), encoding="utf-8") as pf:
@@ -176,8 +172,7 @@ def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {
-        f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
     assert actual == expected
     for profilerfile in os.listdir(trainer.profiler.dirpath):
         with open(os.path.join(trainer.profiler.dirpath, profilerfile), encoding="utf-8") as pf:
@@ -187,8 +182,7 @@ def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
 def test_hpu_profiler_no_string_instances():
     with pytest.raises(MisconfigurationException) as e_info:
         Trainer(profiler="hpu", accelerator="hpu", devices=1)
-    assert "it can only be one of ['simple', 'advanced', 'pytorch', 'xla']" in str(
-        e_info)
+    assert "it can only be one of ['simple', 'advanced', 'pytorch', 'xla']" in str(e_info)
 
 
 def test_hpu_trace_event_cpu_op(tmpdir):
