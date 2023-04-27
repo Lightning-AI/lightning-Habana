@@ -13,20 +13,18 @@
 # limitations under the License.
 
 import torch
-from jsonargparse import lazy_instance
 from lightning_utilities import module_available
 from torch.nn import functional as F  # noqa: N812
 
 if module_available("lightning"):
-    from lightning.pytorch import LightningModule
-    from lightning.pytorch.cli import LightningCLI
+    from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.demos.mnist_datamodule import MNISTDataModule
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning import LightningModule
-    from pytorch_lightning.cli import LightningCLI
+    from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
+from lightning_habana.pytorch.accelerator import HPUAccelerator
+from lightning_habana.pytorch.strategies import SingleHPUStrategy
 
 
 class LitClassifier(LightningModule):
@@ -62,20 +60,9 @@ class LitClassifier(LightningModule):
 
 
 if __name__ == "__main__":
-    cli = LightningCLI(
-        LitClassifier,
-        MNISTDataModule,
-        trainer_defaults={
-            "accelerator": "hpu",
-            "devices": 1,
-            "max_epochs": 1,
-            "plugins": lazy_instance(HPUPrecisionPlugin, precision="bf16-mixed"),
-        },
-        run=False,
-        save_config_kwargs={"overwrite": True},
-    )
+    dm = MNISTDataModule(batch_size=32)
+    model = LitClassifier()
+    trainer = Trainer(max_epochs=2, accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy())
 
-    # Run the model ⚡
-    cli.trainer.fit(cli.model, datamodule=cli.datamodule)
-    cli.trainer.validate(cli.model, datamodule=cli.datamodule)
-    cli.trainer.test(cli.model, datamodule=cli.datamodule)
+    trainer.fit(model, datamodule=dm)
+    trainer.test(model, datamodule=dm)
