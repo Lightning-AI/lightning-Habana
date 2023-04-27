@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 ### Fixed
 
+- Fixed mnist example test ([#20](https://github.com/Lightning-AI/lightning-Habana/pull/20))
+-
 ### Removed
 
 ### Deprecated
