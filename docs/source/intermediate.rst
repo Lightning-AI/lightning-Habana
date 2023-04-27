@@ -135,7 +135,7 @@ To profile a distributed model, use the HPUProfiler with the filename argument w
 Custom Profiling
 ^^^^^^^^^^^^^^^^^
 
-To [profile custom actions of interest](https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_expert.html#profile-custom-actions-of-interest), reference a profiler in the LightningModule:
+To `profile custom actions of interest <https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_expert.html#profile-custom-actions-of-interest>`_, reference a profiler in the LightningModule:
 
 .. code-block:: python
 
@@ -209,6 +209,6 @@ Limitations
 - When using the HPUProfiler, wall clock time will not be representative of the true wall clock time. This is due to forcing profiled operations to be measured synchronously, when many HPU ops happen asynchronously.
   It is recommended to use this Profiler to find bottlenecks/breakdowns, however for end to end wall clock time use the SimpleProfiler.
 
-- HPUProfiler.summary() is not supported
+- ``HPUProfiler.summary()`` is not supported
 
 - Passing profiler name as string "hpu" to the trainer is not supported.
