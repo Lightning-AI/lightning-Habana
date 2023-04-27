@@ -104,7 +104,7 @@ Working with HPUProfiler
 -------------------------
 
 HPUProfiler is a lightning implementation of PyTorch profiler for HPU devices. It aids in obtaining profiling summary of PyTorch functions.
-It subclasses PyTorch Lightning's [PyTorch profiler](https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html#pytorch_lightning.profilers.PyTorchProfiler).
+It subclasses PyTorch Lightning's `PyTorch profiler <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html#pytorch_lightning.profilers.PyTorchProfiler>`_.
 
 Default Profiling
 ^^^^^^^^^^^^^^^^^^
@@ -114,7 +114,7 @@ In case ``accelerator = "hpu"`` is not used with HPUProfiler, then it will dump 
 
 .. code-block:: python
 
-    from pytorch_lightning import Trainer
+    from lightning import Trainer
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
     trainer = Trainer(accelerator="hpu", profiler=HPUProfiler())
@@ -170,7 +170,7 @@ To [profile custom actions of interest](https://pytorch-lightning.readthedocs.io
 For more details on profiler, refer to [PyTorchProfiler](https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_intermediate.html)
 
 Visualize Profiled Operations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Profiler will dump traces in json format. The traces can be visualized in 2 ways:
 
@@ -181,13 +181,18 @@ For further instructions see, https://github.com/pytorch/kineto/tree/master/tb_p
 
 Install tensorboard
 """""""""""""""""""""
- python -um pip install tensorboard torch-tb-profiler
+.. code-block:: bash
+
+    python -um pip install tensorboard torch-tb-profiler
 
 Start the TensorBoard server (default at port 6006)
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
- tensorboard --logdir ./tensorboard --port 6006
 
-Now open the following url on your browser
+.. code-block:: bash
+    
+    tensorboard --logdir ./tensorboard --port 6006
+
+Now open the following url in your browser
 """"""""""""""""""""""""""""""""""""""""""""
  http://localhost:6006/#profile
 
