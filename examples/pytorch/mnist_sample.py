@@ -62,7 +62,7 @@ class LitClassifier(LightningModule):
 if __name__ == "__main__":
     dm = MNISTDataModule(batch_size=32)
     model = LitClassifier()
-    trainer = Trainer(max_epochs=2, accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy())
+    trainer = Trainer(fast_dev_run=True, accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy())
 
     trainer.fit(model, datamodule=dm)
     trainer.test(model, datamodule=dm)
