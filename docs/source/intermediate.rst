@@ -189,7 +189,7 @@ Start the TensorBoard server (default at port 6006)
 """"""""""""""""""""""""""""""""""""""""""""""""""""""
 
 .. code-block:: bash
-    
+
     tensorboard --logdir ./tensorboard --port 6006
 
 Now open the following url in your browser
