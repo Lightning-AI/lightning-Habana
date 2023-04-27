@@ -135,7 +135,7 @@ To profile a distributed model, use the HPUProfiler with the filename argument w
 Custom Profiling
 ^^^^^^^^^^^^^^^^^
 
-To `profile custom actions of interest <https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_expert.html#profile-custom-actions-of-interest>`_, reference a profiler in the LightningModule:
+To `profile custom actions of interest <https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_expert.html#profile-custom-actions-of-interest>`_, reference a profiler in the ``LightningModule``:
 
 .. code-block:: python
 
@@ -167,7 +167,7 @@ To `profile custom actions of interest <https://pytorch-lightning.readthedocs.io
     model = MyModel(profiler)
     trainer = Trainer(accelerator="hpu", profiler=profiler)
 
-For more details on profiler, refer to [PyTorchProfiler](https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_intermediate.html)
+For more details on profiler, refer to `PyTorchProfiler <https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_intermediate.html>`_
 
 Visualize Profiled Operations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
