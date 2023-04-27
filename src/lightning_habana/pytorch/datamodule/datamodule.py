@@ -130,7 +130,6 @@ class HPUDataModule(pl.LightningDataModule):
             else:
                 self.data_loader_type = habana_dataloader.HabanaDataLoader
 
-
     def setup(self, stage: Optional[str] = None):  # type: ignore[no-untyped-def]
         """Method to sanitize the input params."""
         if not _TORCHVISION_AVAILABLE:
