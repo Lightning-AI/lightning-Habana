@@ -15,10 +15,8 @@
 import glob
 import json
 import os
-import shutil
 
 import pytest
-import torch.distributed
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -49,7 +47,6 @@ def get_device_count(pytestconfig):
         assert HPUAccelerator.auto_device_count() >= 1
         return 1
     assert hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
-    assert hpus == 1 or hpus % 8 == 0
     return hpus
 
 
@@ -62,26 +59,23 @@ def _check_distributed(get_device_count):
 def test_hpu_simple_profiler_instances(get_device_count):
     trainer = Trainer(
         profiler="simple",
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=get_device_count,
+        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUParallelStrategy(),
     )
     assert isinstance(trainer.profiler, SimpleProfiler)
 
 
-def test_hpu_simple_profiler_trainer_stages(tmpdir, get_device_count):
+def test_hpu_simple_profiler_trainer_stages(tmpdir):
     model = BoringModel()
-    profiler = SimpleProfiler(dirpath=os.path.join(tmpdir, "profiler_logs"), filename="profiler")
+    profiler = SimpleProfiler(dirpath=tmpdir, filename="profiler")
     _strategy = SingleHPUStrategy()
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
-    hpus = get_device_count
-    if hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         profiler=profiler,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
-        devices=get_device_count,
+        devices=1,
         default_root_dir=tmpdir,
         fast_dev_run=True,
     )
@@ -101,25 +95,22 @@ def test_hpu_simple_profiler_trainer_stages(tmpdir, get_device_count):
 def test_hpu_advanced_profiler_instances(get_device_count):
     trainer = Trainer(
         profiler="advanced",
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=get_device_count,
+        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUParallelStrategy(),
     )
     assert isinstance(trainer.profiler, AdvancedProfiler)
 
 
-def test_hpu_advanced_profiler_trainer_stages(tmpdir, get_device_count):
+def test_hpu_advanced_profiler_trainer_stages(tmpdir):
     model = BoringModel()
-    profiler = AdvancedProfiler(dirpath=os.path.join(tmpdir, "profiler_logs"), filename="profiler")
+    profiler = AdvancedProfiler(dirpath=tmpdir, filename="profiler")
     _strategy = SingleHPUStrategy()
-    hpus = get_device_count
-    if hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         profiler=profiler,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
-        devices=get_device_count,
+        devices=1,
         default_root_dir=tmpdir,
         fast_dev_run=True,
     )
@@ -137,92 +128,55 @@ def test_hpu_advanced_profiler_trainer_stages(tmpdir, get_device_count):
 
 
 @pytest.mark.usefixtures("_check_distributed")
-def test_simple_profiler_distributed_files(tmpdir, get_device_count):
+def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
-    profiler = SimpleProfiler(dirpath="profiler_logs", filename="profiler")
+    profiler = SimpleProfiler(dirpath=tmpdir, filename="profiler")
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
-        max_epochs=1,
         strategy="hpu_parallel",
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler,
-        logger=False,
+        fast_dev_run=True,
     )
     trainer.fit(model)
     trainer.validate(model)
     trainer.test(model)
-    expected = {
-        f"{stage}-profiler-{rank}.txt"
-        for stage in ("fit", "validate", "test")
-        for rank in range(0, trainer.num_devices)
-    }
-    # Wait till all hpus have finished.
-    # assert fail before a torch.distributed.barrier() keeps the barrier waiting
-    # on a process that has returned, causing the test to hang.
-    # Do assert checks after the torch.distributed.barrier()
-    assert_fail = ""
-    torch.distributed.barrier()
-    try:
-        if trainer.local_rank == 0:
-            actual = set(os.listdir(profiler.dirpath))
-            assert actual == expected
-            for profilerfile in os.listdir(profiler.dirpath):
-                with open(os.path.join(profiler.dirpath, profilerfile), encoding="utf-8") as pf:
-                    assert len(pf.read()) != 0
-    except AssertionError as ae:
-        assert_fail = ae
-    finally:
-        torch.distributed.barrier()
-        assert assert_fail == ""
-        if trainer.local_rank == 0:
-            shutil.rmtree("profiler_logs", ignore_errors=True)
+    trainer.predict(model)
+
+    actual = set(os.listdir(profiler.dirpath))
+    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
+    assert actual == expected
+    for profilerfile in os.listdir(trainer.profiler.dirpath):
+        with open(os.path.join(trainer.profiler.dirpath, profilerfile), encoding="utf-8") as pf:
+            assert len(pf.read()) != 0
 
 
 @pytest.mark.usefixtures("_check_distributed")
-def test_advanced_profiler_distributed_files(tmpdir, get_device_count):
+def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
-    profiler = AdvancedProfiler(dirpath="profiler_logs", filename="profiler")
     model = BoringModel()
-    profiler = AdvancedProfiler(dirpath="profiler_logs", filename="profiler")
+    profiler = AdvancedProfiler(dirpath=tmpdir, filename="profiler")
     trainer = Trainer(
         default_root_dir=tmpdir,
-        max_epochs=1,
         strategy="hpu_parallel",
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler,
-        logger=False,
+        fast_dev_run=True,
     )
     trainer.fit(model)
     trainer.validate(model)
     trainer.test(model)
-    expected = {
-        f"{stage}-profiler-{rank}.txt"
-        for stage in ("fit", "validate", "test")
-        for rank in range(0, trainer.num_devices)
-    }
-    # Wait till all hpus have finished.
-    # assert fail before a torch.distributed.barrier() keeps the barrier waiting
-    # on a process that has returned, causing the test to hang.
-    # Do assert checks after the torch.distributed.barrier()
-    assert_fail = ""
-    torch.distributed.barrier()
-    try:
-        if trainer.local_rank == 0:
-            actual = set(os.listdir(profiler.dirpath))
-            assert actual == expected
-            for profilerfile in os.listdir(profiler.dirpath):
-                with open(os.path.join(profiler.dirpath, profilerfile), encoding="utf-8") as pf:
-                    assert len(pf.read()) != 0
-    except AssertionError as ae:
-        assert_fail = ae
-    finally:
-        torch.distributed.barrier()
-        assert assert_fail == ""
-        if trainer.local_rank == 0:
-            shutil.rmtree("profiler_logs", ignore_errors=True)
+    trainer.predict(model)
+
+    actual = set(os.listdir(profiler.dirpath))
+    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
+    assert actual == expected
+    for profilerfile in os.listdir(trainer.profiler.dirpath):
+        with open(os.path.join(trainer.profiler.dirpath, profilerfile), encoding="utf-8") as pf:
+            assert len(pf.read()) != 0
 
 
 def test_hpu_profiler_no_string_instances():
@@ -236,13 +190,12 @@ def test_hpu_trace_event_cpu_op(tmpdir):
     model = BoringModel()
 
     trainer = Trainer(
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
-        max_epochs=1,
+        strategy=SingleHPUStrategy(),
         default_root_dir=tmpdir,
         profiler=HPUProfiler(dirpath=tmpdir),
-        limit_train_batches=2,
-        limit_val_batches=0,
+        fast_dev_run=5,
     )
     trainer.fit(model)
     assert trainer.state.finished, f"Training failed with {trainer.state}"
@@ -273,13 +226,12 @@ def test_hpu_trace_event_runtime(tmpdir):
     model = BoringModel()
 
     trainer = Trainer(
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
-        max_epochs=1,
+        strategy=SingleHPUStrategy(),
         default_root_dir=tmpdir,
         profiler=HPUProfiler(dirpath=tmpdir),
-        limit_train_batches=2,
-        limit_val_batches=0,
+        fast_dev_run=5,
     )
     trainer.fit(model)
     assert trainer.state.finished, f"Training failed with {trainer.state}"
@@ -308,13 +260,12 @@ def test_hpu_trace_event_kernel(tmpdir):
     # Run model and prep json
     model = BoringModel()
     trainer = Trainer(
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
-        max_epochs=1,
+        strategy=SingleHPUStrategy(),
         default_root_dir=tmpdir,
         profiler=HPUProfiler(dirpath=tmpdir),
-        limit_train_batches=2,
-        limit_val_batches=0,
+        fast_dev_run=5,
     )
     trainer.fit(model)
     assert trainer.state.finished, f"Training failed with {trainer.state}"
