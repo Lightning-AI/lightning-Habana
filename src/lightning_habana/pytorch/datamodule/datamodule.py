@@ -104,7 +104,6 @@ class HPUDataModule(pl.LightningDataModule):
         pin_memory: bool = True,
         shuffle: bool = False,
         drop_last: bool = True,
-        dl_type: str = "MP",
         distributed: bool = False,
         *args: Any,
         **kwargs: Any,
@@ -122,7 +121,6 @@ class HPUDataModule(pl.LightningDataModule):
         self.pin_memory = pin_memory
         self.shuffle = shuffle
         self.drop_last = drop_last
-        self.dl_type = dl_type
         self.distributed = distributed
         self.data_loader_type = torch.utils.data.DataLoader
 
@@ -132,9 +130,6 @@ class HPUDataModule(pl.LightningDataModule):
             else:
                 self.data_loader_type = habana_dataloader.HabanaDataLoader
 
-        if self.dl_type == "MP":
-            # users have the option to select native pytorch dataloader using "MP" type
-            self.data_loader_type = torch.utils.data.DataLoader
 
     def setup(self, stage: Optional[str] = None):  # type: ignore[no-untyped-def]
         """Method to sanitize the input params."""
