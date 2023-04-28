@@ -147,7 +147,7 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
         strategy=HPUDeepSpeedStrategy(),
         plugins=_plugins,
         accelerator="hpu",
-        devices=1,
+        devices=8,
         precision="bf16-mixed",
         enable_progress_bar=False,
         enable_model_summary=False,
