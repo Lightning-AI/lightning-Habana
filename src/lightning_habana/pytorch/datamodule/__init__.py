@@ -12,20 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.datamodule.datamodule import HPUDataModule
-from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
-from lightning_habana.pytorch.profiler.profiler import HPUProfiler
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
-from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 
-__all__ = [
-    "HPUAccelerator",
-    "HPUParallelStrategy",
-    "SingleHPUStrategy",
-    "HPUPrecisionPlugin",
-    "HPUCheckpointIO",
-    "HPUProfiler",
-    "HPUDataModule",
-]
+__all__ = ["HPUDataModule"]
