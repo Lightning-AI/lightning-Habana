@@ -141,10 +141,11 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
 
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     model = TestModel()
+    parallel_hpus = [torch.device("hpu")] * 8
     trainer = Trainer(
         fast_dev_run=True,
         default_root_dir=tmpdir,
-        strategy=HPUDeepSpeedStrategy(),
+        strategy=HPUDeepSpeedStrategy(parallel_devices=parallel_hpus),
         plugins=_plugins,
         accelerator="hpu",
         devices=8,
