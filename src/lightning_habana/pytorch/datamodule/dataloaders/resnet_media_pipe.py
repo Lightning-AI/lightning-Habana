@@ -48,20 +48,21 @@ if _HPU_AVAILABLE:
         from habana_frameworks.mediapipe.operators.cpu_nodes.cpu_nodes import media_function
         from habana_frameworks.mediapipe.plugins.iterator_pytorch import HPUResnetPytorchIterator
     except ImportError:
-        raise ModuleNotFoundError("habana_dataloader package is not installed.")
+        raise ModuleNotFoundError("`habana_dataloader` package is not installed.")
 
     class ResnetMediaPipe(MediaPipe):
         """resnet classifier with media pipe.
 
-        :params is_training: True if ResnetMediaPipe handles training data, False in case of evaluation.
-        :params root: path from which to load the images.
-        :params batch_size: mediapipe output batch size.
-        :params shuffle: whether images have to be shuffled.
-        :params drop_last: whether to drop the last incomplete batch or round up.
-        :params queue_depth: Number of preloaded image batches for every slice in mediapipe. <1/2/3>
-        :params num_instances: number of devices.
-        :params instance_id: instance id of current device.
-        :params device: media device to run mediapipe on. <hpu/hpu:0>
+        Args:
+            is_training: True if ResnetMediaPipe handles training data, False in case of evaluation.
+            root: path from which to load the images.
+            batch_size: mediapipe output batch size.
+            shuffle: whether images have to be shuffled.
+            drop_last: whether to drop the last incomplete batch or round up.
+            queue_depth: Number of preloaded image batches for every slice in mediapipe. <1/2/3>
+            num_instances: number of devices.
+            instance_id: instance id of current device.
+            device: media device to run mediapipe on. <hpu/hpu:0>
         """
 
         instance_count = 0
@@ -159,7 +160,8 @@ if _HPU_AVAILABLE:
         def definegraph(self) -> Tuple[Any, Any]:
             """Defines the media graph for Resnet.
 
-            :returns : output images, labels
+            Rreturns:
+                output images, labels
             """
             jpegs, data = self.input()
             images = self.decode(jpegs)
@@ -177,10 +179,11 @@ if _HPU_AVAILABLE:
     class RandomFlipFunction(media_function):
         """Randomly generate input for RandomFlip media node.
 
-        :params params: random_flip_func specific params.
-                        shape: output shape
-                        dtype: output data type
-                        seed: seed to be used
+        Args:
+            random_flip_func specific params.
+            shape: output shape
+            dtype: output data type
+            seed: seed to be used
         """
 
         def __init__(self, params: Any) -> None:
