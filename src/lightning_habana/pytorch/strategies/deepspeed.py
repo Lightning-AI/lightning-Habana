@@ -67,6 +67,11 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
     from pytorch_lightning.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 
+from lightning_habana.utils.imports import _HPU_AVAILABLE
+
+if _HPU_AVAILABLE:
+    import habana_frameworks.torch.distributed.hccl  # noqa: F401
+
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
