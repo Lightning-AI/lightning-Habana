@@ -406,9 +406,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         model_parameters = filter(lambda p: p.requires_grad, model.parameters())
         deepspeed_engine, deepspeed_optimizer, _, _ = deepspeed.initialize(
-            args=argparse.Namespace(
-                use_hpu=True
-            ),
+            args=argparse.Namespace(use_hpu=True),
             config=self.config,
             model=model,
             model_parameters=model_parameters,
@@ -552,9 +550,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         remove_module_hooks(model)
 
         model, _, _, _ = deepspeed.initialize(
-            args=argparse.Namespace(
-                use_hpu=True
-            ),
+            args=argparse.Namespace(use_hpu=True),
             config=inference_config,
             model=model,
             optimizer=None,
