@@ -237,6 +237,10 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         process_group_backend: Optional[str] = "hccl",
     ) -> None:
         os.environ["DEEPSPEED_USE_HPU"] = "true"
+        #TBD - remove these work arounds
+        os.environ["PT_HPU_LAZY_ACC_PAR_MODE"] = "0"
+        os.environ["PT_HPU_ENABLE_REFINE_DYNAMIC_SHAPES"] = "0"
+
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
