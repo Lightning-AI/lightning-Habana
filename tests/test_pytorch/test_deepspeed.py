@@ -37,6 +37,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.callbacks import Callback, LearningRateMonitor
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
+from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.deepspeed import _HPU_DEEPSPEED_AVAILABLE
 
@@ -108,6 +109,7 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
     monkeypatch.setenv("PL_DEEPSPEED_CONFIG_PATH", config_path)
 
     trainer = Trainer(
+        accelerator=HPUAccelerator(),
         fast_dev_run=True, default_root_dir=tmpdir, strategy=HPUDeepSpeedStrategy()
     )  # strategy="hpu_deepspeed")
 
@@ -123,7 +125,7 @@ def test_hpu_deepspeed_precision_choice(tmpdir):
     trainer = Trainer(
         fast_dev_run=True,
         default_root_dir=tmpdir,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(),  # strategy="hpu_deepspeed",
         plugins=_plugins,
         precision="bf16-mixed",
@@ -150,6 +152,7 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     model = TestModel()
     trainer = Trainer(
+        accelerator=HPUAccelerator(),
         fast_dev_run=True,
         default_root_dir=tmpdir,
         strategy=HPUDeepSpeedStrategy(),
@@ -189,6 +192,7 @@ def test_deepspeed_config(tmpdir, deepspeed_zero_config):
     lr_monitor = LearningRateMonitor()
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
+        accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(config=deepspeed_zero_config),
         default_root_dir=tmpdir,
         devices=1,
@@ -259,5 +263,6 @@ def test_lightning_model():
     """Test that DeepSpeed works with a simple LightningModule and LightningDataModule."""
     model = SomeModel()
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
-    trainer = Trainer(strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins)
+    trainer = Trainer(accelerator=HPUAccelerator(),
+                      strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins)
     trainer.fit(model)

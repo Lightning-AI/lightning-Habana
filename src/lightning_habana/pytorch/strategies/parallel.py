@@ -20,7 +20,7 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning.fabric.utilities.distributed import group as _group
+    from lightning.fabric.utilities.distributed import group as _group, _distributed_available
     from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
@@ -29,7 +29,7 @@ if module_available("lightning"):
     from lightning.pytorch.strategies.ddp import DDPStrategy
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning_fabric.utilities.distributed import group as _group
+    from lightning_fabric.utilities.distributed import group as _group, _distributed_available
     from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
@@ -107,6 +107,9 @@ class HPUParallelStrategy(DDPStrategy):
         return None
 
     def broadcast(self, obj: object, src: int = 0) -> object:
+        if not _distributed_available():
+            return obj
+
         obj = [obj]
         if self.global_rank != src:
             obj = [None]

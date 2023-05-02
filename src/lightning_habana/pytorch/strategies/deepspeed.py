@@ -36,11 +36,9 @@ if module_available("lightning"):
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
     from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from lightning.pytorch.accelerators import HPUAccelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
     from lightning.pytorch.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from lightning.pytorch.plugins.precision import PrecisionPlugin
-    from lightning.pytorch.strategies import HPUParallelStrategy
     from lightning.pytorch.strategies.utils import _fp_to_half
     from lightning.pytorch.trainer.states import TrainerFn
     from lightning.pytorch.utilities import GradClipAlgorithmType
@@ -54,11 +52,9 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from pytorch_lightning.accelerators import HPUAccelerator
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
     from pytorch_lightning.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from pytorch_lightning.plugins.precision import PrecisionPlugin
-    from pytorch_lightning.strategies import HPUParallelStrategy
     from pytorch_lightning.strategies.utils import _fp_to_half
     from pytorch_lightning.trainer.states import TrainerFn
     from pytorch_lightning.utilities import GradClipAlgorithmType
@@ -67,6 +63,8 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
     from pytorch_lightning.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 
+from lightning_habana.pytorch.accelerator import HPUAccelerator
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 if _HPU_AVAILABLE:
