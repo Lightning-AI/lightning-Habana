@@ -109,8 +109,7 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
     monkeypatch.setenv("PL_DEEPSPEED_CONFIG_PATH", config_path)
 
     trainer = Trainer(
-        accelerator=HPUAccelerator(),
-        fast_dev_run=True, default_root_dir=tmpdir, strategy=HPUDeepSpeedStrategy()
+        accelerator=HPUAccelerator(), fast_dev_run=True, default_root_dir=tmpdir, strategy=HPUDeepSpeedStrategy()
     )  # strategy="hpu_deepspeed")
 
     strategy = trainer.strategy
@@ -263,6 +262,5 @@ def test_lightning_model():
     """Test that DeepSpeed works with a simple LightningModule and LightningDataModule."""
     model = SomeModel()
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
-    trainer = Trainer(accelerator=HPUAccelerator(),
-                      strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins)
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins)
     trainer.fit(model)
