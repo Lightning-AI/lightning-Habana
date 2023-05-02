@@ -262,5 +262,7 @@ def test_lightning_model():
     """Test that DeepSpeed works with a simple LightningModule and LightningDataModule."""
     model = SomeModel()
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
-    trainer = Trainer(accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins, devices=1)
+    trainer = Trainer(
+        accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins, devices=1
+    )
     trainer.fit(model)
