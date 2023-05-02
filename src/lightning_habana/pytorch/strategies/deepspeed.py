@@ -254,7 +254,6 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         self.config = self._load_config(config)
         if self.config is None:
             # User has not overridden config, set defaults
-            # TBD update def values
             self.config = self._create_default_config(
                 zero_optimization,
                 zero_allow_untested_optimizer,
@@ -407,8 +406,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         model_parameters = filter(lambda p: p.requires_grad, model.parameters())
         deepspeed_engine, deepspeed_optimizer, _, _ = deepspeed.initialize(
             args=argparse.Namespace(
-                device_rank=self.local_rank, use_hpu=True
-            ),  # self.root_device.index), #TBD : check device index usage
+                use_hpu=True
+            ),
             config=self.config,
             model=model,
             model_parameters=model_parameters,
@@ -553,8 +552,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         model, _, _, _ = deepspeed.initialize(
             args=argparse.Namespace(
-                device_rank=self.local_rank, use_hpu=True
-            ),  # self.root_device.index),  #TBD : check device index usage
+                use_hpu=True
+            ),
             config=inference_config,
             model=model,
             optimizer=None,
