@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from lightning_habana.pytorch.strategies.deepspeed import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 
-__all__ = ["HPUParallelStrategy", "SingleHPUStrategy"]
+__all__ = ["HPUDeepSpeedStrategy", "HPUParallelStrategy", "SingleHPUStrategy"]
