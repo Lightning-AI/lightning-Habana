@@ -31,7 +31,7 @@ lightning + Habana documentation
 
 .. displayitem::
    :header: Advanced
-   :description: Profiling HPU and enable advanced strategies.
+   :description: Profiling HPU and enable advanced strategies
    :col_css: col-md-4
    :button_link: advanced.html
    :height: 150
