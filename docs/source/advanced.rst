@@ -129,7 +129,7 @@ Limitations
 Working with DeepSpeed
 ------------------------
 
-HPU's support advanced strategies like ``deepspeed``. 
+HPU's support advanced strategies like ``deepspeed``.
 By default, HPU training will use 32-bit precision. To enable mixed precision, set the ``precision`` flag.
 
 .. code-block:: python
