@@ -138,6 +138,6 @@ By default, HPU training will use 32-bit precision. To enable mixed precision, s
     from lightning_habana.pytorch.accelerator import HPUAccelerator
     from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 
-    trainer = Trainer(devices=1, accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")])
+    trainer = Trainer(devices=8, accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")])
 
 More details on the HPU supported deepspeed features and functionalities, refer to refer to `Deepspeed with HPU <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html>`_
