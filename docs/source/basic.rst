@@ -32,23 +32,32 @@ To enable PyTorch Lightning to utilize the HPU accelerator, simply provide ``acc
 
 .. code-block:: python
 
+    from lightning_habana.pytorch.accelerator import HPUAccelerator
+
     # run on as many Gaudi devices as available by default
     trainer = Trainer(accelerator="auto", devices="auto", strategy="auto")
     # equivalent to
     trainer = Trainer()
 
     # run on one Gaudi device
-    trainer = Trainer(accelerator="hpu", devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
     # run on multiple Gaudi devices
-    trainer = Trainer(accelerator="hpu", devices=8)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
     # choose the number of devices automatically
-    trainer = Trainer(accelerator="hpu", devices="auto")
+    trainer = Trainer(accelerator=HPUAccelerator(), devices="auto")
 
 
-The ``devices>1`` parameter with HPUs enables the Habana accelerator for distributed training.
-It uses :class:`~pytorch_lightning.strategies.hpu_parallel.HPUParallelStrategy` internally which is based on DDP
+The ``devices>1`` parameter with HPUs enables the Habana accelerator for single card training.
+It uses :class:`~lightning_habana.pytorch.strategies.SingleHPUStrategy`.
+
+The ``devices>8`` parameter with HPUs enables the Habana accelerator for distributed training.
+It uses :class:`~lightning_habana.pytorch.strategies.HPUParallelStrategy` which is based on DDP
 strategy with the addition of Habana's collective communication library (HCCL) to support scale-up within a node and
 scale-out across multiple nodes.
+
+.. note::
+   accelerator="auto" or accelerator="hpu" is not yet enabled with lightning>2.0.0 and lightning-habana.
+   However passing class object :class:`HPUAccelerator()` is supported.
 
 ----
 
@@ -59,7 +68,12 @@ To train a Lightning model using multiple HPU nodes, set the ``num_nodes`` param
 
 .. code-block:: python
 
-    trainer = Trainer(accelerator="hpu", devices=8, strategy="hpu_parallel", num_nodes=2)
+    from lightning_habana.pytorch.accelerator import HPUAccelerator
+    from lightning_habana.pytorch.strategies import HPUParallelStrategy
+
+    hpus = 8
+    parallel_hpus = [torch.device("hpu")] * hpus
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=hpus, strategy=HPUParallelStrategy(parallel_devices=parallel_hpus), num_nodes=2)
 
 In addition to this, the following environment variables need to be set to establish communication across nodes.
 
@@ -96,12 +110,3 @@ AWS
 You can either use `Gaudi-based AWS EC2 DL1 instances <https://aws.amazon.com/ec2/instance-types/dl1/>`__ or `Supermicro X12 Gaudi server <https://www.supermicro.com/en/solutions/habana-gaudi>`__ to get access to HPUs.
 
 Check out the `PyTorch Model on AWS DL1 Instance Quick Start <https://docs.habana.ai/en/latest/AWS_EC2_DL1_and_PyTorch_Quick_Start/AWS_EC2_DL1_and_PyTorch_Quick_Start.html>`__.
-
-----
-
-.. _known-limitations_hpu:
-
-Known limitations
------------------
-
-* `Habana dataloader <https://docs.habana.ai/en/latest/PyTorch_User_Guide/PyTorch_User_Guide.html#habana-data-loader>`__ is not supported.

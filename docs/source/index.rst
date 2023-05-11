@@ -23,11 +23,19 @@ lightning + Habana documentation
 
 .. displayitem::
    :header: Intermediate
-   :description: Enable state-of-the-art scaling with advanced mix-precision settings.
+   :description: Enable state-of-the-art scaling with advanced mix-precision settings
    :col_css: col-md-4
    :button_link: intermediate.html
    :height: 150
    :tag: intermediate
+
+.. displayitem::
+   :header: Advanced
+   :description: Profiling HPU and enable advanced strategies
+   :col_css: col-md-4
+   :button_link: advanced.html
+   :height: 150
+   :tag: advanced
 
 .. raw:: html
 
