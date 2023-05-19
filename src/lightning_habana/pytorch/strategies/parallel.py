@@ -99,7 +99,6 @@ class HPUParallelStrategy(DDPStrategy):
         self._checkpoint_io = io
 
     def setup_environment(self) -> None:
-        os.environ["ID"] = str(self.local_rank)
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
             os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
@@ -145,8 +144,6 @@ class HPUParallelStrategy(DDPStrategy):
 
     def teardown(self) -> None:
         super().teardown()
-        # Was set to local rank
-        os.environ.pop("ID", None)
         os.environ.pop("HCCL_DISTRIBUTED_BACKEND", None)
 
 
