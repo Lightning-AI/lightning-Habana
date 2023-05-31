@@ -68,6 +68,7 @@ from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 if _HPU_AVAILABLE:
+    import habana_frameworks.torch.core as htcore  # noqa: F401
     import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
