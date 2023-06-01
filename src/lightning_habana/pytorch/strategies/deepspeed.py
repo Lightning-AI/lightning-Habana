@@ -68,14 +68,15 @@ from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.imports import _HPU_AVAILABLE
 
 if _HPU_AVAILABLE:
+    import habana_frameworks.torch.core as htcore  # noqa: F401
     import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.9.0
-    RequirementCache("deepspeed==0.7.7+94c3e80")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+    RequirementCache("deepspeed==0.7.7+hpu.synapse.v1.10.0")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -244,7 +245,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.9.0`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
             )
 
         super().__init__(
