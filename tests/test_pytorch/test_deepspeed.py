@@ -150,7 +150,6 @@ def test_deepspeed_defaults():
     assert isinstance(strategy.config["zero_optimization"], dict)
 
 
-@pytest.mark.xfail(MisconfigurationException, reason="Device initialized missing")  # TBD
 def test_warn_hpu_deepspeed_ignored(tmpdir):
     class TestModel(BoringModel):
         def backward(self, loss: Tensor, *args, **kwargs) -> None:
@@ -172,7 +171,6 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
         trainer.fit(model)
 
 
-@pytest.mark.xfail(MisconfigurationException, reason="Device initialize missing")  # TBD
 def test_deepspeed_config(tmpdir, deepspeed_zero_config):
     """Test to ensure deepspeed config works correctly.
 
@@ -260,7 +258,6 @@ class SomeModel(LightningModule):
         return DataLoader(SomeDataset(32, 64), batch_size=2)
 
 
-@pytest.mark.xfail(MisconfigurationException, reason="Device initialize missing")  # TBD
 def test_lightning_model():
     """Test that DeepSpeed works with a simple LightningModule and LightningDataModule."""
     model = SomeModel()
