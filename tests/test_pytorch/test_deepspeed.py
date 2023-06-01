@@ -143,6 +143,13 @@ def test_hpu_deepspeed_with_invalid_config_path():
         HPUDeepSpeedStrategy(config="invalid_path.json")
 
 
+def test_deepspeed_defaults():
+    """Ensure that defaults are correctly set as a config for DeepSpeed if no arguments are passed."""
+    strategy = HPUDeepSpeedStrategy()
+    assert strategy.config is not None
+    assert isinstance(strategy.config["zero_optimization"], dict)
+
+
 def test_warn_hpu_deepspeed_ignored(tmpdir):
     class TestModel(BoringModel):
         def backward(self, loss: Tensor, *args, **kwargs) -> None:
@@ -162,13 +169,6 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
     )
     with pytest.warns(UserWarning, match="will be ignored since DeepSpeed handles the backward"):
         trainer.fit(model)
-
-
-def test_deepspeed_defaults():
-    """Ensure that defaults are correctly set as a config for DeepSpeed if no arguments are passed."""
-    strategy = HPUDeepSpeedStrategy()
-    assert strategy.config is not None
-    assert isinstance(strategy.config["zero_optimization"], dict)
 
 
 def test_deepspeed_config(tmpdir, deepspeed_zero_config):
