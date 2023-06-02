@@ -55,7 +55,7 @@ def patch_aeon_length(self) -> int:  # type: ignore[no-untyped-def]
     # If Lightning version is >= 2.0.0, and dataloader is aeon,
     # drop the last batch from dataloader.
     if _LIGHTNING_GREATER_EQUAL_2_0_0 and _TORCH_GREATER_EQUAL_2_0_0 and self.dataloader.aeon is not None:
-        length = length - 1
+        return length - 1
     return length
 
 
