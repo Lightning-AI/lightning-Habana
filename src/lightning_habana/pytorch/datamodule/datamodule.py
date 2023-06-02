@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import warnings
 from typing import Any, Optional
 
 from lightning_utilities import module_available
@@ -25,7 +26,7 @@ elif module_available("pytorch_lightning"):
 
 import torch
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HPU_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_0_0, _TORCH_GREATER_EQUAL_2_0_0
 
 if _TORCHVISION_AVAILABLE:
     import torchvision.datasets
@@ -42,6 +43,20 @@ if _HPU_AVAILABLE:
 import lightning_habana.pytorch.datamodule.utils
 
 _DATASETS_PATH = "/tmp/data"
+
+
+def patch_aeon_length(self) -> int:  # type: ignore[no-untyped-def]
+    """WA to avoid hang in aeon dataloader with PyTorch Lightning version >= 2.0.0.
+
+    Returns adjusted length if lightning version >= 2.0.0
+    Returns default length otherwise.
+    """
+    length = len(self.dataloader)
+    # If Lightning version is >= 2.0.0, and dataloader is aeon,
+    # drop the last batch from dataloader.
+    if _LIGHTNING_GREATER_EQUAL_2_0_0 and _TORCH_GREATER_EQUAL_2_0_0 and self.dataloader.aeon is not None:
+        return length - 1
+    return length
 
 
 def load_data(traindir, valdir, train_transforms, val_transforms):  # type: ignore[no-untyped-def]
@@ -149,6 +164,13 @@ class HPUDataModule(pl.LightningDataModule):
         )
 
         dataset = self.dataset_train if stage == "fit" else self.dataset_val
+        if self.drop_last is False and (
+            isinstance(
+                dataset, (torchvision.datasets.ImageFolder, habana_dataloader.habana_dataset.ImageFolderWithManifest)
+            )
+        ):
+            warnings.warn("HabanaDataLoader only supports drop_last as True with Imagenet dataset. Setting to True")
+            self.drop_last = True
         if dataset is None:
             raise TypeError("Error creating dataset")
 
@@ -159,6 +181,8 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.RandomSampler(self.dataset_train)
         )
+        if self.drop_last:
+            self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_train,
             batch_size=self.batch_size,
@@ -176,6 +200,8 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.SequentialSampler(self.dataset_val)
         )
+        if self.drop_last:
+            self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_val,
             batch_size=self.batch_size,
@@ -193,6 +219,8 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.SequentialSampler(self.dataset_val)
         )
+        if self.drop_last:
+            self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_val,
             batch_size=self.batch_size,
