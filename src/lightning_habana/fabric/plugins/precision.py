@@ -14,8 +14,16 @@
 
 from typing import Literal, Optional, Union, cast
 
-from lightning.fabric.plugins.precision.precision import Precision
+from lightning_utilities import module_available
 from typing_extensions import get_args
+
+if module_available("lightning"):
+    from lightning.fabric.plugins.precision.precision import Precision
+elif module_available("pytorch_lightning"):
+    from lightning_fabric.plugins.precision.precision import Precision
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
 
 from lightning_habana.utils.imports import _HPU_AVAILABLE
 
