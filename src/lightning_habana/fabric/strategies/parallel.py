@@ -19,13 +19,27 @@ from datetime import timedelta
 from typing import Any, Dict, List, Literal, Optional
 
 import torch.distributed
-from lightning.fabric.accelerators import Accelerator
-from lightning.fabric.plugins import CheckpointIO
-from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
-from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
-from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
-from lightning.fabric.strategies.ddp import DDPStrategy
-from lightning.fabric.utilities.types import Optimizable
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.fabric.accelerators import Accelerator
+    from lightning.fabric.plugins import CheckpointIO
+    from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
+    from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
+    from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
+    from lightning.fabric.strategies.ddp import DDPStrategy
+    from lightning.fabric.utilities.types import Optimizable
+elif module_available("pytorch_lightning"):
+    from lightning_fabric.accelerators import Accelerator
+    from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
+    from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
+    from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
+    from lightning_fabric.strategies.ddp import DDPStrategy
+    from lightning_fabric.utilities.types import Optimizable
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
 from torch import Tensor
 from torch.nn import Module
 
