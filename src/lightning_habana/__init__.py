@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import operator
+
+from lightning_utilities import compare_version
 
 from lightning_habana.__about__ import *  # noqa: F401, F403
 from lightning_habana.pytorch.accelerator import HPUAccelerator
@@ -22,6 +25,11 @@ from lightning_habana.pytorch.strategies.deepspeed import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 from lightning_habana.utils.imports import _HPU_AVAILABLE
+
+if compare_version("lightning", operator.lt, "2.0.0") and compare_version("pytorch_lightning", operator.lt, "2.0.0"):
+    raise ImportError(
+        "You are missing `lightning` or `pytorch-lightning` package or neither of them is in version 2.0+"
+    )
 
 __all__ = [
     "HPUAccelerator",
