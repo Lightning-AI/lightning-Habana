@@ -24,13 +24,14 @@ if module_available("lightning"):
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.profilers import AdvancedProfiler, SimpleProfiler
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
+    from lightning.pytorch.utilities.imports import _KINETO_AVAILABLE
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.profilers import AdvancedProfiler, SimpleProfiler
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
+    from pytorch_lightning.utilities.imports import _KINETO_AVAILABLE
 
-from pytorch_lightning.utilities.imports import _KINETO_AVAILABLE
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin

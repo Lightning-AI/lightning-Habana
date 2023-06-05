@@ -14,11 +14,23 @@
 
 from typing import Any, Dict, Optional
 
-from lightning.fabric.accelerators import Accelerator
-from lightning.fabric.plugins import CheckpointIO
-from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
-from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-from lightning.fabric.utilities.types import _DEVICE, Optimizable
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.fabric.accelerators import Accelerator
+    from lightning.fabric.plugins import CheckpointIO
+    from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
+    from lightning.fabric.strategies.single_device import SingleDeviceStrategy
+    from lightning.fabric.utilities.types import _DEVICE, Optimizable
+elif module_available("pytorch_lightning"):
+    from lightning_fabric.accelerators import Accelerator
+    from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
+    from lightning_fabric.strategies.single_device import SingleDeviceStrategy
+    from lightning_fabric.utilities.types import _DEVICE, Optimizable
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
 from torch import Tensor
 from torch.nn import Module
 
