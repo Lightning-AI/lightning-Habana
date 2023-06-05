@@ -27,7 +27,7 @@ jobs:
       actions-ref: main
       import-name: "lightning_habana"
       # install also lightning package so this sample import won't crash, also consistent with readme instructions
-      install-flags: '"lightning>=2.0.0"'
+      install-flags: '"pytorch-lightning>=2.0.0"'
       artifact-name: dist-packages-${{ github.sha }}
       testing-matrix: |
         {
