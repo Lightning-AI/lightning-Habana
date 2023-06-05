@@ -1,0 +1,3 @@
+# this sets the requirements contains if you go with main lightning
+
+pytorch-lightning >=2.0.0
