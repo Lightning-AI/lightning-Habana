@@ -1,3 +1,4 @@
 # for details, see the extras `lightning.txt` and/or `pytorch-lightning.txt`
 
+torch  # this is kind of placeholder in case this pkg is installed on black env
 lightning-utilities >= 0.7.0
