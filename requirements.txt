@@ -1,1 +1,3 @@
-lightning >=2.0.0
+# for details, see the extras `lightning.txt` and/or `pytorch-lightning.txt`
+
+lightning-utilities >= 0.7.0
