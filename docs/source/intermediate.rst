@@ -25,6 +25,10 @@ By default, HPU training will use 32-bit precision. To enable mixed precision, s
 Customize Mixed Precision
 -------------------------
 
+Lightning supports following methods to enable mixed precision training with HPU.
+
+**HPUPrecisionPlugin**
+
 Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` uses the Habana Mixed Precision (HMP) package to enable mixed precision training.
 
 You can execute the ops in FP32 or BF16 precision. The HMP package modifies the Python operators to add the appropriate cast operations for the arguments before execution.
@@ -38,13 +42,13 @@ This enables advanced users to provide their own BF16 and FP32 operator list ins
 
 .. code-block:: python
 
-    import pytorch_lightning as pl
+    from lightning import Trainer
     from lightning_habana.pytorch.accelerator import HPUAccelerator
     from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 
     # Initialize a trainer with HPU accelerator for HPU strategy for single device,
     # with mixed precision using overidden HMP settings
-    trainer = pl.Trainer(
+    trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=1,
         # Optional Habana mixed precision params to be set
@@ -69,6 +73,52 @@ This enables advanced users to provide their own BF16 and FP32 operator list ins
     trainer.fit(model, datamodule=dm)
 
 For more details, please refer to `PyTorch Mixed Precision Training on Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/PT_Mixed_Precision.html>`__.
+
+
+**Native PyTorch torch.autocast()**
+
+For more granular control over with mixed precision training, one can use torch.autocast from native PyTorch.
+
+Instances of autocast serve as context managers or decorators that allow regions of your script to run in mixed precision. 
+These also allow for fine tuning with `enabled` for enabling and disabling mixed precision training for certain parts of the code.
+
+.. code-block:: python
+
+    import torch
+    from lightning import Trainer
+
+    class AutocastModelCM(nn.Module):
+        # Autocast can be used as a context manager to the required code block.
+        def forward(self, input):
+            with torch.autocast("device_type="hpu", dtype=torch.bfloat16):
+            ...
+            return
+
+    class AutocastModelDecorator(nn.Module):
+        # Autocast can be used as a decorator to the required code block.
+        @torch.autocast("device_type="hpu", dtype=torch.bfloat16)
+        def forward(self, input):
+            ...
+            return
+
+    # Initialize a trainer with HPU accelerator for HPU strategy for single device,
+    # with mixed precision using overidden HMP settings
+    trainer = Trainer(
+        accelerator="hpu",
+        devices=1,
+    )
+
+    # Init our model
+    model = AutocastModelCM()
+    # Init the data
+    dm = MNISTDataModule(batch_size=batch_size)
+
+    # Train the model ⚡
+    trainer.fit(model, datamodule=dm)
+
+For more details, please refer to
+`Native PyTorch Autocast <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html>`__. 
+and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs/stable/amp.html#autocasting>`__.
 
 ----
 
