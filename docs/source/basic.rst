@@ -28,7 +28,7 @@ For more information, check out `Gaudi Architecture <https://docs.habana.ai/en/l
 Run on Gaudi
 ------------
 
-To enable PyTorch Lightning to utilize the HPU accelerator, simply provide ``accelerator="hpu"`` parameter to the Trainer class.
+To enable PyTorch Lightning to utilize the HPU accelerator, simply provide ``accelerator=HPUAccelerator()"`` parameter to the Trainer class.
 
 .. code-block:: python
 
@@ -47,10 +47,10 @@ To enable PyTorch Lightning to utilize the HPU accelerator, simply provide ``acc
     trainer = Trainer(accelerator=HPUAccelerator(), devices="auto")
 
 
-The ``devices>1`` parameter with HPUs enables the Habana accelerator for single card training.
+The ``devices=1`` parameter with HPUs enables the Habana accelerator for single card training.
 It uses :class:`~lightning_habana.pytorch.strategies.SingleHPUStrategy`.
 
-The ``devices>8`` parameter with HPUs enables the Habana accelerator for distributed training.
+The ``devices>1`` parameter with HPUs enables the Habana accelerator for distributed training.
 It uses :class:`~lightning_habana.pytorch.strategies.HPUParallelStrategy` which is based on DDP
 strategy with the addition of Habana's collective communication library (HCCL) to support scale-up within a node and
 scale-out across multiple nodes.
