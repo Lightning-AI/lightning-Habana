@@ -24,12 +24,21 @@ from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 from lightning_habana.pytorch.strategies.deepspeed import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if compare_version("lightning", operator.lt, "2.0.0") and compare_version("pytorch_lightning", operator.lt, "2.0.0"):
     raise ImportError(
         "You are missing `lightning` or `pytorch-lightning` package or neither of them is in version 2.0+"
     )
+
+if _HABANA_FRAMEWORK_AVAILABLE:
+    from habana_frameworks.torch.utils.library_loader import is_habana_available
+
+    _HPU_AVAILABLE: bool = is_habana_available()
+else:
+    _HPU_AVAILABLE = False
+
+assert _HPU_AVAILABLE
 
 __all__ = [
     "HPUAccelerator",

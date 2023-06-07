@@ -19,7 +19,7 @@ import numpy as np
 import torch.utils.data
 
 import lightning_habana.pytorch.datamodule.utils as utils
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 TRAIN_RESIZE_DIM = 224
 EVAL_RESIZE_DIM = 256
@@ -40,7 +40,7 @@ RGB_MULTIPLIER = 255
 EVAL_CROP_X = 0.5
 EVAL_CROP_Y = 0.5
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     try:
         from habana_frameworks.mediapipe import fn
         from habana_frameworks.mediapipe.media_types import decoderStage, dtype, ftype, imgtype, randomCropType
