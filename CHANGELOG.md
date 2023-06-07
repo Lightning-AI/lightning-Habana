@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed mnist example test ([#20](https://github.com/Lightning-AI/lightning-Habana/pull/20))
 - Habana dataloader hang with Lightning 2.0.x ([#29](https://github.com/Lightning-AI/lightning-Habana/pull/29))
-
+- Device check for the Habana dataloder workaround ([#39](https://github.com/Lightning-AI/lightning-Habana/pull/39))
 ### Removed
 
 - Cleaning up env's ID for HPU parallel plugins based on synapse AI release 1.9 ([#28](https://github.com/Lightning-AI/lightning-Habana/pull/28))
