@@ -42,6 +42,7 @@ if _HABANA_FRAMEWORK_AVAILABLE:
 
 from lightning_habana import _HPU_AVAILABLE
 
+
 class SingleHPUStrategy(SingleDeviceStrategy):
     """Strategy for training on single HPU device."""
 

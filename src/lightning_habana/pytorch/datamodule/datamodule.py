@@ -26,7 +26,11 @@ elif module_available("pytorch_lightning"):
 
 import torch
 
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_0_0, _TORCH_GREATER_EQUAL_2_0_0
+from lightning_habana.utils.imports import (
+    _HABANA_FRAMEWORK_AVAILABLE,
+    _LIGHTNING_GREATER_EQUAL_2_0_0,
+    _TORCH_GREATER_EQUAL_2_0_0,
+)
 
 if _TORCHVISION_AVAILABLE:
     import torchvision.datasets
