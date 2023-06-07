@@ -38,7 +38,6 @@ if _HABANA_FRAMEWORK_AVAILABLE:
 else:
     _HPU_AVAILABLE = False
 
-assert _HPU_AVAILABLE
 
 __all__ = [
     "HPUAccelerator",
