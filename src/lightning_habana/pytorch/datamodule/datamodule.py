@@ -181,7 +181,7 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.RandomSampler(self.dataset_train)
         )
-        if self.drop_last:
+        if self.drop_last and lightning_habana.pytorch.datamodule.utils.is_gaudi():
             self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_train,
@@ -200,7 +200,7 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.SequentialSampler(self.dataset_val)
         )
-        if self.drop_last:
+        if self.drop_last and lightning_habana.pytorch.datamodule.utils.is_gaudi():
             self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_val,
@@ -219,7 +219,7 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.SequentialSampler(self.dataset_val)
         )
-        if self.drop_last:
+        if self.drop_last and lightning_habana.pytorch.datamodule.utils.is_gaudi():
             self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_val,
