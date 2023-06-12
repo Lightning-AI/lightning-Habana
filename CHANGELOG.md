@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed mnist example test ([#20](https://github.com/Lightning-AI/lightning-Habana/pull/20))
 - Habana dataloader hang with Lightning 2.0.x ([#29](https://github.com/Lightning-AI/lightning-Habana/pull/29))
 - Make #29 applicable only for gaudi devices ([#39](https://github.com/Lightning-AI/lightning-Habana/pull/39))
+- Fixed environment initialization for hpus ([#40](https://github.com/Lightning-AI/lightning-Habana/pull/40))
 
 ### Removed
 

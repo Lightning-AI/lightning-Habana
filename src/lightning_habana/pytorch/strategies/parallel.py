@@ -103,9 +103,9 @@ class HPUParallelStrategy(DDPStrategy):
             # this env is used in overrides to check the backend initiated
             os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
             _ws = self.cluster_environment.world_size()
-            _gRank = self.cluster_environment.global_rank()
-            _lRank = self.cluster_environment.local_rank()
-            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_gRank, local_rank=_lRank)
+            _grank = self.cluster_environment.global_rank()
+            _lrank = self.cluster_environment.local_rank()
+            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
         super().setup_environment()
 
     def determine_ddp_device_ids(self) -> None:
