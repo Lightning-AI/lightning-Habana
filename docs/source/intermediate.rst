@@ -2,17 +2,17 @@
 
 .. _hpu_intermediate:
 
-Accelerator: HPU training
+Accelerator: HPU Training
 =========================
-**Audience:** Gaudi chip users looking to save memory and scale models with mixed-precision training.
+This document offers instructions to Gaudi chip users who want to conserve memory and scale models using mixed-precision training.
 
 ----
 
 Enable Mixed Precision
 ----------------------
 
-Lightning also allows mixed precision training with HPUs.
-By default, HPU training will use 32-bit precision. To enable mixed precision, set the ``precision`` flag.
+With Lightning, you can leverage mixed precision training on HPUs. By default, HPU training
+uses 32-bit precision. To enable mixed precision, set the ``precision`` flag.
 
 .. code-block:: python
 
@@ -28,13 +28,12 @@ Customize Mixed Precision
 Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` uses the Habana Mixed Precision (HMP) package to enable mixed precision training.
 
 You can execute the ops in FP32 or BF16 precision. The HMP package modifies the Python operators to add the appropriate cast operations for the arguments before execution.
-The default settings enable users to enable mixed precision training with minimal code easily.
+With the default settings, you can easily enable mixed precision training with minimal code.
 
-In addition to the default settings in HMP, users also have the option of overriding these defaults and providing their
-BF16 and FP32 operator lists by passing them as parameter to :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
+In addition to the default settings in HMP, you can choose to override these defaults and provide your own BF16 and FP32 operator lists by passing them as parameters
+to :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
 
-The below snippet shows an example model using MNIST with a single Habana Gaudi device and making use of HMP by overriding the default parameters.
-This enables advanced users to provide their own BF16 and FP32 operator list instead of using the HMP defaults.
+The following is an excerpt from an MNIST example implemented on a single HPU.
 
 .. code-block:: python
 
@@ -78,18 +77,32 @@ Enabling DeviceStatsMonitor with HPUs
 :class:`~pytorch_lightning.callbacks.device_stats_monitor.DeviceStatsMonitor` is a callback that automatically monitors and logs device stats during the training stage.
 This callback can be passed for training with HPUs. It returns a map of the following metrics with their values in bytes of type uint64:
 
-- **Limit**: amount of total memory on HPU device.
-- **InUse**: amount of allocated memory at any instance.
-- **MaxInUse**: amount of total active memory allocated.
-- **NumAllocs**: number of allocations.
-- **NumFrees**: number of freed chunks.
-- **ActiveAllocs**: number of active allocations.
-- **MaxAllocSize**: maximum allocated size.
-- **TotalSystemAllocs**: total number of system allocations.
-- **TotalSystemFrees**: total number of system frees.
-- **TotalActiveAllocs**: total number of active allocations.
++-------------------+---------------------------------------------+
+| Metric            | Value                                       |
++===================+=============================================+
+| Limit             | Amount of total memory on HPU.              |
++-------------------+---------------------------------------------+
+| InUse             | Amount of allocated memory at any instance. |
++-------------------+---------------------------------------------+
+| MaxInUse          | Amount of total active memory allocated.    |
++-------------------+---------------------------------------------+
+| NumAllocs         | Number of allocations.                      |
++-------------------+---------------------------------------------+
+| NumFrees          | Number of freed chunks.                     |
++-------------------+---------------------------------------------+
+| ActiveAllocs      | Number of active allocations.               |
++-------------------+---------------------------------------------+
+| MaxAllocSize      | Maximum allocated size.                     |
++-------------------+---------------------------------------------+
+| TotalSystemAllocs | Total number of system allocations.         |
++-------------------+---------------------------------------------+
+| TotalSystemFrees  | Total number of system frees.               |
++-------------------+---------------------------------------------+
+| TotalActiveAllocs | Total number of active allocations.         |
++-------------------+---------------------------------------------+
 
-The below snippet shows how DeviceStatsMonitor can be enabled.
+
+The below shows how ``DeviceStatsMonitor`` can be enabled.
 
 .. code-block:: python
 

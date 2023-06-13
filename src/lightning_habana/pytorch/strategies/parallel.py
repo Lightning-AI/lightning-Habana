@@ -47,7 +47,7 @@ from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl  # noqa: F401
+    import habana_frameworks.torch.distributed.hccl as hpu_dist
 
 log = logging.getLogger(__name__)
 
@@ -102,6 +102,10 @@ class HPUParallelStrategy(DDPStrategy):
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
             os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
+            _ws = self.cluster_environment.world_size()
+            _grank = self.cluster_environment.global_rank()
+            _lrank = self.cluster_environment.local_rank()
+            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
         super().setup_environment()
 
     def determine_ddp_device_ids(self) -> None:
