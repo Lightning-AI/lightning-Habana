@@ -18,39 +18,66 @@ Gaudi is the first DL training processor that has integrated RDMA over Converged
 
 On the software side, the PyTorch Habana bridge interfaces between the framework and SynapseAI software stack to enable the execution of deep learning models on the Habana Gaudi device.
 
-Gaudi offers a substantial price/performance advantage -- so you get to do more deep learning training while spending less.
+Gaudi provides a significant cost-effective benefit, allowing you to engage in more deep learning training while minimizing expenses.
 
 For more information, check out [Gaudi Architecture](https://docs.habana.ai/en/latest/Gaudi_Overview/Gaudi_Overview.html#gaudi-architecture%3E) and [Gaudi Developer Docs](https://developer.habana.ai).
 
 ______________________________________________________________________
 
-## Installation
+## Installing Lighting Habana
+
+To install Lightning Habana, run the following command:
 
 ```bash
 pip install -U lightning lightning-habana
 ```
 
-## Usage
+## Using PyTorch Lighting with HPU
 
-To enable PyTorch Lightning to utilize the HPU accelerator, simply provide `accelerator=HPUAccelerator()` parameter to the Trainer class.
+To enable PyTorch Lightning with HPU accelerator, provide `accelerator=HPUAccelerator()` parameter to the Trainer class.
 
 ```python
 from lightning import Trainer
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 
-# run on as many Gaudi devices as available by default
+# Run on as many HPUs as available by default.
 trainer = Trainer(accelerator="auto", devices="auto", strategy="auto")
-# equivalent to
+# Equivalent to
 trainer = Trainer()
 
-# run on one Gaudi device
+# Run on one HPU.
 trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
-# run on multiple Gaudi devices
+# Run on multiple HPUs.
 trainer = Trainer(accelerator=HPUAccelerator(), devices=8)
-# choose the number of devices automatically
+# Choose the number of devices automatically.
 trainer = Trainer(accelerator=HPUAccelerator(), devices="auto")
 ```
 
-The `devices=1` parameter with HPUs enables the Habana accelerator for single card training. It uses `SingleHPUStrategy`.
+The `devices=1` parameter with HPUs enables the Habana accelerator for single card training using `SingleHPUStrategy`.
 
-The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses HPUParallelStrategy which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
+The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses `HPUParallelStrategy` which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
+
+
+# Support Matrix
+
+    +------------------------+----------------------------------------------------------+
+    | **SynapseAI**          |            1.10.0                                        |
+    +========================+==========================================================+
+    | **PyTorch**            | 2.0.1                                                    |
+    |                        |                                                          |
+    +------------------------+----------------------------------------------------------+
+    | **PyTorch Lightning**  | 2.0.0                                                    |
+    |          or            |                                                          |
+    | **Lightning**          | 2.0.0                                                    |
+    |                        |                                                          |
+    +------------------------+----------------------------------------------------------+
+    | **Lightning Habana**   | 1.0.0                                                    |
+    |                        |                                                          |
+    +------------------------+----------------------------------------------------------+
+    | **DeepSpeed**          | Forked from v0.7.7 of the official                       |
+    |                        | DeepSpeed.                                               |
+    |                        |                                                          |
+    +------------------------+----------------------------------------------------------+
+
+For more information, check out [HPU Support Matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html)
+

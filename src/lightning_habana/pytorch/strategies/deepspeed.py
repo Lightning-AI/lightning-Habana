@@ -74,8 +74,10 @@ if _HPU_AVAILABLE:
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
+#WA : TBD : there is an issue with internal habana pipelines wrt deepspeed package naming in 1.10.0 release
 _HPU_DEEPSPEED_AVAILABLE = (
     # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
+    RequirementCache("deepspeed==0.7.7+hpu.synapse.v1.10.0") or 
     RequirementCache("deepspeed==0.7.7+ca649af")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
