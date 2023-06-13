@@ -26,13 +26,17 @@ elif module_available("pytorch_lightning"):
 
 import torch
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_0_0, _TORCH_GREATER_EQUAL_2_0_0
+from lightning_habana.utils.imports import (
+    _HABANA_FRAMEWORK_AVAILABLE,
+    _LIGHTNING_GREATER_EQUAL_2_0_0,
+    _TORCH_GREATER_EQUAL_2_0_0,
+)
 
 if _TORCHVISION_AVAILABLE:
     import torchvision.datasets
     from torchvision import transforms as transform_lib
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     try:
         import habana_dataloader
     except ImportError:
@@ -139,7 +143,7 @@ class HPUDataModule(pl.LightningDataModule):
         self.distributed = distributed
         self.data_loader_type = torch.utils.data.DataLoader
 
-        if _HPU_AVAILABLE:
+        if _HABANA_FRAMEWORK_AVAILABLE:
             if lightning_habana.pytorch.datamodule.utils.is_gaudi2():
                 self.data_loader_type = MediaApiDataLoader  # type: ignore
             else:

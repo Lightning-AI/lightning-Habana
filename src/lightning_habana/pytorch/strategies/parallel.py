@@ -43,9 +43,9 @@ else:
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
     import habana_frameworks.torch.distributed.hccl as hpu_dist
 

@@ -21,12 +21,6 @@ _PROJECT_ROOT = os.path.dirname(_PACKAGE_ROOT)
 from lightning_utilities.core.imports import compare_version, package_available  # noqa: E402
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-if _HABANA_FRAMEWORK_AVAILABLE:
-    from habana_frameworks.torch.utils.library_loader import is_habana_available
-
-    _HPU_AVAILABLE: bool = is_habana_available()
-else:
-    _HPU_AVAILABLE = False
 
 _TORCH_LESSER_EQUAL_1_13_1 = compare_version("torch", operator.le, "1.13.1")
 _TORCH_GREATER_EQUAL_2_0_0 = compare_version("torch", operator.ge, "2.0.0")
