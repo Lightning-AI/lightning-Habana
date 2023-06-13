@@ -5,6 +5,7 @@
 Accelerator: HPU Training
 =========================
 This document offers instructions to Gaudi chip users who want to conserve memory and scale models using mixed-precision training.
+
 ----
 
 Enable Mixed Precision
