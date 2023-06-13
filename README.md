@@ -57,27 +57,27 @@ The `devices=1` parameter with HPUs enables the Habana accelerator for single ca
 
 The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses `HPUParallelStrategy` which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
 
-
 # Support Matrix
 
-    +------------------------+----------------------------------------------------------+
-    | **SynapseAI**          |            1.10.0                                        |
-    +========================+==========================================================+
-    | **PyTorch**            | 2.0.1                                                    |
-    |                        |                                                          |
-    +------------------------+----------------------------------------------------------+
-    | **PyTorch Lightning**  | 2.0.0                                                    |
-    |          or            |                                                          |
-    | **Lightning**          | 2.0.0                                                    |
-    |                        |                                                          |
-    +------------------------+----------------------------------------------------------+
-    | **Lightning Habana**   | 1.0.0                                                    |
-    |                        |                                                          |
-    +------------------------+----------------------------------------------------------+
-    | **DeepSpeed**          | Forked from v0.7.7 of the official                       |
-    |                        | DeepSpeed.                                               |
-    |                        |                                                          |
-    +------------------------+----------------------------------------------------------+
+```
++------------------------+----------------------------------------------------------+
+| **SynapseAI**          |            1.10.0                                        |
++========================+==========================================================+
+| **PyTorch**            | 2.0.1                                                    |
+|                        |                                                          |
++------------------------+----------------------------------------------------------+
+| **PyTorch Lightning**  | 2.0.0                                                    |
+|          or            |                                                          |
+| **Lightning**          | 2.0.0                                                    |
+|                        |                                                          |
++------------------------+----------------------------------------------------------+
+| **Lightning Habana**   | 1.0.0                                                    |
+|                        |                                                          |
++------------------------+----------------------------------------------------------+
+| **DeepSpeed**          | Forked from v0.7.7 of the official                       |
+|                        | DeepSpeed.                                               |
+|                        |                                                          |
++------------------------+----------------------------------------------------------+
+```
 
 For more information, check out [HPU Support Matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html)
-
