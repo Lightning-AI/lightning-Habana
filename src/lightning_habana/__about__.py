@@ -4,7 +4,7 @@ __author_email__ = "name@lightning.ai"
 __license__ = "Apache-2.0"
 __copyright__ = f"Copyright (c) 2020-2023, {__author__}."
 __homepage__ = "https://github.com/Lightning-AI/lightning-habana"
-__docs__ = "Lightning suport for Intel Habana accelerators"
+__docs__ = "Lightning support for Intel Habana accelerators"
 
 __all__ = [
     "__author__",
