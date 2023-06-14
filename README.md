@@ -32,6 +32,14 @@ To install Lightning Habana, run the following command:
 pip install -U lightning lightning-habana
 ```
 
+---
+**NOTE**
+
+Ensure either of lightning or pytorch-lightning is used when working with the plugin.
+Mixing strategies, plugins etc from both packages is not yet validated.
+
+---
+
 ## Using PyTorch Lighting with HPU
 
 To enable PyTorch Lightning with HPU accelerator, provide `accelerator=HPUAccelerator()` parameter to the Trainer class.
@@ -39,11 +47,6 @@ To enable PyTorch Lightning with HPU accelerator, provide `accelerator=HPUAccele
 ```python
 from lightning import Trainer
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-
-# Run on as many HPUs as available by default.
-trainer = Trainer(accelerator="auto", devices="auto", strategy="auto")
-# Equivalent to
-trainer = Trainer()
 
 # Run on one HPU.
 trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
@@ -59,25 +62,11 @@ The `devices>1` parameter with HPUs enables the Habana accelerator for distribut
 
 # Support Matrix
 
-```
-+------------------------+----------------------------------------------------------+
-|   SynapseAI            |            1.10.0                                        |
-+========================+==========================================================+
-|   PyTorch              | 2.0.1                                                    |
-|                        |                                                          |
-+------------------------+----------------------------------------------------------+
-|   PyTorch Lightning    | 2.0.0                                                    |
-|          or            |                                                          |
-|   Lightning            | 2.0.0                                                    |
-|                        |                                                          |
-+------------------------+----------------------------------------------------------+
-|   Lightning Habana     | 1.0.0                                                    |
-|                        |                                                          |
-+------------------------+----------------------------------------------------------+
-|   DeepSpeed            | Forked from v0.7.7 of the official                       |
-|                        | DeepSpeed.                                               |
-|                        |                                                          |
-+------------------------+----------------------------------------------------------+
-```
+| **SynapseAI**                            | **1.10.0**                                         |
+|------------------------------------------|----------------------------------------------------|
+| PyTorch                                  | 2.0.1                                              |
+| PyTorch Lightning<br>    or<br>Lightning | 2.0.0<br><br>2.0.0                                 |
+| **Lightning Habana**                     | **1.0.0**                                          |
+| DeepSpeed                                | Forked from v0.7.7 of the official DeepSpeed repo. |
 
 For more information, check out [HPU Support Matrix](https://docs.habana.ai/en/latest/Support_Matrix/Support_Matrix.html)
