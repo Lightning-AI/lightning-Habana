@@ -56,13 +56,9 @@ def patch_aeon_length(self) -> int:  # type: ignore[no-untyped-def]
     Returns default length otherwise.
     """
     length = len(self.dataloader)
-    # If Lightning version is >= 2.0.0, and dataloader is for gaudi,
+    # If Lightning version is >= 2.0.0, and dataloader is aeon,
     # drop the last batch from dataloader.
-    if (
-        _LIGHTNING_GREATER_EQUAL_2_0_0
-        and _TORCH_GREATER_EQUAL_2_0_0
-        and lightning_habana.pytorch.datamodule.utils.is_gaudi()
-    ):
+    if _LIGHTNING_GREATER_EQUAL_2_0_0 and _TORCH_GREATER_EQUAL_2_0_0 and self.dataloader.aeon is not None:
         return length - 1
     return length
 
