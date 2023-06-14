@@ -66,7 +66,7 @@ The `devices>1` parameter with HPUs enables the Habana accelerator for distribut
 | **SynapseAI**                            | **1.10.0**                                         |
 | ---------------------------------------- | -------------------------------------------------- |
 | PyTorch                                  | 2.0.1                                              |
-| PyTorch Lightning<br>    or<br>Lightning | 2.0.0<br><br>2.0.0                                 |
+| PyTorch Lightning<br>    or<br>Lightning | 2.0.x<br><br>2.0.x                                 |
 | **Lightning Habana**                     | **1.0.0**                                          |
 | DeepSpeed                                | Forked from v0.7.7 of the official DeepSpeed repo. |
 
