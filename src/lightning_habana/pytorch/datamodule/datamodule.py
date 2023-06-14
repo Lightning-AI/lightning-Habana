@@ -18,10 +18,10 @@ from typing import Any, Optional
 from lightning_utilities import module_available
 
 if module_available("lightning"):
-    import lightning.pytorch as pl
+    from lightning.pytorch import LightningDataModule
     from lightning.pytorch.utilities.imports import _TORCHVISION_AVAILABLE
 elif module_available("pytorch_lightning"):
-    import pytorch_lightning as pl
+    from pytorch_lightning import LightningDataModule
     from pytorch_lightning.utilities.imports import _TORCHVISION_AVAILABLE
 
 import torch
@@ -105,7 +105,7 @@ def load_data(traindir, valdir, train_transforms, val_transforms):  # type: igno
     return dataset_train, dataset_val
 
 
-class HPUDataModule(pl.LightningDataModule):
+class HPUDataModule(LightningDataModule):
     """Datamodule helper class to load the right media pipe."""
 
     name = "hpu-dataset"

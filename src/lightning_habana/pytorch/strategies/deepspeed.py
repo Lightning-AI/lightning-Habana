@@ -31,11 +31,12 @@ from torch.nn import Module
 from torch.optim import Optimizer
 
 if module_available("lightning"):
-    import lightning.pytorch as pl
     from lightning.fabric.plugins import ClusterEnvironment
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
     from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
     from lightning.pytorch.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from lightning.pytorch.plugins.precision import PrecisionPlugin
@@ -47,12 +48,13 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
     from lightning.pytorch.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 elif module_available("pytorch_lightning"):
-    import pytorch_lightning as pl
     from lightning_fabric.plugins import ClusterEnvironment
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
+    from pytorch_lightning.accelerators import Accelerator
+    from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.utils import _fp_to_half
@@ -194,7 +196,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
     def __init__(
         self,
-        accelerator: Optional["pl.accelerators.Accelerator"] = None,
+        accelerator: Optional[Accelerator] = None,
         zero_optimization: bool = True,
         stage: int = 2,
         remote_device: str = "cpu",
@@ -331,7 +333,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             self._format_config()
             self._config_initialized = True
 
-    def setup(self, trainer: "pl.Trainer") -> None:
+    def setup(self, trainer: Trainer) -> None:
         assert self.accelerator is not None
         self.accelerator.setup(trainer)
         # habana deepspeed needs model to be moved to device before initialization
@@ -425,7 +427,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def init_deepspeed(self) -> None:
         assert self.lightning_module is not None
         # deepspeed handles gradient clipping internally
-        if is_overridden("configure_gradient_clipping", self.lightning_module, pl.LightningModule):
+        if is_overridden("configure_gradient_clipping", self.lightning_module, LightningModule):
             rank_zero_warn(
                 "Since DeepSpeed handles gradient clipping internally, the default"
                 " `LightningModule.configure_gradient_clipping` implementation will not actually clip gradients."
@@ -442,7 +444,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 f"DeepSpeed strategy is only supported on HPU but `{self.accelerator.__class__.__name__}` is used."
             )
 
-        assert isinstance(self.model, (pl.LightningModule, _LightningPrecisionModuleWrapperBase))
+        assert isinstance(self.model, (LightningModule, _LightningPrecisionModuleWrapperBase))
         model = _LightningModuleWrapperBase(forward_module=self.model)
 
         if self.lightning_module.trainer and self.lightning_module.trainer.training:
@@ -571,7 +573,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def distributed_sampler_kwargs(self) -> Dict[str, int]:
         return {"num_replicas": self.world_size, "rank": self.global_rank}
 
-    def setup_optimizers(self, trainer: "pl.Trainer") -> None:
+    def setup_optimizers(self, trainer: Trainer) -> None:
         """Creates optimizers and schedulers.
 
         Args:
