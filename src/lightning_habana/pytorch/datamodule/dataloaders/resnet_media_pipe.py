@@ -186,13 +186,13 @@ if _HABANA_FRAMEWORK_AVAILABLE:
             seed: seed to be used
         """
 
-        def __init__(self, params: Any) -> None:
+        def __init__(self, params):  # type: ignore[no-untyped-def]
             self.np_shape = params["shape"][::-1]
             self.np_dtype = params["dtype"]
             self.seed = params["seed"]
             self.rng = np.random.default_rng(self.seed)
 
-        def __call__(self) -> Any:
+        def __call__(self):  # type: ignore[no-untyped-def]
             """:returns : randomly generated binary output per image."""
             probabilities = [1.0 - FLIP_PROBABILITY, FLIP_PROBABILITY]
             random_flips = self.rng.choice([0, 1], p=probabilities, size=self.np_shape)
