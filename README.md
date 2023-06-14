@@ -32,13 +32,14 @@ To install Lightning Habana, run the following command:
 pip install -U lightning lightning-habana
 ```
 
----
+______________________________________________________________________
+
 **NOTE**
 
 Ensure either of lightning or pytorch-lightning is used when working with the plugin.
 Mixing strategies, plugins etc from both packages is not yet validated.
 
----
+______________________________________________________________________
 
 ## Using PyTorch Lighting with HPU
 
@@ -63,7 +64,7 @@ The `devices>1` parameter with HPUs enables the Habana accelerator for distribut
 # Support Matrix
 
 | **SynapseAI**                            | **1.10.0**                                         |
-|------------------------------------------|----------------------------------------------------|
+| ---------------------------------------- | -------------------------------------------------- |
 | PyTorch                                  | 2.0.1                                              |
 | PyTorch Lightning<br>    or<br>Lightning | 2.0.0<br><br>2.0.0                                 |
 | **Lightning Habana**                     | **1.0.0**                                          |
