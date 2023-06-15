@@ -15,26 +15,23 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import torch
 import torch.distributed
 from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning.fabric.utilities.distributed import _distributed_available
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
-    from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning_fabric.utilities.distributed import _distributed_available
     from lightning_fabric.utilities.distributed import group as _group
     from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
-    from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
@@ -43,6 +40,7 @@ else:
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
+from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -112,7 +110,7 @@ class HPUParallelStrategy(DDPStrategy):
         return None
 
     def broadcast(self, obj: object, src: int = 0) -> object:
-        if not _distributed_available():
+        if not torch.distributed.is_available():
             return obj
 
         obj = [obj]

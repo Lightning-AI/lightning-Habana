@@ -42,7 +42,7 @@ def test_device_name():
 
 
 def test_accelerator_selected():
-    trainer = Trainer(accelerator=HPUAccelerator())
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
@@ -172,7 +172,7 @@ def test_stages_correct(tmpdir):
 
 
 def test_accelerator_is_hpu():
-    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy())
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 1
 
