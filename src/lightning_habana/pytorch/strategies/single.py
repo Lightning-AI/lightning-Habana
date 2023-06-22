@@ -110,7 +110,6 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         htcore.mark_step()
         return optimizer_output
 
-
     def validation_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
         # Break lazy accumulation of graph after every step
         htcore.mark_step()

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import argparse
+
 import torch
 from lightning_utilities import module_available
 from torch.nn import functional as F  # noqa: N812
@@ -25,7 +26,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies import SingleHPUStrategy, HPUParallelStrategy
+from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 
 
 class LitClassifier(LightningModule):
@@ -61,10 +62,9 @@ class LitClassifier(LightningModule):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MNIST on HPU",
-                                    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--hpus', default=1, type=int, help='Number of hpus to be used for training')
-    parser.add_argument('-b', '--batch-size', default=32, type=int)
+    parser = argparse.ArgumentParser(description="MNIST on HPU", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--hpus", default=1, type=int, help="Number of hpus to be used for training")
+    parser.add_argument("-b", "--batch-size", default=32, type=int)
     args = parser.parse_args()
     dm = MNISTDataModule(batch_size=args.batch_size)
     model = LitClassifier()
@@ -75,7 +75,6 @@ if __name__ == "__main__":
         parallel_hpus = [torch.device("hpu")] * hpus
         _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy)
-
 
     trainer.fit(model, datamodule=dm)
     trainer.test(model, datamodule=dm)
