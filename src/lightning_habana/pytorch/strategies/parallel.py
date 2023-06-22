@@ -138,17 +138,17 @@ class HPUParallelStrategy(DDPStrategy):
         htcore.mark_step()
         return optimizer_output
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step(self, batch, batch_idx) -> Any:
         # Break lazy accumulation of graph after every step
         htcore.mark_step()
         return super().validation_step(batch, batch_idx)
 
-    def test_step(self, batch, batch_idx):
+    def test_step(self, batch, batch_idx) -> Any:
         # Break lazy accumulation of graph after every step
         htcore.mark_step()
         return super().test_step(batch, batch_idx)
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, batch_idx) -> Any:
         # Break lazy accumulation of graph after every step
         htcore.mark_step()
         return super().predict_step(batch, batch_idx)
