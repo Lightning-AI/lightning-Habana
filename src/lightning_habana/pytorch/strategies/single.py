@@ -25,6 +25,7 @@ if module_available("lightning"):
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.single_device import SingleDeviceStrategy
+    from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO
     from lightning_fabric.utilities.types import _DEVICE
@@ -34,6 +35,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.single_device import SingleDeviceStrategy
+    from pytorch_lightning.utilities.types import STEP_OUTPUT
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
@@ -107,6 +109,22 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         # Break lazy accumulation of graph after optimizer
         htcore.mark_step()
         return optimizer_output
+
+
+    def validation_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().validation_step(*args, **kwargs)
+
+    def test_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().validation_step(*args, **kwargs)
+
+    def predict_step(self, *args: Any, **kwargs: Any) -> STEP_OUTPUT:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().predict_step(*args, **kwargs)
 
     @classmethod
     def register_strategies(cls, strategy_registry: Dict) -> None:
