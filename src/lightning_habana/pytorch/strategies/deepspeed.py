@@ -46,7 +46,7 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
-    from lightning.pytorch.utilities.types import LRSchedulerConfig
+    from lightning.pytorch.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import ClusterEnvironment
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
@@ -63,7 +63,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
     from pytorch_lightning.utilities.model_helpers import is_overridden
     from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
-    from pytorch_lightning.utilities.types import LRSchedulerConfig
+    from pytorch_lightning.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
@@ -445,12 +445,12 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             )
 
         assert isinstance(self.model, (LightningModule, _LightningPrecisionModuleWrapperBase))
-        _LightningModuleWrapperBase(forward_module=self.model)
+        model = _LightningModuleWrapperBase(forward_module=self.model)
 
         if self.lightning_module.trainer and self.lightning_module.trainer.training:
-            self._initialize_deepspeed_train(self.model)
+            self._initialize_deepspeed_train(model)
         else:
-            self._initialize_deepspeed_inference(self.model)
+            self._initialize_deepspeed_inference(model)
 
     def _init_optimizers(self) -> Tuple[Optimizer, Optional[LRSchedulerConfig]]:
         assert self.lightning_module is not None
@@ -547,8 +547,6 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         inference_config = {"train_micro_batch_size_per_gpu": 1}
         if "fp16" in self.config:
             inference_config.update({"fp16": self.config["fp16"]})
-        if "bf16" in self.config:
-            inference_config.update({"bf16": self.config["bf16"]})
         if self.zero_stage_3:
             inference_config.update(
                 {
@@ -906,3 +904,18 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def batch_to_device(self, batch: Any, device: Optional[torch.device] = None, dataloader_idx: int = 0) -> Any:
         batch = apply_to_collection(batch, Tensor, function=_fp_to_half, precision=self.precision_plugin.precision)
         return super().batch_to_device(batch, device, dataloader_idx)
+
+    def validation_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
+        assert self.model is not None
+        with self.precision_plugin.val_step_context():
+            return self.model(*args, **kwargs)
+
+    def test_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
+        assert self.model is not None
+        with self.precision_plugin.test_step_context():
+            return self.model(*args, **kwargs)
+
+    def predict_step(self, *args: Any, **kwargs: Any) -> STEP_OUTPUT:
+        assert self.model is not None
+        with self.precision_plugin.predict_step_context():
+            return self.model(*args, **kwargs)

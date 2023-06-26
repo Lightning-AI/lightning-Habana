@@ -42,7 +42,7 @@ try:
         from pytorch_lightning.accelerators import HPUAccelerator as HPUAccelerator_Registered
         from pytorch_lightning.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
         from pytorch_lightning.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
-except:
+except Exception:
     print("Trainer not initialized, HPU registration not complete")
     pass
 
