@@ -8,17 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [UnReleased] - 2023-MM-DD
 
 ### Added
+
 -
 
 ### Changed
+
 -
 
 ### Fixed
+
+- Fixed Attribute Error ([#43](https://github.com/Lightning-AI/lightning-Habana/pull/43))
 - Fixed wrong imports & update deep speed strategy ([#44](https://github.com/Lightning-AI/lightning-Habana/pull/44))
+- Fixed graph breaks in test/val phases in lazy mode ([#45](https://github.com/Lightning-AI/lightning-Habana/pull/45))
 
 ### Removed
+
 -
 
+### Deprecated
+
+-
 
 
 ## [1.0.0] - 2023-06-14
