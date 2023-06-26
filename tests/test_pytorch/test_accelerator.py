@@ -46,6 +46,7 @@ except:
     print("Trainer not initialized, HPU registration not complete")
     pass
 
+
 def test_availability():
     assert HPUAccelerator.is_available()
 
@@ -198,7 +199,6 @@ def test_accelerator_with_single_device():
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices():
-
     trainer = Trainer(accelerator="hpu", devices=8)
     assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
     assert isinstance(trainer.accelerator, HPUAccelerator_Registered)

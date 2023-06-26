@@ -46,7 +46,7 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
-    from lightning.pytorch.utilities.types import STEP_OUTPUT, LRSchedulerConfig
+    from lightning.pytorch.utilities.types import LRSchedulerConfig
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import ClusterEnvironment
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
@@ -63,7 +63,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
     from pytorch_lightning.utilities.model_helpers import is_overridden
     from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
-    from pytorch_lightning.utilities.types import STEP_OUTPUT, LRSchedulerConfig
+    from pytorch_lightning.utilities.types import LRSchedulerConfig
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
@@ -445,7 +445,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             )
 
         assert isinstance(self.model, (LightningModule, _LightningPrecisionModuleWrapperBase))
-        model = _LightningModuleWrapperBase(forward_module=self.model)
+        _LightningModuleWrapperBase(forward_module=self.model)
 
         if self.lightning_module.trainer and self.lightning_module.trainer.training:
             self._initialize_deepspeed_train(self.model)
@@ -906,4 +906,3 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def batch_to_device(self, batch: Any, device: Optional[torch.device] = None, dataloader_idx: int = 0) -> Any:
         batch = apply_to_collection(batch, Tensor, function=_fp_to_half, precision=self.precision_plugin.precision)
         return super().batch_to_device(batch, device, dataloader_idx)
-
