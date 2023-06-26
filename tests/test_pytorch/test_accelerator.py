@@ -33,18 +33,14 @@ from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUSt
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 # The external strategies, accelerator gets registerd with trainer initialization
-try:
-    if module_available("lightning"):
-        from lightning.pytorch.accelerators import HPUAccelerator as HPUAccelerator_Registered
-        from lightning.pytorch.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
-        from lightning.pytorch.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
-    elif module_available("pytorch_lightning"):
-        from pytorch_lightning.accelerators import HPUAccelerator as HPUAccelerator_Registered
-        from pytorch_lightning.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
-        from pytorch_lightning.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
-except Exception:
-    print("Trainer not initialized, HPU registration not complete")
-    pass
+if module_available("lightning"):
+    from lightning.pytorch.accelerators import HPUAccelerator as HPUAccelerator_Registered
+    from lightning.pytorch.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
+    from lightning.pytorch.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning.accelerators import HPUAccelerator as HPUAccelerator_Registered
+    from pytorch_lightning.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
+    from pytorch_lightning.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
 
 
 def test_availability():
