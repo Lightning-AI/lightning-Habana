@@ -106,8 +106,8 @@ The below shows how ``DeviceStatsMonitor`` can be enabled.
 
 .. code-block:: python
 
-    from pytorch_lightning import Trainer
-    from pytorch_lightning.callbacks import DeviceStatsMonitor
+    from lightning import Trainer
+    from lightning.callbacks import DeviceStatsMonitor
     from lightning_habana.pytorch.accelerator import HPUAccelerator
 
     device_stats = DeviceStatsMonitor()
