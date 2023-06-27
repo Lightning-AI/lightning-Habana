@@ -78,7 +78,7 @@ For more details, please refer to `PyTorch Mixed Precision Training on Gaudi <ht
 
 For more granular control over with mixed precision training, one can use torch.autocast from native PyTorch.
 
-Instances of autocast serve as context managers or decorators that allow regions of your script to run in mixed precision. 
+Instances of autocast serve as context managers or decorators that allow regions of your script to run in mixed precision.
 These also allow for fine tuning with `enabled` for enabling and disabling mixed precision training for certain parts of the code.
 
 .. code-block:: python
@@ -116,7 +116,7 @@ These also allow for fine tuning with `enabled` for enabling and disabling mixed
     trainer.fit(model, datamodule=dm)
 
 For more details, please refer to
-`Native PyTorch Autocast <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html>`__. 
+`Native PyTorch Autocast <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html>`__.
 and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs/stable/amp.html#autocasting>`__.
 
 ----
