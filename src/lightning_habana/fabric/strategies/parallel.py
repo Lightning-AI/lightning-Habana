@@ -43,11 +43,12 @@ else:
 from torch import Tensor
 from torch.nn import Module
 
+from lightning_habana import _HPU_AVAILABLE
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.precision import HPUPrecision
-from lightning_habana.utils.imports import _HPU_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
     import habana_frameworks.torch.distributed.hccl  # noqa: F401
 

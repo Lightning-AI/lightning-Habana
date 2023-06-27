@@ -31,11 +31,13 @@ from torch.nn import Module
 from torch.optim import Optimizer
 
 if module_available("lightning"):
-    import lightning.pytorch as pl
     from lightning.fabric.plugins import ClusterEnvironment
+    from lightning.fabric.strategies import _StrategyRegistry
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
     from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
     from lightning.pytorch.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from lightning.pytorch.plugins.precision import PrecisionPlugin
@@ -47,12 +49,14 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
     from lightning.pytorch.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 elif module_available("pytorch_lightning"):
-    import pytorch_lightning as pl
     from lightning_fabric.plugins import ClusterEnvironment
+    from lightning_fabric.strategies import _StrategyRegistry
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
+    from pytorch_lightning.accelerators import Accelerator
+    from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.utils import _fp_to_half
@@ -65,18 +69,20 @@ elif module_available("pytorch_lightning"):
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore  # noqa: F401
     import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
+# WA : TBD : there is an issue with internal habana pipelines wrt deepspeed package naming in 1.10.0 release
 _HPU_DEEPSPEED_AVAILABLE = (
     # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
     RequirementCache("deepspeed==0.7.7+hpu.synapse.v1.10.0")
+    or RequirementCache("deepspeed==0.7.7+ca649af")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -192,7 +198,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
     def __init__(
         self,
-        accelerator: Optional["pl.accelerators.Accelerator"] = None,
+        accelerator: Optional[Accelerator] = None,
         zero_optimization: bool = True,
         stage: int = 2,
         remote_device: str = "cpu",
@@ -329,7 +335,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             self._format_config()
             self._config_initialized = True
 
-    def setup(self, trainer: "pl.Trainer") -> None:
+    def setup(self, trainer: Trainer) -> None:
         assert self.accelerator is not None
         self.accelerator.setup(trainer)
         # habana deepspeed needs model to be moved to device before initialization
@@ -423,7 +429,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def init_deepspeed(self) -> None:
         assert self.lightning_module is not None
         # deepspeed handles gradient clipping internally
-        if is_overridden("configure_gradient_clipping", self.lightning_module, pl.LightningModule):
+        if is_overridden("configure_gradient_clipping", self.lightning_module, LightningModule):
             rank_zero_warn(
                 "Since DeepSpeed handles gradient clipping internally, the default"
                 " `LightningModule.configure_gradient_clipping` implementation will not actually clip gradients."
@@ -440,7 +446,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 f"DeepSpeed strategy is only supported on HPU but `{self.accelerator.__class__.__name__}` is used."
             )
 
-        assert isinstance(self.model, (pl.LightningModule, _LightningPrecisionModuleWrapperBase))
+        assert isinstance(self.model, (LightningModule, _LightningPrecisionModuleWrapperBase))
         model = _LightningModuleWrapperBase(forward_module=self.model)
 
         if self.lightning_module.trainer and self.lightning_module.trainer.training:
@@ -534,6 +540,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 profile=checkpoint_config.get("profile"),
             )
 
+    # TBD - this is still experimental and not complete
     def _initialize_deepspeed_inference(self, model: Module) -> None:
         import deepspeed
 
@@ -543,6 +550,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         inference_config = {"train_micro_batch_size_per_gpu": 1}
         if "fp16" in self.config:
             inference_config.update({"fp16": self.config["fp16"]})
+        if "bf16" in self.config:
+            inference_config.update({"bf16": self.config["bf16"]})
         if self.zero_stage_3:
             inference_config.update(
                 {
@@ -569,7 +578,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def distributed_sampler_kwargs(self) -> Dict[str, int]:
         return {"num_replicas": self.world_size, "rank": self.global_rank}
 
-    def setup_optimizers(self, trainer: "pl.Trainer") -> None:
+    def setup_optimizers(self, trainer: Trainer) -> None:
         """Creates optimizers and schedulers.
 
         Args:
@@ -861,7 +870,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         pass
 
     @classmethod
-    def register_strategies(cls, strategy_registry: Dict) -> None:
+    def register_strategies(cls, strategy_registry: _StrategyRegistry) -> None:
         strategy_registry.register("hpu_deepspeed", cls, description="Default DeepSpeed Strategy")
         strategy_registry.register(
             "hpu_deepspeed_stage_1", cls, description="DeepSpeed with ZeRO Stage 1 enabled", stage=1

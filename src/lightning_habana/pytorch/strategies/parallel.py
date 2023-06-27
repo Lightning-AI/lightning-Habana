@@ -15,26 +15,23 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
+import torch
 import torch.distributed
 from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning.fabric.utilities.distributed import _distributed_available
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
-    from lightning.pytorch.plugins.io.hpu_plugin import HPUCheckpointIO
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning_fabric.utilities.distributed import _distributed_available
     from lightning_fabric.utilities.distributed import group as _group
     from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
-    from pytorch_lightning.plugins.io.hpu_plugin import HPUCheckpointIO
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
@@ -43,11 +40,12 @@ else:
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl  # noqa: F401
+    import habana_frameworks.torch.distributed.hccl as hpu_dist
 
 log = logging.getLogger(__name__)
 
@@ -96,19 +94,23 @@ class HPUParallelStrategy(DDPStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
+        self._checkpoint_io = io  # type: ignore
 
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
             os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
+            _ws = self.cluster_environment.world_size()
+            _grank = self.cluster_environment.global_rank()
+            _lrank = self.cluster_environment.local_rank()
+            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
         super().setup_environment()
 
     def determine_ddp_device_ids(self) -> None:
         return None
 
     def broadcast(self, obj: object, src: int = 0) -> object:
-        if not _distributed_available():
+        if not torch.distributed.is_available():
             return obj
 
         obj = [obj]
@@ -133,6 +135,21 @@ class HPUParallelStrategy(DDPStrategy):
         # Break lazy accumulation of graph after optimizer
         htcore.mark_step()
         return optimizer_output
+
+    def validation_step(self, batch: Any, batch_idx: int) -> Any:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().validation_step(batch, batch_idx)
+
+    def test_step(self, batch: Any, batch_idx: int) -> Any:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().test_step(batch, batch_idx)
+
+    def predict_step(self, batch: Any, batch_idx: int) -> Any:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().predict_step(batch, batch_idx)
 
     @classmethod
     def register_strategies(cls, strategy_registry: Dict) -> None:

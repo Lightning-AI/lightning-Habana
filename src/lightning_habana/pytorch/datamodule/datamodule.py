@@ -18,21 +18,25 @@ from typing import Any, Optional
 from lightning_utilities import module_available
 
 if module_available("lightning"):
-    import lightning.pytorch as pl
+    from lightning.pytorch import LightningDataModule
     from lightning.pytorch.utilities.imports import _TORCHVISION_AVAILABLE
 elif module_available("pytorch_lightning"):
-    import pytorch_lightning as pl
+    from pytorch_lightning import LightningDataModule
     from pytorch_lightning.utilities.imports import _TORCHVISION_AVAILABLE
 
 import torch
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_0_0, _TORCH_GREATER_EQUAL_2_0_0
+from lightning_habana.utils.imports import (
+    _HABANA_FRAMEWORK_AVAILABLE,
+    _LIGHTNING_GREATER_EQUAL_2_0_0,
+    _TORCH_GREATER_EQUAL_2_0_0,
+)
 
 if _TORCHVISION_AVAILABLE:
     import torchvision.datasets
     from torchvision import transforms as transform_lib
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     try:
         import habana_dataloader
     except ImportError:
@@ -101,7 +105,7 @@ def load_data(traindir, valdir, train_transforms, val_transforms):  # type: igno
     return dataset_train, dataset_val
 
 
-class HPUDataModule(pl.LightningDataModule):
+class HPUDataModule(LightningDataModule):
     """Datamodule helper class to load the right media pipe."""
 
     name = "hpu-dataset"
@@ -139,7 +143,7 @@ class HPUDataModule(pl.LightningDataModule):
         self.distributed = distributed
         self.data_loader_type = torch.utils.data.DataLoader
 
-        if _HPU_AVAILABLE:
+        if _HABANA_FRAMEWORK_AVAILABLE:
             if lightning_habana.pytorch.datamodule.utils.is_gaudi2():
                 self.data_loader_type = MediaApiDataLoader  # type: ignore
             else:
@@ -181,7 +185,7 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.RandomSampler(self.dataset_train)
         )
-        if self.drop_last:
+        if self.drop_last and lightning_habana.pytorch.datamodule.utils.is_gaudi():
             self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_train,
@@ -200,7 +204,7 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.SequentialSampler(self.dataset_val)
         )
-        if self.drop_last:
+        if self.drop_last and lightning_habana.pytorch.datamodule.utils.is_gaudi():
             self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_val,
@@ -219,7 +223,7 @@ class HPUDataModule(pl.LightningDataModule):
             if self.distributed
             else torch.utils.data.SequentialSampler(self.dataset_val)
         )
-        if self.drop_last:
+        if self.drop_last and lightning_habana.pytorch.datamodule.utils.is_gaudi():
             self.data_loader_type.__len__ = patch_aeon_length
         return self.data_loader_type(
             dataset=self.dataset_val,

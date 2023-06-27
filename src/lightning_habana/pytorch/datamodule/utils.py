@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
 
 import torch.distributed as dist

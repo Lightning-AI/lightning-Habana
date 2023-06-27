@@ -23,9 +23,9 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.utils.imports import _HPU_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     from habana_frameworks.torch.hpex import hmp
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]

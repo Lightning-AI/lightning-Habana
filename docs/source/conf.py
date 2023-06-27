@@ -90,7 +90,7 @@ _convert_markdown(os.path.join(_PATH_ROOT, "README.md"), "readme.md")
 
 # If your documentation needs a minimal Sphinx version, state it here.
 
-needs_sphinx = "5.3"
+needs_sphinx = "6.2"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -393,13 +393,6 @@ autosectionlabel_prefix_document = True
 # only run doctests marked with a ".. doctest::" directive
 doctest_test_doctest_blocks = ""
 doctest_global_setup = """
-
-import importlib
 import os
-import torch
-
-import pytorch_lightning as pl
-from pytorch_lightning import Trainer, LightningModule
-
 """
 coverage_skip_undoc_in_source = True
