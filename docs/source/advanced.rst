@@ -35,7 +35,7 @@ To profile a distributed model, use ``HPUProfiler`` with the filename argument w
 
 .. code-block:: python
 
-    from pytorch_lightning import Trainer
+    from lightning import Trainer
     from lightning_habana.pytorch.accelerator import HPUAccelerator
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
@@ -50,7 +50,7 @@ reference a profiler in the ``LightningModule``.
 
 .. code-block:: python
 
-    from pytorch_lightning import Trainer
+    from lightning import Trainer
     from lightning_habana.pytorch.accelerator import HPUAccelerator
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
