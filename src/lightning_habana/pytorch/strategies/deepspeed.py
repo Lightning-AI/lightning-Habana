@@ -32,6 +32,7 @@ from torch.optim import Optimizer
 
 if module_available("lightning"):
     from lightning.fabric.plugins import ClusterEnvironment
+    from lightning.fabric.strategies import _StrategyRegistry
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
     from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
@@ -49,6 +50,7 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.types import STEP_OUTPUT, LRSchedulerConfig
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import ClusterEnvironment
+    from lightning_fabric.strategies import _StrategyRegistry
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
@@ -538,6 +540,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 profile=checkpoint_config.get("profile"),
             )
 
+    # TBD - this is still experimental and not complete
     def _initialize_deepspeed_inference(self, model: Module) -> None:
         import deepspeed
 
@@ -547,6 +550,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         inference_config = {"train_micro_batch_size_per_gpu": 1}
         if "fp16" in self.config:
             inference_config.update({"fp16": self.config["fp16"]})
+        if "bf16" in self.config:
+            inference_config.update({"bf16": self.config["bf16"]})
         if self.zero_stage_3:
             inference_config.update(
                 {
@@ -865,7 +870,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         pass
 
     @classmethod
-    def register_strategies(cls, strategy_registry: Dict) -> None:
+    def register_strategies(cls, strategy_registry: _StrategyRegistry) -> None:
         strategy_registry.register("hpu_deepspeed", cls, description="Default DeepSpeed Strategy")
         strategy_registry.register(
             "hpu_deepspeed_stage_1", cls, description="DeepSpeed with ZeRO Stage 1 enabled", stage=1
