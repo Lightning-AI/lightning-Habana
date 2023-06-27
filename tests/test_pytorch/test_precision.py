@@ -29,7 +29,7 @@ elif module_available("pytorch_lightning"):
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
-from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
+from lightning_habana.pytorch.strategies import SingleHPUStrategy, HPUParallelStrategy
 
 
 @contextmanager
@@ -55,22 +55,35 @@ def mpp_params():
     return {"device": "hpu"}
 
 
-def run_training(tmpdir, model, plugin):
+@pytest.fixture()
+def get_device_count(pytestconfig):
+    hpus = int(pytestconfig.getoption("hpus"))
+    if not hpus:
+        assert HPUAccelerator.auto_device_count() >= 1
+        return 1
+    if hpus > HPUAccelerator.auto_device_count():
+        pytest.skip("More hpu devices asked than present")
+    return hpus
+
+
+def run_training(tmpdir, model, plugin, hpu=1):
     """Runs a model and returns loss."""
     _model = model()
     _strategy = SingleHPUStrategy()
+    if hpu > 1:
+        parallel_hpus = [torch.device("hpu")] * hpu
+        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
-        devices=1,
+        devices=hpu,
         strategy=_strategy,
         plugins=plugin,
     )
     trainer.fit(_model)
-    return trainer.callback_metrics["val_loss"].to(torch.bfloat16), trainer.callback_metrics["train_loss"].to(
-        torch.bfloat16
-    )
+    if trainer.global_rank == 0:
+        return trainer.callback_metrics["val_loss"].to(torch.bfloat16), trainer.callback_metrics["train_loss"].to(torch.bfloat16)
 
 
 class BaseBM(BoringModel):
@@ -89,13 +102,15 @@ class BaseBM(BoringModel):
     def training_step(self, batch, batch_idx):
         """Training step."""
         loss = super().training_step(batch, batch_idx)
-        self.log("train_loss", loss.get("loss").to(torch.bfloat16), prog_bar=True, sync_dist=True)
+        self.log("train_loss", loss.get("loss").to(
+            torch.bfloat16), prog_bar=True, sync_dist=True)
         return loss
 
     def validation_step(self, batch, batch_idx):
         """Validation step."""
         loss = super().validation_step(batch, batch_idx)
-        self.log("val_loss", loss.get("x").to(torch.bfloat16), prog_bar=True, sync_dist=True)
+        self.log("val_loss", loss.get("x").to(
+            torch.bfloat16), prog_bar=True, sync_dist=True)
         return loss
 
 
@@ -161,7 +176,8 @@ def test_mixed_precision_plugin(tmpdir, plugin, params, request):
         accelerator=HPUAccelerator(),
         devices=1,
         strategy=SingleHPUStrategy(),  # TBD- set default in accelertor
-        plugins=[plugin(precision="bf16-mixed", **request.getfixturevalue(params))],
+        plugins=[plugin(precision="bf16-mixed", **
+                        request.getfixturevalue(params))],
         callbacks=TestCallback(),
     )
     assert isinstance(trainer.strategy, SingleHPUStrategy)
@@ -187,7 +203,8 @@ def test_unsupported_precision_plugin():
             BaseBMActive,
             HPUPrecisionPlugin,
             "hmp_params",
-            pytest.raises(AssertionError, match="False = <function is_autocast_hpu_enabled"),
+            pytest.raises(AssertionError,
+                          match="False = <function is_autocast_hpu_enabled"),
         ),
     ],
     ids=[
@@ -202,7 +219,8 @@ def test_mixed_precision_autocast_active(tmpdir, model, plugin, params, expectat
     _model = model
     _plugin = plugin
     if plugin and params:
-        _plugin = plugin(precision="bf16-mixed", **request.getfixturevalue(params))
+        _plugin = plugin(precision="bf16-mixed", **
+                         request.getfixturevalue(params))
     seed_everything(42)
     with expectation:
         assert run_training(tmpdir, _model, _plugin) is not None
@@ -223,29 +241,23 @@ def test_mixed_precision_autocast_active(tmpdir, model, plugin, params, expectat
             (BaseBM, HPUPrecisionPlugin, "hmp_params"),
             (BaseBM, MixedPrecisionPlugin, "mpp_params"),
         ],
-        [
-            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
-            (BMAutocastCM, [], ""),
-            (BMAutocastDecorator, [], ""),
-            (BaseBM, MixedPrecisionPlugin, "mpp_params"),
-        ],
     ],
     ids=[
         "HPUPrecisionPlugin_AutocastCM",
         "HPUPrecisionPlugin_AutocastDecorator",
         "HPUPrecisionPlugin_MixedPrecisionPlugin",
-        "HPUPrecisionPlugin_AutocastCM_AutocastDecorator_MixedPrecisionPlugin",
     ],
 )
-def test_mixed_precision_compare_accuracy(tmpdir, model_plugin_list, request):
+def test_mixed_precision_compare_accuracy(tmpdir, model_plugin_list, request, get_device_count):
     loss_list = []
     for model, plugin, params in model_plugin_list:
         _plugin = plugin
         if plugin and params:
-            _plugin = plugin(precision="bf16-mixed", **request.getfixturevalue(params))
+            _plugin = plugin(precision="bf16-mixed", **
+                             request.getfixturevalue(params))
         # Reset seed before each trainer.fit call
         seed_everything(42)
-        loss_list.append(run_training(tmpdir, model, _plugin))
+        loss_list.append(run_training(tmpdir, model, _plugin, get_device_count))
     assert all(x == loss_list[0] for x in loss_list), [
         (item1, item2) for item1, item2 in zip(model_plugin_list, loss_list)
     ]
@@ -264,7 +276,8 @@ def test_autocast_enable_disable(tmpdir):
                 # Operands will be downcasted if operator supports bfloat16
                 assert torch.hpu.is_autocast_hpu_enabled()
                 assert x.dtype == torch.float32
-                identity = torch.eye(x.shape[1], device=x.device, dtype=x.dtype)
+                identity = torch.eye(
+                    x.shape[1], device=x.device, dtype=x.dtype)
                 x = torch.mm(x, identity)
                 assert x.dtype == torch.bfloat16
 
@@ -298,7 +311,8 @@ def test_autocast_operators_override(tmpdir):
             """Forward."""
             with torch.autocast(device_type="hpu", dtype=torch.bfloat16):
                 x = x.to(torch.float32)
-                identity = torch.eye(x.shape[1], device=x.device, dtype=x.dtype)
+                identity = torch.eye(
+                    x.shape[1], device=x.device, dtype=x.dtype)
                 # Due to operator override,
                 # torch.mm will now operate in torch.float32
                 y = torch.mm(x, identity)
