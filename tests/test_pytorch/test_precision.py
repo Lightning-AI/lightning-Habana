@@ -38,12 +38,6 @@ def does_not_raise():
     yield
 
 
-@contextmanager
-def does_not_raise():
-    """No-op context manager as a complement to pytest.raises."""
-    yield
-
-
 @pytest.fixture()
 def hmp_params(request):
     """Returns params for HPUPrecisionPlugin."""
