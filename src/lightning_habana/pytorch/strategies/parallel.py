@@ -94,7 +94,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
+        self._checkpoint_io = io # type: ignore[has-type]
 
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
