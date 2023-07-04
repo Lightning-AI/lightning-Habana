@@ -196,8 +196,7 @@ if _HABANA_FRAMEWORK_AVAILABLE:
             """:returns : randomly generated binary output per image."""
             probabilities = [1.0 - FLIP_PROBABILITY, FLIP_PROBABILITY]
             random_flips = self.rng.choice([0, 1], p=probabilities, size=self.np_shape)
-            random_flips = np.array(random_flips, dtype=self.np_dtype)
-            return random_flips
+            return np.array(random_flips, dtype=self.np_dtype)
 
     class MediaApiDataLoader(torch.utils.data.DataLoader):
         """Helper to construct resnet media pipe dataloader."""
