@@ -23,7 +23,7 @@ elif module_available("pytorch_lightning"):
 
 
 class LitClassifier(LightningModule):
-    """Base model"""
+    """Base model."""
 
     def __init__(self):
         super().__init__()
@@ -69,9 +69,8 @@ class LitAutocastClassifier(LitClassifier):
         return super().forward(x)
 
     def check_override(self, x):
-        """Checks for op override"""
-        identity = torch.eye(
-            x.shape[1], device=x.device, dtype=x.dtype)
+        """Checks for op override."""
+        identity = torch.eye(x.shape[1], device=x.device, dtype=x.dtype)
         y = torch.mm(x, identity)
         z = torch.tan(x)
         assert y.dtype == torch.float32
