@@ -1,1 +1,2 @@
 cross_entropy
+tan
