@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added tests for mixed precision training ([#36](https://github.com/Lightning-AI/lightning-Habana/pull/36))
-- Example to include mixed precision training ([%54](https://github.com/Lightning-AI/lightning-Habana/pull/54))
+- Example to include mixed precision training ([#54](https://github.com/Lightning-AI/lightning-Habana/pull/54))
 -
 
 ### Changed
