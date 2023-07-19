@@ -12,24 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
-
 import torch
 from lightning_utilities import module_available
 from torch.nn import functional as F  # noqa: N812
 
 if module_available("lightning"):
-    from lightning.pytorch import LightningModule, Trainer
-    from lightning.pytorch.demos.mnist_datamodule import MNISTDataModule
+    from lightning.pytorch import LightningModule
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning import LightningModule, Trainer
-    from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
-
-from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+    from pytorch_lightning import LightningModule
 
 
 class LitClassifier(LightningModule):
+    """Base model."""
+
     def __init__(self):
         super().__init__()
         self.l1 = torch.nn.Linear(28 * 28, 10)
@@ -61,20 +56,37 @@ class LitClassifier(LightningModule):
         return torch.optim.Adam(self.parameters(), lr=0.02)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MNIST on HPU", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("--hpus", default=1, type=int, help="Number of hpus to be used for training")
-    parser.add_argument("-b", "--batch-size", default=32, type=int)
-    args = parser.parse_args()
-    dm = MNISTDataModule(batch_size=args.batch_size)
-    model = LitClassifier()
+class LitAutocastClassifier(LitClassifier):
+    """Base Model with torch.autocast CM."""
 
-    hpus = args.hpus
-    _strategy = SingleHPUStrategy()
-    if hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
-    trainer = Trainer(fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy)
+    def __init__(self, op_override=False):
+        super().__init__()
+        self.op_override = op_override
 
-    trainer.fit(model, datamodule=dm)
-    trainer.test(model, datamodule=dm)
+    def forward(self, x):
+        if self.op_override:
+            self.check_override(x)
+        return super().forward(x)
+
+    def check_override(self, x):
+        """Checks for op override."""
+        identity = torch.eye(x.shape[1], device=x.device, dtype=x.dtype)
+        y = torch.mm(x, identity)
+        z = torch.tan(x)
+        assert y.dtype == torch.float32
+        assert z.dtype == torch.bfloat16
+
+    def training_step(self, batch, batch_idx):
+        """Training step."""
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16):
+            return super().training_step(batch, batch_idx)
+
+    def validation_step(self, batch, batch_idx):
+        """Validation step."""
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16):
+            return super().validation_step(batch, batch_idx)
+
+    def test_step(self, batch, batch_idx):
+        """Test step."""
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16):
+            return super().test_step(batch, batch_idx)
