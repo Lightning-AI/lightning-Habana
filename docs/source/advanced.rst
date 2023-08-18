@@ -345,8 +345,8 @@ Activation Checkpointing
                         plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
                     )
 
-Limitations
-^^^^^^^^^^^^
+Limitations of DeepSpeed on HPU
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    1. DeepSpeed Zero Stage 3 is not yet supported by Gaudi2.
    2. Offloading to Nvme is not yet verified on HPU with DeepSpeed Zero Stage 3 Offload configuration.
    3. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
