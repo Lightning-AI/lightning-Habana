@@ -249,7 +249,7 @@ BF16 precision
     from lightning_habana.pytorch.accelerator import HPUAccelerator
     from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 
-    trainer = Trainer(devices=8, accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")]) 
+    trainer = Trainer(devices=8, accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")])
 
 BF16-Optimizer
 """"""""""""""
@@ -350,6 +350,3 @@ Limitations of DeepSpeed on HPU
    1. DeepSpeed Zero Stage 3 is not yet supported by Gaudi2.
    2. Offloading to Nvme is not yet verified on HPU with DeepSpeed Zero Stage 3 Offload configuration.
    3. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
-
-
-
