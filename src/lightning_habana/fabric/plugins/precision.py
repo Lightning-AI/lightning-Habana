@@ -58,7 +58,8 @@ class HPUPrecision(Precision):
         verbose: bool = False,
     ) -> None:
         rank_zero_info(
-            "The 'HPUPrecision' strategy is deprecated and will be removed in lightning-habana release 1.12.0, Use 'torch autocast' instead."
+            "The 'HPUPrecision' strategy is deprecated and will be removed in lightning-habana release 1.12.0,"
+            " Use 'torch autocast' instead."
         )
 
         if not _HPU_AVAILABLE:
