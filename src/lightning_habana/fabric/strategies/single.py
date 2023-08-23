@@ -19,12 +19,14 @@ from lightning_utilities import module_available
 if module_available("lightning"):
     from lightning.fabric.accelerators import Accelerator
     from lightning.fabric.plugins import CheckpointIO
+    from lightning.fabric.plugins.precision import Precision
     from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning.fabric.strategies.single_device import SingleDeviceStrategy
     from lightning.fabric.utilities.types import _DEVICE, Optimizable
 elif module_available("pytorch_lightning"):
     from lightning_fabric.accelerators import Accelerator
     from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.plugins.precision import Precision
     from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning_fabric.strategies.single_device import SingleDeviceStrategy
     from lightning_fabric.utilities.types import _DEVICE, Optimizable
@@ -34,7 +36,6 @@ else:
 from torch import Tensor
 from torch.nn import Module
 
-from lightning_habana.fabric.plugins.precision import HPUPrecision
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -53,7 +54,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         device: _DEVICE = "hpu",
         accelerator: Optional[Accelerator] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
-        precision: Optional[HPUPrecision] = None,
+        precision: Optional[Precision] = None,
     ):
         if not _HPU_AVAILABLE:
             raise ValueError("`SingleHPUStrategy` requires HPU devices to run")
