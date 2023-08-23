@@ -29,6 +29,9 @@ Lightning supports following methods to enable mixed precision training with HPU
 
 **HPUPrecisionPlugin**
 
+.. note::
+   `HPUPrecisionPlugin` is getting deprecated and will be removed from upcoming releases. Please use `torch.autocast`.
+
 Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` uses the Habana Mixed Precision (HMP) package to enable mixed precision training.
 
 You can execute the ops in FP32 or BF16 precision. The HMP package modifies the Python operators to add the appropriate cast operations for the arguments before execution.

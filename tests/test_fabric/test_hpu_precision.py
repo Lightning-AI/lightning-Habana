@@ -19,7 +19,6 @@ import torch.nn as nn
 from lightning.fabric import Fabric, seed_everything
 
 from lightning_habana.fabric.accelerator import HPUAccelerator
-from lightning_habana.fabric.plugins.precision import HPUPrecision
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 from tests.test_fabric.fabric_helpers import BoringFabric
 
@@ -68,7 +67,6 @@ def test_hpu(precision, expected_dtype):
         accelerator=HPUAccelerator(),
         devices=1,
         strategy=SingleHPUStrategy(),
-        plugins=[HPUPrecision(precision=precision)],
     )
     fabric.expected_dtype = expected_dtype
     fabric.run()
@@ -81,7 +79,6 @@ def test_hpu_fused_optimizer():
             accelerator=HPUAccelerator(),
             devices=1,
             strategy=SingleHPUStrategy(),
-            plugins=[HPUPrecision(precision="bf16")],
         )
 
         model = nn.Linear(10, 10).to(fabric.device)
@@ -108,7 +105,6 @@ def test_hpu_fused_optimizer():
             accelerator=HPUAccelerator(),
             devices=1,
             strategy=SingleHPUStrategy(),
-            plugins=[HPUPrecision(precision="bf16")],
         )
 
         model = nn.Linear(10, 10).to(fabric.device)
