@@ -52,7 +52,9 @@ class HPUPrecisionPlugin(PrecisionPlugin):
         fp32_file_path: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
-        rank_zero_info("The 'HPUPrecision' strategy is deprecated and will be removed in lightning-habana release 1.12.0, Use 'torch autocast' instead.")
+        rank_zero_info(
+            "The 'HPUPrecision' strategy is deprecated and will be removed in lightning-habana release 1.12.0, Use 'torch autocast' instead."
+        )
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(

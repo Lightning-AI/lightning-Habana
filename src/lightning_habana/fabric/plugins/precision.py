@@ -57,7 +57,9 @@ class HPUPrecision(Precision):
         fp32_file_path: Optional[str] = None,
         verbose: bool = False,
     ) -> None:
-        rank_zero_info("The 'HPUPrecision' strategy is deprecated and will be removed in lightning-habana release 1.12.0, Use 'torch autocast' instead.")
+        rank_zero_info(
+            "The 'HPUPrecision' strategy is deprecated and will be removed in lightning-habana release 1.12.0, Use 'torch autocast' instead."
+        )
 
         if not _HPU_AVAILABLE:
             raise ValueError("HPU precision plugin requires HPU devices.")
