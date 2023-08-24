@@ -30,7 +30,7 @@ Lightning supports following methods to enable mixed precision training with HPU
 **HPUPrecisionPlugin**
 
 .. note::
-   `HPUPrecisionPlugin` is getting deprecated and will be removed from upcoming releases. Please use `torch.autocast`.
+   `HMP` support is getting deprecated and the precision plugin will support `torch.autocast` by default.
 
 Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` uses the Habana Mixed Precision (HMP) package to enable mixed precision training.
 
