@@ -28,7 +28,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins import MixedPrecisionPlugin
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 
 
@@ -36,17 +35,6 @@ from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 def does_not_raise():
     """No-op context manager as a complement to pytest.raises."""
     yield
-
-
-@pytest.fixture()
-def hmp_params(request):
-    """Returns params for HPUPrecisionPlugin."""
-    return {
-        "opt_level": "O1",
-        "verbose": False,
-        "bf16_file_path": request.config.getoption("--hmp-bf16"),
-        "fp32_file_path": request.config.getoption("--hmp-fp32"),
-    }
 
 
 @pytest.fixture()
@@ -129,7 +117,6 @@ class BMAutocastDecorator(BaseBMActive):
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
-        (HPUPrecisionPlugin, "hmp_params"),
         (MixedPrecisionPlugin, "mpp_params"),
     ],
 )
@@ -142,7 +129,6 @@ def test_precision_plugins_instance(plugin, params, request):
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
-        (HPUPrecisionPlugin, "hmp_params"),
         (MixedPrecisionPlugin, "mpp_params"),
     ],
 )
@@ -171,30 +157,17 @@ def test_mixed_precision_plugin(tmpdir, plugin, params, request):
         trainer.fit(model)
 
 
-def test_unsupported_precision_plugin():
-    """Tests unsupported HPUPrecisionPlugin init."""
-    with pytest.raises(ValueError, match=r"accelerator='hpu', precision='mixed'\)` is not supported."):
-        HPUPrecisionPlugin(precision="mixed")
-
-
 @pytest.mark.parametrize(
     ("model", "plugin", "params", "expectation"),
     [
         (BMAutocastCM, [], "", does_not_raise()),
         (BMAutocastDecorator, [], "", does_not_raise()),
         (BaseBMActive, MixedPrecisionPlugin, "mpp_params", does_not_raise()),
-        (
-            BaseBMActive,
-            HPUPrecisionPlugin,
-            "hmp_params",
-            pytest.raises(AssertionError, match="False = <function is_autocast_hpu_enabled"),
-        ),
     ],
     ids=[
         "TorchAutocast_CM_True",
         "TorchAutocast_Decorator_True",
         "MixedPrecisionPlugin_True",
-        "HPUPrecisionPlugin_False",
     ],
 )
 def test_mixed_precision_autocast_active(tmpdir, model, plugin, params, expectation, request):
@@ -212,29 +185,13 @@ def test_mixed_precision_autocast_active(tmpdir, model, plugin, params, expectat
     "model_plugin_list",
     [
         [
-            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
-            (BMAutocastCM, [], ""),
-        ],
-        [
-            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
-            (BMAutocastDecorator, [], ""),
-        ],
-        [
-            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
-            (BaseBM, MixedPrecisionPlugin, "mpp_params"),
-        ],
-        [
-            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
             (BMAutocastCM, [], ""),
             (BMAutocastDecorator, [], ""),
             (BaseBM, MixedPrecisionPlugin, "mpp_params"),
         ],
     ],
     ids=[
-        "HPUPrecisionPlugin_AutocastCM",
-        "HPUPrecisionPlugin_AutocastDecorator",
-        "HPUPrecisionPlugin_MixedPrecisionPlugin",
-        "HPUPrecisionPlugin_AutocastCM_AutocastDecorator_MixedPrecisionPlugin",
+        "AutocastCM_AutocastDecorator_MixedPrecisionPlugin",
     ],
 )
 def test_mixed_precision_compare_accuracy(tmpdir, model_plugin_list, request):
