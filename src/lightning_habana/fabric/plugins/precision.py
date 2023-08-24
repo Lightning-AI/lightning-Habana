@@ -12,66 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Literal, Optional, Union, cast
+from contextlib import contextmanager
+from typing import Generator, Literal
 
+import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
 
 if module_available("lightning"):
     from lightning.fabric.plugins.precision.precision import Precision
-    from lightning.fabric.utilities.rank_zero import rank_zero_info
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins.precision.precision import Precision
-    from lightning_fabric.utilities.rank_zero import rank_zero_info
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 
-from lightning_habana import _HPU_AVAILABLE
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    from habana_frameworks.torch.hpex import hmp
-
-_PRECISION_INPUT_INT = Literal[32]
-_PRECISION_INPUT_STR = Literal["32", "bf16", "32-true", "bf16-mixed"]
-_PRECISION_INPUT = Union[_PRECISION_INPUT_INT, _PRECISION_INPUT_STR]
+_PRECISION_INPUT = Literal["32", "bf16", "32-true", "bf16-mixed"]
 
 
 class HPUPrecision(Precision):
     """Plugin that enables bfloat support on HPUs.
 
     Args:
-        precision: The precision to use.
-        opt_level: Choose optimization level for hmp.
-        bf16_file_path: Path to bf16 ops list in hmp O1 mode.
-        fp32_file_path: Path to fp32 ops list in hmp O1 mode.
-        verbose: Enable verbose mode for hmp.
+        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
+        device: The device for ``torch.autocast``.
     """
 
     def __init__(
         self,
         precision: _PRECISION_INPUT,
-        opt_level: str = "O2",
-        bf16_file_path: Optional[str] = None,
-        fp32_file_path: Optional[str] = None,
-        verbose: bool = False,
+        device: str = "hpu",
     ) -> None:
-        rank_zero_info(
-            "The 'HMP' support is deprecated and will be removed in lightning-habana release 1.2.0,"
-            " Use 'torch autocast' instead."
-        )
-
-        if not _HPU_AVAILABLE:
-            raise ValueError("HPU precision plugin requires HPU devices.")
-        supported_precision = get_args(_PRECISION_INPUT_STR) + get_args(_PRECISION_INPUT_INT)
+        supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
-                f"`Fabric(accelerator='hpu', precision={precision!r})` is not supported."
+                f"`Fabric run with  (accelerator='hpu', precision={precision!r})` is not supported."
                 f" `precision` must be one of: {supported_precision}."
             )
-        self.precision = cast(_PRECISION_INPUT_STR, str(precision))
-        if self.precision in ("bf16"):
-            hmp.convert(
-                opt_level=opt_level, bf16_file_path=bf16_file_path, fp32_file_path=fp32_file_path, isVerbose=verbose
-            )
+        self.precision = precision
+        self.device = device
+
+    def autocast_context_manager(self) -> torch.autocast:
+        return torch.autocast(device_type="hpu", dtype=torch.bfloat16 if self.precision == "bf16" else torch.float32, enabled=True)
+
+    @contextmanager
+    def forward_context(self) -> Generator[None, None, None]:
+        """Enable autocast context."""
+        with self.autocast_context_manager():
+            yield

@@ -28,6 +28,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
+from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 from tests.helpers import ClassifDataModule, ClassificationModel
 
@@ -60,6 +61,7 @@ def test_all_stages(tmpdir, hpus):
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
+    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     if hpus > 1:
         parallel_hpus = [torch.device("hpu")] * hpus
         _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
@@ -68,7 +70,9 @@ def test_all_stages(tmpdir, hpus):
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
+        plugins=_plugins,
         devices=hpus,
+        precision="bf16-mixed",
     )
     trainer.fit(model)
     trainer.validate(model)
