@@ -124,6 +124,7 @@ class BMAutocastDecorator(BaseBMActive):
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
+        (HPUPrecisionPlugin, "hmp_params"),
         (MixedPrecisionPlugin, "mpp_params"),
     ],
 )
@@ -136,6 +137,7 @@ def test_precision_plugins_instance(plugin, params, request):
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
+        (HPUPrecisionPlugin, "hmp_params"),
         (MixedPrecisionPlugin, "mpp_params"),
     ],
 )
@@ -164,6 +166,12 @@ def test_mixed_precision_plugin(tmpdir, plugin, params, request):
         trainer.fit(model)
 
 
+def test_unsupported_precision_plugin():
+    """Tests unsupported HPUPrecisionPlugin init."""
+    with pytest.raises(ValueError, match=r"accelerator='hpu', precision='mixed'\)` is not supported."):
+        HPUPrecisionPlugin(precision="mixed")
+
+
 @pytest.mark.parametrize(
     ("model", "plugin", "params", "expectation"),
     [
@@ -181,6 +189,7 @@ def test_mixed_precision_plugin(tmpdir, plugin, params, request):
         "TorchAutocast_CM_True",
         "TorchAutocast_Decorator_True",
         "MixedPrecisionPlugin_True",
+        "HPUPrecisionPlugin_False",
     ],
 )
 def test_mixed_precision_autocast_active(tmpdir, model, plugin, params, expectation, request):
@@ -198,13 +207,29 @@ def test_mixed_precision_autocast_active(tmpdir, model, plugin, params, expectat
     "model_plugin_list",
     [
         [
+            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
+            (BMAutocastCM, [], ""),
+        ],
+        [
+            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
+            (BMAutocastDecorator, [], ""),
+        ],
+        [
+            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
+            (BaseBM, MixedPrecisionPlugin, "mpp_params"),
+        ],
+        [
+            (BaseBM, HPUPrecisionPlugin, "hmp_params"),
             (BMAutocastCM, [], ""),
             (BMAutocastDecorator, [], ""),
             (BaseBM, MixedPrecisionPlugin, "mpp_params"),
         ],
     ],
     ids=[
-        "AutocastCM_AutocastDecorator_MixedPrecisionPlugin",
+        "HPUPrecisionPlugin_AutocastCM",
+        "HPUPrecisionPlugin_AutocastDecorator",
+        "HPUPrecisionPlugin_MixedPrecisionPlugin",
+        "HPUPrecisionPlugin_AutocastCM_AutocastDecorator_MixedPrecisionPlugin",
     ],
 )
 def test_mixed_precision_compare_accuracy(tmpdir, model_plugin_list, request):
