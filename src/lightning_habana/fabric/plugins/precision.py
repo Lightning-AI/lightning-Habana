@@ -21,10 +21,8 @@ from typing_extensions import get_args
 
 if module_available("lightning"):
     from lightning.fabric.plugins.precision.precision import Precision
-    from lightning.fabric.utilities.rank_zero import rank_zero_info
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins.precision.precision import Precision
-    from lightning_fabric.utilities.rank_zero import rank_zero_info
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
@@ -55,7 +53,9 @@ class HPUPrecision(Precision):
         self.device = device
 
     def autocast_context_manager(self) -> torch.autocast:
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16 if self.precision == "bf16" else torch.float32, enabled=True)
+        return torch.autocast(
+            device_type="hpu", dtype=torch.bfloat16 if self.precision == "bf16" else torch.float32, enabled=True
+        )
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:
