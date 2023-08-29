@@ -14,11 +14,13 @@
 
 from enum import Enum
 
-import habana_frameworks.torch.core as htcore
 import pytest
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as f
+import habana_frameworks.torch.core as htcore
+
+from enum import Enum
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -33,7 +35,6 @@ from lightning_habana.pytorch import HPUAccelerator, HPUParallelStrategy, Single
 
 class HPUGraphMode(Enum):
     """HPU graph modes."""
-
     TRAIN_NONE = 0
     # https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#training-loop-with-capture-and-replay
     TRAIN_CAPTURE_AND_REPLAY = 1
@@ -53,7 +54,7 @@ class NetHPUGraphs(LightningModule):
 
     def __init__(self, graph_mode=HPUGraphMode.TRAIN_NONE, batch_size=None):
         """Init."""
-        super().__init__()
+        super(NetHPUGraphs, self).__init__()
         self.fc1 = nn.Linear(784, 128)
         self.fc2 = nn.Linear(128, 10)
         self.dropout = nn.Dropout(0.5)
@@ -66,9 +67,12 @@ class NetHPUGraphs(LightningModule):
             self.g = htcore.hpu.HPUGraph()
             self.automatic_optimization = False
             self.training_step = self.train_with_capture_and_replay
-            self.static_input = torch.randn((batch_size), 1, 28, 28, device="hpu")
-            self.static_target = torch.randint(0, 10, (batch_size,), device="hpu")
-            self.static_y_pred = torch.randint(0, 10, (batch_size,), device="hpu")
+            self.static_input = torch.randn(
+                (batch_size), 1, 28, 28, device="hpu")
+            self.static_target = torch.randint(
+                0, 10, (batch_size,), device="hpu")
+            self.static_y_pred = torch.randint(
+                0, 10, (batch_size,), device="hpu")
             self.static_loss = None
         else:
             self.training_step = self.training_step_automatic
@@ -77,16 +81,16 @@ class NetHPUGraphs(LightningModule):
         """Forward."""
         x = torch.flatten(x, 1)
         x = self.fc1(x)
-        x = F.relu(x)
+        x = f.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)
         x = torch.mm(x, torch.eye(x.shape[1], device=x.device, dtype=x.dtype))
-        return F.log_softmax(x, dim=1)
+        return f.log_softmax(x, dim=1)
 
     def training_step_automatic(self, batch, batch_idx):
         """Automatic optimization training step."""
         x, y = batch
-        loss = F.cross_entropy(self.forward(x), y)
+        loss = f.cross_entropy(self.forward(x), y)
         self.log("train_loss", loss)
         return loss
 
@@ -97,7 +101,7 @@ class NetHPUGraphs(LightningModule):
             # First we warmup
             optimizer.zero_grad(set_to_none=True)
             y_pred = self.forward(self.static_input)
-            loss = F.cross_entropy(y_pred, self.static_target)
+            loss = f.cross_entropy(y_pred, self.static_target)
             loss.backward()
             optimizer.step()
             return loss
@@ -106,7 +110,8 @@ class NetHPUGraphs(LightningModule):
             optimizer.zero_grad(set_to_none=True)
             with htcore.hpu.graph(self.g):
                 static_y_pred = self(self.static_input)
-                self.static_loss = F.cross_entropy(static_y_pred, self.static_target)
+                self.static_loss = f.cross_entropy(
+                    static_y_pred, self.static_target)
                 self.static_loss.backward()
                 optimizer.step()
                 return self.static_loss
@@ -135,7 +140,8 @@ class NetHPUGraphs(LightningModule):
             if batch_idx == 0:
                 with htcore.hpu.graph(self.g):
                     static_y_pred = self.forward(self.static_input)
-                    self.static_loss = F.cross_entropy(static_y_pred, self.static_target)
+                    self.static_loss = f.cross_entropy(
+                        static_y_pred, self.static_target)
             else:
                 self.static_input.copy_(x)
                 self.static_target.copy_(y)
@@ -202,25 +208,23 @@ def get_model(graph_mode):
     return None
 
 
-@pytest.mark.parametrize(
-    ("graph_mode", "mode"),
-    [
-        (HPUGraphMode.TRAIN_NONE, "fit"),
-        (HPUGraphMode.TRAIN_CAPTURE_AND_REPLAY, "fit"),
-        (HPUGraphMode.TRAIN_MAKE_GRAPHED_CALLABLES, "fit"),
-        (HPUGraphMode.TRAIN_MODULECACHER, "fit"),
-        (HPUGraphMode.INFERENCE_NONE, "validate"),
-        (HPUGraphMode.INFERENCE_CAPTURE_AND_REPLAY, "validate"),
-        (HPUGraphMode.INFERENCE_WRAP_IN_HPU_GRAPH, "validate"),
-    ],
-)
+@pytest.mark.parametrize(("graph_mode", "mode"), [
+    (HPUGraphMode.TRAIN_NONE, "fit"),
+    (HPUGraphMode.TRAIN_CAPTURE_AND_REPLAY, "fit"),
+    (HPUGraphMode.TRAIN_MAKE_GRAPHED_CALLABLES, "fit"),
+    (HPUGraphMode.TRAIN_MODULECACHER, "fit"),
+    (HPUGraphMode.INFERENCE_NONE, "validate"),
+    (HPUGraphMode.INFERENCE_CAPTURE_AND_REPLAY, "validate"),
+    (HPUGraphMode.INFERENCE_WRAP_IN_HPU_GRAPH, "validate"),
+])
 def test_hpu_graphs(tmpdir, graph_mode, mode):
     """Trains with a given HPU graph mode."""
     seed_everything(42)
     model = get_model(graph_mode)
     data_module = MNISTDataModule(batch_size=200)
     data_module.val_dataloader = data_module.train_dataloader
-    train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None, mode=mode)
+    train_model(tmpdir, 1, model=model, data_module=data_module,
+                profiler=None, mode=mode)
 
 
 @pytest.mark.parametrize(
@@ -242,7 +246,8 @@ def test_hpu_graph_accuracy_train(tmpdir, train_modes):
         seed_everything(42)
         hpu_graph_model = get_model(graph_mode)
         data_module = MNISTDataModule(batch_size=200)
-        loss_metrics.append(train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
+        loss_metrics.append(train_model(
+            tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
     assert torch.allclose(
         loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05
     ), loss_metrics  # Compare train loss
@@ -269,7 +274,8 @@ def test_hpu_graph_accuracy_inference(tmpdir, train_modes):
         hpu_graph_model = get_model(graph_mode)
         data_module = MNISTDataModule(batch_size=200)
         loss_metrics.append(
-            train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, mode="test", profiler=None)
+            train_model(tmpdir, 1, model=hpu_graph_model,
+                        data_module=data_module, mode="test", profiler=None)
         )
     assert torch.allclose(
         loss_metrics[0]["test_acc"], loss_metrics[1]["test_acc"], rtol=0.05
@@ -278,7 +284,6 @@ def test_hpu_graph_accuracy_inference(tmpdir, train_modes):
 
 def test_automatic_optimization_graph_capture(tmpdir):
     """Test to showcase HPU Graphs with automatic optimization."""
-
     class ManualCaptureModel(NetHPUGraphs):
         """Test model to capture HPU Graphs manually."""
 
@@ -309,7 +314,7 @@ def test_automatic_optimization_graph_capture(tmpdir):
             if batch_idx < 2:
                 # Regular training for graph capture
                 x, y = batch
-                loss = F.cross_entropy(self.forward(x), y)
+                loss = f.cross_entropy(self.forward(x), y)
                 self.log("train_loss", loss)
                 return loss
             else:
@@ -326,13 +331,15 @@ def test_automatic_optimization_graph_capture(tmpdir):
     seed_everything(42)
     model = get_model(HPUGraphMode.TRAIN_NONE)
     data_module = MNISTDataModule(batch_size=200)
-    loss_metrics.append(train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None))
+    loss_metrics.append(train_model(tmpdir, 1, model=model,
+                        data_module=data_module, profiler=None))
 
     # Train with HPU Graphs
     seed_everything(42)
     hpu_graph_model = ManualCaptureModel()
     data_module = MNISTDataModule(batch_size=200)
-    loss_metrics.append(train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
+    loss_metrics.append(train_model(
+        tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
 
     assert torch.allclose(
         loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05
