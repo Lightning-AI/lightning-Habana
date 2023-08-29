@@ -66,12 +66,9 @@ class NetHPUGraphs(LightningModule):
             self.g = htcore.hpu.HPUGraph()
             self.automatic_optimization = False
             self.training_step = self.train_with_capture_and_replay
-            self.static_input = torch.randn(
-                (batch_size), 1, 28, 28, device="hpu")
-            self.static_target = torch.randint(
-                0, 10, (batch_size,), device="hpu")
-            self.static_y_pred = torch.randint(
-                0, 10, (batch_size,), device="hpu")
+            self.static_input = torch.randn((batch_size), 1, 28, 28, device="hpu")
+            self.static_target = torch.randint(0, 10, (batch_size,), device="hpu")
+            self.static_y_pred = torch.randint(0, 10, (batch_size,), device="hpu")
             self.static_loss = None
         else:
             self.training_step = self.training_step_automatic
@@ -109,8 +106,7 @@ class NetHPUGraphs(LightningModule):
             optimizer.zero_grad(set_to_none=True)
             with htcore.hpu.graph(self.g):
                 static_y_pred = self(self.static_input)
-                self.static_loss = f.cross_entropy(
-                    static_y_pred, self.static_target)
+                self.static_loss = f.cross_entropy(static_y_pred, self.static_target)
                 self.static_loss.backward()
                 optimizer.step()
                 return self.static_loss
@@ -138,8 +134,7 @@ class NetHPUGraphs(LightningModule):
             if batch_idx == 0:
                 with htcore.hpu.graph(self.g):
                     static_y_pred = self.forward(self.static_input)
-                    self.static_loss = f.cross_entropy(
-                        static_y_pred, self.static_target)
+                    self.static_loss = f.cross_entropy(static_y_pred, self.static_target)
             else:
                 self.static_input.copy_(x)
                 self.static_target.copy_(y)
@@ -223,8 +218,7 @@ def test_hpu_graphs(tmpdir, graph_mode, mode):
     model = get_model(graph_mode)
     data_module = MNISTDataModule(batch_size=200)
     data_module.val_dataloader = data_module.train_dataloader
-    train_model(tmpdir, 1, model=model, data_module=data_module,
-                profiler=None, mode=mode)
+    train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None, mode=mode)
 
 
 @pytest.mark.parametrize(
@@ -246,8 +240,7 @@ def test_hpu_graph_accuracy_train(tmpdir, train_modes):
         seed_everything(42)
         hpu_graph_model = get_model(graph_mode)
         data_module = MNISTDataModule(batch_size=200)
-        loss_metrics.append(train_model(
-            tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
+        loss_metrics.append(train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
     assert torch.allclose(
         loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05
     ), loss_metrics  # Compare train loss
@@ -274,8 +267,7 @@ def test_hpu_graph_accuracy_inference(tmpdir, train_modes):
         hpu_graph_model = get_model(graph_mode)
         data_module = MNISTDataModule(batch_size=200)
         loss_metrics.append(
-            train_model(tmpdir, 1, model=hpu_graph_model,
-                        data_module=data_module, mode="test", profiler=None)
+            train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, mode="test", profiler=None)
         )
     assert torch.allclose(
         loss_metrics[0]["test_acc"], loss_metrics[1]["test_acc"], rtol=0.05
@@ -331,15 +323,13 @@ def test_automatic_optimization_graph_capture(tmpdir):
     seed_everything(42)
     model = get_model(HPUGraphMode.TRAIN_NONE)
     data_module = MNISTDataModule(batch_size=200)
-    loss_metrics.append(train_model(tmpdir, 1, model=model,
-                        data_module=data_module, profiler=None))
+    loss_metrics.append(train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None))
 
     # Train with HPU Graphs
     seed_everything(42)
     hpu_graph_model = ManualCaptureModel()
     data_module = MNISTDataModule(batch_size=200)
-    loss_metrics.append(train_model(
-        tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
+    loss_metrics.append(train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
 
     assert torch.allclose(
         loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05
