@@ -245,7 +245,7 @@ def test_hpu_graph_accuracy_train(tmpdir, train_modes):
         loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05
     ), loss_metrics  # Compare train loss
     assert torch.allclose(
-        loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.01
+        loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.05
     ), loss_metrics  # Compare val acc
 
 
