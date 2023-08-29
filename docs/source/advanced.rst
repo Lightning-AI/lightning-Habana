@@ -350,3 +350,261 @@ Limitations of DeepSpeed on HPU
    1. DeepSpeed Zero Stage 3 is not yet supported by Gaudi2.
    2. Offloading to Nvme is not yet verified on HPU with DeepSpeed Zero Stage 3 Offload configuration.
    3. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
+
+=======
+For further details on the supported DeepSpeed features and functionalities, refer to `Using Deepspeed with HPU <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html>`_.
+
+----
+
+Using HPU Graphs
+------------------------
+
+HPU Graphs reduce training and inference time for large models running in Lazy Mode. HPU Graphs bypasses all op accumulations by recording a static version of the entire graph, then replaying it.
+The speedup achieved by using HPU Graphs depends on the underlying model. HPU Graphs reduce host overhead significantly, and can be used to speed up the process when it is host bound.
+
+For further details, refer to `Using HPU Graphs for Training <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html>`_ and `Run Inference Using HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_HPU_Graphs.html>`_
+
+HPU Graphs APIs for Training
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following section describes the usage of HPU Graph APIs in a training model.
+
+Capture and Replay
+""""""""""""""""""
+
+These are the APIs for manually capturing and replaying HPU Graphs. The capture phase involves recording all the forward and backward passes, then, replaying it again and again in the actual training phase.
+An optional warmup phase may be added before capture phase.
+
+Basic API usage:
+
+#. Create a HPUGraph instance.
+#. Create placeholders for input and target. These have to be compliant with batch_size and input / target dimensions.
+#. Capture graph by wrapping the required portion of training step in HPUGraph ContextManager in first pass. Alternatively, `HPUGraph.capture_begin()` and `HPUGraph.capture_end()` can be used to wrap the module. A warmup pass may be used before capture begins.
+#. Finally replay the graph for remaining iterations.
+
+.. code-block:: python
+
+    class HPUGraphsModel(LightningModule):
+        def __init__(self, batch_size=_batch_size):
+            """init"""
+            super().__init__()
+            # Create a HPUGraph instance
+            self.g = htcore.hpu.HPUGraph()
+            # Placeholders for capture. Should be compliant with data and target dims
+            self.static_input = torch.rand(device="hpu")
+            self.static_target = torch.rand(device="hpu")
+            # result is available in static_loss tensor after graph is replayed
+            self.static_loss = None
+            # Set manual optimization training
+            self.automatic_optimization = False
+            self.training_step = self.train_with_capture_and_replay
+
+        def train_with_capture_and_replay(self, batch, batch_idx):
+            """Manual optimization training step"""
+            if batch_idx == 0 and self.current_epoch == 0:
+                optimizer.zero_grad(set_to_none=True)
+                # Capture graphs using HPUGraph ContextManager.
+                # Alternatively, use HPUGraph.capture_begin() and HPUGraph.capture_end()
+                with htcore.hpu.graph(self.g):
+                    static_y_pred = self(self.static_input)
+                    self.static_loss = F.cross_entropy(static_y_pred, self.static_target)
+                    self.static_loss.backward()
+                    optimizer.step()
+                    return self.static_loss
+            else:
+                # Replay the graph
+                # data must be copied to existing tensors that were used in the capture phase
+                data, target = batch
+                self.static_input.copy_(data)
+                self.static_target.copy_(target)
+                self.g.replay()
+                self.log("train_loss", self.static_loss)
+                return self.static_loss
+
+make_graphed_callables
+""""""""""""""""""""""
+
+The `make_graphed_callables` API can be used to wrap a module into a standalone graph.
+It accepts a callable module, sample_args, and warmup steps as inputs.
+This API also requires the model to have only tuples for tensors as input and output. This is incompatible with workloads using data structures such as dicts and lists.
+
+.. code-block:: python
+
+    # model and sample_args as input to make_graphed_callables.
+    model = HPUGraphsModel().to(torch.device("hpu"))
+    x = torch.randn()
+    model = htcore.hpu.make_graphed_callables(model, (x,))
+    trainer.fit(model, data_module)
+
+ModuleCacher
+""""""""""""
+
+This API provides another way of wrapping the model and handles dynamic inputs in a training model. `ModuleCacher` internally keeps track of whether an input shape has changed, and if so, creates a new HPU graph.
+`ModuleCacher` is the recommended method for using HPU Graphs in training.
+`max_graphs` specifies the number of graphs to cache. A larger amount will increase the number of cache hits but will result in higher memory usage.
+
+.. code-block:: python
+
+    # model is given an input to ModuleCacher.
+    model= HPUGraphsModel()
+    htcore.hpu.ModuleCacher(max_graphs)(model=model, inplace=True)
+    trainer.fit(model, data_module)
+
+HPU Graphs APIs for Inference
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following section describes the usage of HPU Graph APIs in an inference model.
+
+Capture and Replay
+""""""""""""""""""
+
+The implementation is similar to Capture and Replay in training.
+
+#. Create a HPUGraph instance.
+#. Create placeholders for input, target and predicitons.
+#. Capture graph by wrapping the required portion of test / validation step in HPUGraph ContextManager in first pass.
+#. Finally replay the graph for remaining iterations.
+
+.. code-block:: python
+
+    class HPUGraphsModel(LightningModule):
+        def __init__(self, batch_size=_batch_size):
+            """init"""
+            super().__init__()
+            # Create a HPUGraph object
+            self.g = htcore.hpu.HPUGraph()
+            # Placeholders for capture. Should be compliant with data and target dims
+            self.static_input = torch.rand(device="hpu")
+            self.static_target = torch.rand(device="hpu")
+            # Placeholder to store predictions after graph is replayed
+            self.static_y_pred = torch.rand(device="hpu")
+            # loss is available in static_loss tensor after graph is replayed
+            self.static_loss = None
+
+        def test_step(self, batch, batch_idx):
+            """Test step"""
+            x, y = batch
+            if batch_idx == 0:
+                with htcore.hpu.graph(self.g):
+                    static_y_pred = self.forward(self.static_input)
+                    self.static_loss = F.cross_entropy(static_y_pred, self.static_target)
+            else:
+                self.static_input.copy_(x)
+                self.static_target.copy_(y)
+                self.g.replay()
+
+wrap_in_hpu_graph
+"""""""""""""""""
+
+This is an alternative to manual capturing and replaying HPU Graphs.
+`htorch.hpu.wrap_in_hpu_graph` can be used to wrap module forward function with HPU Graphs.
+This wrapper captures, caches and replays the graph.
+Setting `disasble_tensor_cache` to `True` will release cached output tensor memory after every replay.
+`asynchronous` specifies whether the graph capture and replay should be asynchronous.
+
+.. code-block:: python
+
+    model = NetHPUGraphs(mode=mode).to(torch.device("hpu"))
+    model =  htcore.hpu.wrap_in_hpu_graph(model, asynchronous=False, disable_tensor_cache=True)
+    trainer.test(model, data_module)
+
+HPU Graphs and Dynamicity in Models
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Dynamicity, resulting from changing input shapes or dynamic ops, can lead to multiple recompilations, causing longer training time and reducing performance.
+
+HPU Graphs do not support dynamicity in models. `ModuleCacher` can handle dynamic inputs automatically, but it does not handle dynamic control flow and dynamic ops.
+
+However, one can split the module into static and dynamic portions and use HPU Graphs in static regions.
+
+For further details, refer to `Dynamicity in Models <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#dynamicity-in-models>`_
+
+Dynamic Control Flow
+""""""""""""""""""""
+
+When dynamic control flow is present, the model needs to be separated into different HPU Graphs.
+In the example below, the output of module1 feeds module2 or module3 depending on the dynamic control flow.
+
+.. code-block:: python
+
+    class HPUGraphsModel(LightningModule):
+        def __init__(self, mode=None, batch_size=None):
+            """init"""
+            super(NetHPUGraphs, self).__init__()
+            # Break Model into separate HPU Graphs for each control flow.
+            self.module1 = NetHPUGraphs()
+            self.module2 = nn.Identity()
+            self.module3 = nn.ReLU()
+            htcore.hpu.ModuleCacher(max_graphs)(model=self.module1, inplace=True)
+            htcore.hpu.ModuleCacher(max_graphs)(model=self.module2, inplace=True)
+            htcore.hpu.ModuleCacher(max_graphs)(model=self.module3, inplace=True)
+            self.automatic_optimization = False
+            self.training_step = self.dynamic_control_flow_training_step
+
+        def dynamic_control_flow_training_step(self, batch, batch_idx):
+            """Training step with HPU Graphs and Dynamic control flow"""
+            optimizer = self.optimizers()
+            data, target = batch
+            optimizer.zero_grad(set_to_none=True)
+            # Train with HPU Graph
+            tmp = self.module1(data)
+
+            # dynamic control flow
+            if random.random() > 0.5:
+                tmp = self.module2(tmp)  # forward ops run as a graph
+            else:
+                tmp = self.module3(tmp)  # forward ops run as a graph
+
+            loss = F.cross_entropy(tmp, target)
+            loss.backward()
+            optimizer.step()
+            self.log("train_loss", loss)
+            return loss
+
+Dynamic Ops
+"""""""""""
+
+In this example we have module1 -> dynamic boolean indexing -> module2.
+Thus, both the static modules are placed into separate ModuleCacher and the dynamic op part is left out.
+
+.. code-block:: python
+
+    class HPUGraphsModel(LightningModule):
+        def __init__(self, mode=None, batch_size=None):
+            """init"""
+            super(NetHPUGraphs, self).__init__()
+            # Encapsulate dynamic ops between two separate HPU Graph modules,
+            # instead of using one single HPU Graph for whole model
+            self.module1 = NetHPUGraphs()
+            self.module2 = nn.Identity()
+            htcore.hpu.ModuleCacher(max_graphs)(model=self.module1, inplace=True)
+            htcore.hpu.ModuleCacher(max_graphs)(model=self.module2, inplace=True)
+            self.automatic_optimization = False
+            self.training_step = self.dynamic_ops_training_step
+
+        def dynamic_ops_training_step(self, batch, batch_idx):
+            """Training step with HPU Graphs and Dynamic ops"""
+            optimizer = self.optimizers()
+            data, target = batch
+            optimizer.zero_grad(set_to_none=True)
+            # Train with HPU graph module
+            tmp = self.module1(data)
+
+            # Dynamic op
+            htcore.mark_step()
+            tmp = tmp[torch.where(tmp < 0)]
+            htcore.mark_step()
+
+            # Resume training with HPU graph module
+            tmp = self.module2(tmp)
+            loss = F.cross_entropy(tmp, target)
+            loss.backward()
+            optimizer.step()
+            self.log("train_loss", loss)
+            return loss
+
+Limitations
+^^^^^^^^^^^
+* Using HPU Graphs with `torch.compile` is not supported.
+
+Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis>`_
