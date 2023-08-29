@@ -368,8 +368,8 @@ HPU Graphs APIs for Training
 
 The following section describes the usage of HPU Graph APIs in a training model.
 
-Capture and Replay
-""""""""""""""""""
+Capture and Replay Training
+"""""""""""""""""""""""""""
 
 These are the APIs for manually capturing and replaying HPU Graphs. The capture phase involves recording all the forward and backward passes, then, replaying it again and again in the actual training phase.
 An optional warmup phase may be added before capture phase.
@@ -454,8 +454,8 @@ HPU Graphs APIs for Inference
 
 The following section describes the usage of HPU Graph APIs in an inference model.
 
-Capture and Replay
-""""""""""""""""""
+Capture and Replay Inference
+""""""""""""""""""""""""""""
 
 The implementation is similar to Capture and Replay in training.
 
@@ -602,8 +602,9 @@ Thus, both the static modules are placed into separate ModuleCacher and the dyna
             self.log("train_loss", loss)
             return loss
 
-Limitations
-^^^^^^^^^^^
+Limitations of HPU Graphs
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
 * Using HPU Graphs with `torch.compile` is not supported.
 
 Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis>`_
