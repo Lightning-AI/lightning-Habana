@@ -22,7 +22,7 @@ uses 32-bit precision. To enable mixed precision, set the ``precision`` flag.
 
 ----
 
-Customize Mixed Precision using autocast
+Customize Mixed Precision Using Autocast
 ----------------------------------------
 
 Lightning supports following methods to enable mixed precision training with HPU.
@@ -30,7 +30,7 @@ Lightning supports following methods to enable mixed precision training with HPU
 **HPUPrecisionPlugin**
 
 .. note::
-   `HMP` support is getting deprecated and the precision plugin will support `torch.autocast` by default.
+   Habana Mixed Precision (HMP) is being deprecated, and the precision plugin now supports `torch.autocast` by default
 
 Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` uses the Habana Mixed Precision (HMP) package to enable mixed precision training.
 
@@ -39,7 +39,7 @@ With the default settings, you can easily enable mixed precision training with m
 
 In addition to the default settings, you can choose to override these defaults and provide your own BF16 (LOWER_LIST) and FP32 (FP32_LIST)
 operator lists by passing them as parameters to :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
-The `LOWER_LIST` and `FP32_LIST` environment variables needs to be set before any instances can begin.
+The `LOWER_LIST` and `FP32_LIST` environment variables must be set before any instances begin.
 
 The following is an excerpt from an MNIST example implemented on a single HPU.
 
