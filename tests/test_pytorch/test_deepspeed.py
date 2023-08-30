@@ -440,25 +440,25 @@ def test_hpu_deepspeed_with_invalid_optimizer():
         def configure_optimizers(self):
             return None
 
+    import logging
+
+    model = DummyModel()
+    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO),
+        max_epochs=1,
+        plugins=_plugins,
+        devices=1,
+    )
     with pytest.raises(
         MisconfigurationException, match="You have specified an invalid optimizer to be run with deepspeed."
     ):
-        import logging
-
-        model = DummyModel()
-        _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
-        trainer = Trainer(
-            accelerator=HPUAccelerator(),
-            strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO),
-            max_epochs=1,
-            plugins=_plugins,
-            devices=1,
-        )
         trainer.fit(model)
 
 
 def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
-    """Test to ensure if we pass optimizer both from configuration and LightningModule preference is given to LightningModule."""
+    """Test the preference of optimizer when configured both from deepspeed config and LightningModule."""
 
     class DummyModel(BoringModel):
         def configure_optimizers(self):
