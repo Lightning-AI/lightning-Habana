@@ -168,20 +168,17 @@ def deepspeed_zero_config(deepspeed_config):
     return {**deepspeed_config, "zero_allow_untested_optimizer": True, "zero_optimization": {"stage": 2}}
 
 
-
 @pytest.fixture()
 def deepspeed_zero_autotuning_config():
     return {
-        "bf16": {
-            "enabled": True
-        },
+        "bf16": {"enabled": True},
         "autotuning": {
             "enabled": True,
             "arg_mappings": {
                 "train_micro_batch_size_per_gpu": "--per_device_train_batch_size",
-                "gradient_accumulation_steps ": "--gradient_accumulation_steps"
-            }
-        }
+                "gradient_accumulation_steps ": "--gradient_accumulation_steps",
+            },
+        },
     }
 
 
@@ -358,7 +355,6 @@ def test_deepspeed_config(tmpdir):
 
     class TestCB(Callback):
         def on_train_start(self, trainer, pl_module) -> None:
-            from deepspeed.runtime.lr_schedules import WarmupLR
             from torch.optim.lr_scheduler import StepLR
 
             assert isinstance(trainer.optimizers[0], DeepSpeedZeroOptimizer)
