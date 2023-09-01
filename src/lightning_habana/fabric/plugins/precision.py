@@ -21,8 +21,10 @@ from typing_extensions import get_args
 
 if module_available("lightning"):
     from lightning.fabric.plugins.precision.precision import Precision
+    from lightning.pytorch.utilities.rank_zero import rank_zero_info
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins.precision.precision import Precision
+    from pytorch_lightning.utilities.rank_zero import rank_zero_info
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
@@ -43,6 +45,10 @@ class HPUPrecision(Precision):
         precision: _PRECISION_INPUT,
         device: str = "hpu",
     ) -> None:
+        rank_zero_info(
+            "The 'HMP' support is deprecated and will be removed in lightning-habana release 1.1.0,"
+            " Use 'torch autocast' instead. or use lightning-habana <= 1.0.1"
+        )
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
