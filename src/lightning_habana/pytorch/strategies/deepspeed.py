@@ -617,6 +617,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         self._format_precision_config()
 
     def _validate_config(self) -> None:
+        assert isinstance(self.config, dict)
+
         if "autotuning" in self.config and self.config["autotuning"]["enabled"] is True:
             raise MisconfigurationException("HPU DeepSpeed strategy doesn't support `autotuning`")
 
