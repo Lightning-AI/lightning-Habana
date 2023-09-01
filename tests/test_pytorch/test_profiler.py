@@ -34,7 +34,6 @@ elif module_available("pytorch_lightning"):
 
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 
 if _KINETO_AVAILABLE:
@@ -71,7 +70,6 @@ def test_hpu_simple_profiler_trainer_stages(tmpdir):
     model = BoringModel()
     profiler = SimpleProfiler(dirpath=tmpdir, filename="profiler")
     _strategy = SingleHPUStrategy()
-    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         profiler=profiler,
         accelerator=HPUAccelerator(),

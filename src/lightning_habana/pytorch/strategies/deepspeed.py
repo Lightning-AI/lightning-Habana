@@ -78,11 +78,9 @@ if _HABANA_FRAMEWORK_AVAILABLE:
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
-# WA : TBD : there is an issue with internal habana pipelines wrt deepspeed package naming in 1.10.0 release
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
-    RequirementCache("deepspeed==0.7.7+hpu.synapse.v1.10.0")
-    or RequirementCache("deepspeed==0.7.7+ca649af")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0
+    RequirementCache("deepspeed==0.9.4+hpu.synapse.v1.11.0")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -256,7 +254,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0`."
             )
 
         super().__init__(

@@ -7,6 +7,9 @@ recursive-exclude __pycache__  *.py[cod] *.orig
 include *.md
 recursive-include src *.md
 
+# Include the Requirements
+recursive-include _requirements *
+
 # Include the license file
 include LICENSE
 
@@ -25,9 +28,6 @@ exclude tests
 # Exclude the documentation files
 recursive-exclude docs *
 exclude docs
-
-# Include the Requirements
-include requirements.txt
 
 # Exclude Makefile
 exclude Makefile

@@ -25,12 +25,6 @@ def datadir():
 
 def pytest_addoption(parser):
     parser.addoption("--hpus", action="store", type=int, default=1, help="Number of hpus 1-8")
-    parser.addoption(
-        "--hmp-bf16", action="store", type=str, default="./ops_bf16.txt", help="bf16 ops list file in hmp O1 mode"
-    )
-    parser.addoption(
-        "--hmp-fp32", action="store", type=str, default="./ops_fp32.txt", help="fp32 ops list file in hmp O1 mode"
-    )
 
 
 @pytest.fixture()
