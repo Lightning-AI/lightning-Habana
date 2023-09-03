@@ -109,7 +109,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     These defaults have been set generally, but may require tuning for optimum performance based on your model size.
     `For more information: https://www.deepspeed.ai/docs/config-json/#zero-optimizations-for-fp16-training`.
 
-    Note:
+    .. note::
     It is recommended to define the optimizer and otpmizer params in `LightningModule.configure_optimizers`.
     The optimizer defined by LightningModule overrides any optimizer and optimizer params specified in
     DeepSpeed configuration file.
