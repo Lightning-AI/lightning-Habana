@@ -1,2 +1,2 @@
-mypy ==1.4.1
+mypy ==1.5.1
 pytorch-lightning ==2.0.6
