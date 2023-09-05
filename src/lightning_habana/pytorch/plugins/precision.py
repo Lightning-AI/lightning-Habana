@@ -47,7 +47,7 @@ class HPUPrecisionPlugin(PrecisionPlugin):
     ) -> None:
         rank_zero_info(
             "The 'HMP' support is deprecated and will be removed in lightning-habana release 1.1.0,"
-            " Use 'torch autocast' instead. or use lightning-habana <= 1.0.1"
+            " Use 'torch autocast' instead. or use lightning-habana < 1.1.0"
         )
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
