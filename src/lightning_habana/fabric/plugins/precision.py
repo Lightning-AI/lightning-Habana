@@ -21,10 +21,8 @@ from typing_extensions import get_args
 
 if module_available("lightning"):
     from lightning.fabric.plugins.precision.precision import Precision
-    from lightning.fabric.utilities.rank_zero import rank_zero_info
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins.precision.precision import Precision
-    from lightning_fabric.utilities.rank_zero import rank_zero_info
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
