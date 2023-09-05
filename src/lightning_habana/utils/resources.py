@@ -16,7 +16,7 @@ import subprocess
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from lightning_utilities import module_available
-from lightning_utilities.core.rank_zero import rank_zero_debug
+from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 if module_available("lightning"):
     from lightning.fabric.utilities.exceptions import MisconfigurationException
@@ -61,9 +61,15 @@ def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
 
     >>> _parse_gaudi_versions("Habanalabs hl-smi/hlml version hl-1.11.0-fw-45.1.1.1 (Aug 04 2023 - 02:48:21)")
     ('1.11.0', '45.1.1.1')
+    >>> _parse_gaudi_versions("any string as fake CMD output")
+    ('', '')
     """
-    hl = re.search(r"hl-([\d\.]+)", line).group(1)
-    fw = re.search(r"fw-([\d\.]+)", line).group(1)
+    try:
+        hl = re.search(r"hl-([\d\.]+)", line).group(1)
+        fw = re.search(r"fw-([\d\.]+)", line).group(1)
+    except AttributeError:
+        rank_zero_warn("Provided string does not include Habana version; check if HPU is available with `hl-smi`.")
+        return "", ""
     return hl, fw
 
 
