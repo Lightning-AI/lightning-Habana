@@ -18,6 +18,8 @@ import pytest
 import torch
 from lightning_utilities import module_available
 
+from lightning_habana.utils.resources import device_count
+
 if module_available("lightning"):
     from lightning.pytorch import Callback, Trainer, seed_everything
     from lightning.pytorch.demos.boring_classes import BoringModel
@@ -188,7 +190,7 @@ def test_accelerator_with_single_device():
     assert isinstance(trainer.accelerator, HPUAccelerator_Registered)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices():
     trainer = Trainer(accelerator="hpu", devices=8)
     assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
@@ -200,7 +202,7 @@ def test_accelerator_with_multiple_devices():
     assert trainer.num_devices == HPUAccelerator_Registered.auto_device_count()
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_auto_with_devices_hpu():
     trainer = Trainer(accelerator="auto", devices=8)
     assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
@@ -216,7 +218,7 @@ def test_strategy_choice_single_strategy():
     assert isinstance(trainer.strategy, SingleHPUStrategy_Registered)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_strategy_choice_parallel_strategy():
     trainer = Trainer(
         strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8),
