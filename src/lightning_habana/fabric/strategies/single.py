@@ -41,7 +41,7 @@ from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_L
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana import HPU_AVAILABLE
 
 
 class SingleHPUStrategy(SingleDeviceStrategy):
@@ -56,7 +56,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         checkpoint_io: Optional[CheckpointIO] = None,
         precision: Optional[Precision] = None,
     ):
-        if not _HPU_AVAILABLE:
+        if not HPU_AVAILABLE:
             raise ValueError("`SingleHPUStrategy` requires HPU devices to run")
 
         super().__init__(

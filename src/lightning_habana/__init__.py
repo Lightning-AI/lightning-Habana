@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import operator
+import os
 
 from lightning_utilities import compare_version
 
@@ -34,9 +35,12 @@ if compare_version("lightning", operator.lt, "2.0.0") and compare_version("pytor
 if _HABANA_FRAMEWORK_AVAILABLE:
     from habana_frameworks.torch.utils.library_loader import is_habana_available
 
-    _HPU_AVAILABLE: bool = is_habana_available()
+    HPU_AVAILABLE: bool = is_habana_available()
 else:
-    _HPU_AVAILABLE = False
+    HPU_AVAILABLE = False
+
+_PACKAGE_ROOT = os.path.dirname(__file__)
+_PROJECT_ROOT = os.path.dirname(_PACKAGE_ROOT)
 
 
 __all__ = [
@@ -48,5 +52,5 @@ __all__ = [
     "HPUCheckpointIO",
     "HPUDataModule",
     "HPUProfiler",
-    "_HPU_AVAILABLE",
+    "HPU_AVAILABLE",
 ]
