@@ -24,8 +24,8 @@ if module_available("lightning"):
     from lightning.fabric.utilities.exceptions import MisconfigurationException
     from lightning.fabric.utilities.types import _DEVICE
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.utilities.types import _DEVICE
     from lightning_fabric.utilities.exceptions import MisconfigurationException
+    from lightning_fabric.utilities.types import _DEVICE
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
 

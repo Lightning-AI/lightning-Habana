@@ -27,6 +27,7 @@ else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana.utils.imports import _GAUDI_GREATER_EQUAL_1_1_0
+
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
 
