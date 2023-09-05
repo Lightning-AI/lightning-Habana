@@ -19,10 +19,8 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.pytorch import LightningDataModule
-    from lightning.pytorch.utilities.imports import _TORCHVISION_AVAILABLE
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningDataModule
-    from pytorch_lightning.utilities.imports import _TORCHVISION_AVAILABLE
 
 import torch
 
@@ -30,6 +28,7 @@ from lightning_habana.utils.imports import (
     _HABANA_FRAMEWORK_AVAILABLE,
     _LIGHTNING_GREATER_EQUAL_2_0_0,
     _TORCH_GREATER_EQUAL_2_0_0,
+    _TORCHVISION_AVAILABLE,
 )
 
 if _TORCHVISION_AVAILABLE:
