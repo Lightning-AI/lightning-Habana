@@ -79,7 +79,11 @@ def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
 @lru_cache
 def get_gaudi_version() -> str:
     """Get Gaudi version."""
-    proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
+    try:
+        proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
+    # FileNotFoundError: No such file or directory: 'hl-smi'
+    except FileNotFoundError:
+        return ""
     out = proc.communicate()[0]
     hl, fw = _parse_gaudi_versions(out.decode("utf-8"))
     return hl
