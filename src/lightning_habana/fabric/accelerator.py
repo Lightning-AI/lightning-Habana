@@ -19,16 +19,15 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.pytorch.accelerators.accelerator import Accelerator
-    from lightning.pytorch.utilities.rank_zero import rank_zero_debug
 elif module_available("pytorch_lightning"):
     from pytorch_lightning.accelerators.accelerator import Accelerator
-    from pytorch_lightning.utilities.rank_zero import rank_zero_debug
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana import HPU_AVAILABLE
+from lightning_habana.utils.resources import _parse_hpus, device_count
 
-if _HPU_AVAILABLE:
+if HPU_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
 
 
@@ -61,11 +60,7 @@ class HPUAccelerator(Accelerator):
     @staticmethod
     def auto_device_count() -> int:
         """Returns the number of HPU devices when the devices is set to auto."""
-        try:
-            return torch_hpu.device_count()
-        except (AttributeError, NameError):
-            rank_zero_debug("HPU `auto_device_count` failed, returning default count of 8.")
-            return 8
+        return device_count()
 
     @staticmethod
     def is_available() -> bool:
@@ -90,23 +85,3 @@ class HPUAccelerator(Accelerator):
             cls,
             description=cls.__class__.__name__,
         )
-
-
-def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
-    """Parse hpu devices.
-
-    Parses the hpus given in the format as accepted by the
-    :class:`~lightning.pytorch.trainer.Trainer` for the `devices` flag.
-
-    Args:
-        devices: An integer that indicates the number of Gaudi devices to be used
-    Returns:
-        Either an integer or ``None`` if no devices were requested
-    Raises:
-        ValueError:
-            If devices aren't of type `int` or `str`.
-    """
-    if devices is not None and not isinstance(devices, (int, str)):
-        raise ValueError("`devices` for `HPUAccelerator` must be int, string or None.")
-
-    return int(devices) if isinstance(devices, str) else devices

@@ -27,7 +27,7 @@ else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana import HPU_AVAILABLE
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -62,7 +62,7 @@ class HPUPrecision(Precision):
             " Use 'torch autocast' instead."
         )
 
-        if not _HPU_AVAILABLE:
+        if not HPU_AVAILABLE:
             raise ValueError("HPU precision plugin requires HPU devices.")
         supported_precision = get_args(_PRECISION_INPUT_STR) + get_args(_PRECISION_INPUT_INT)
         if precision not in supported_precision:
