@@ -17,6 +17,7 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from lightning_utilities import module_available
+from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 if module_available("lightning"):
@@ -26,7 +27,7 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.types import _DEVICE
     from lightning_fabric.utilities.exceptions import MisconfigurationException
 
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu

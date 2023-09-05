@@ -30,10 +30,7 @@ else:
 
 
 from lightning_habana import HPU_AVAILABLE
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    from habana_frameworks.torch.hpex import hmp
+from lightning_habana.utils.imports import _GAUDI_GREATER_EQUAL_1_1_0
 
 _PRECISION_INPUT = Literal["32", "bf16", "32-true", "bf16-mixed"]
 
@@ -51,13 +48,10 @@ class HPUPrecision(Precision):
         precision: _PRECISION_INPUT,
         device: str = "hpu",
     ) -> None:
-        rank_zero_info(
-            "The 'HMP' support is deprecated and will be removed in lightning-habana release 1.1.0,"
-            " Use 'torch autocast' instead. or use lightning-habana < 1.1.0"
-        )
-
         if not HPU_AVAILABLE:
             raise ValueError("HPU precision plugin requires HPU devices.")
+        if not _GAUDI_GREATER_EQUAL_1_1_0:
+            raise OSError("HPU precision plugin requires `Gaudi >= 1.1`.")
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
