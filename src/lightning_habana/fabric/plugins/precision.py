@@ -33,7 +33,7 @@ from lightning_habana import HPU_AVAILABLE
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    from habana_frameworks.torch.hpex import hmp
+    pass
 
 _PRECISION_INPUT = Literal["32", "bf16", "32-true", "bf16-mixed"]
 
