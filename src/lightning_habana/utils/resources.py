@@ -77,7 +77,7 @@ def get_gaudi_version() -> str:
     """Get Gaudi version."""
     proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
     out = proc.communicate()[0]
-    hl, fw = _parse_gaudi_versions(out.decode('utf-8'))
+    hl, fw = _parse_gaudi_versions(out.decode("utf-8"))
     return hl
 
 
