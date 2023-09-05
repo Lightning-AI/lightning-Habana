@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation with examples for using DeepSpeed with HPU ([#64](https://github.com/Lightning-AI/lightning-Habana/pull/64))
 
+- Add autocast using HPUPrecision plugin ([#66](https://github.com/Lightning-AI/lightning-Habana/pull/66))
+
 
 ### Changed
 

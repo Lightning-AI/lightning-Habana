@@ -15,13 +15,16 @@
 import operator
 
 import torch
-from lightning_utilities.core.imports import RequirementCache, compare_version, package_available
+from lightning_utilities.core.imports import RequirementCache, compare_version
+from packaging.version import Version
 
-_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-_TORCHVISION_AVAILABLE = RequirementCache("torchvision")
+from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE, get_gaudi_version  # noqa:
+
+_GAUDI_GREATER_EQUAL_1_1_0 = Version(get_gaudi_version()) >= Version("1.1.0")
 _TORCH_LESSER_EQUAL_1_13_1 = compare_version("torch", operator.le, "1.13.1")
 _TORCH_GREATER_EQUAL_2_0_0 = compare_version("torch", operator.ge, "2.0.0")
 _LIGHTNING_GREATER_EQUAL_2_0_0 = compare_version("lightning", operator.ge, "2.0.0") or compare_version(
     "pytorch_lightning", operator.ge, "2.0.0"
 )
+_TORCHVISION_AVAILABLE = RequirementCache("torchvision")
 _KINETO_AVAILABLE = torch.profiler.kineto_available()
