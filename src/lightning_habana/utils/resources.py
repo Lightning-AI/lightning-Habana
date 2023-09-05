@@ -75,7 +75,7 @@ def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
     return hl, fw
 
 
-@lru_cache()
+@lru_cache
 def get_gaudi_version() -> str:
     """Get Gaudi version."""
     proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
@@ -107,7 +107,7 @@ def get_device_stats(device: _DEVICE) -> Dict[str, Any]:
         return {}
 
 
-@lru_cache()
+@lru_cache
 def device_count() -> int:
     """Return the number of HPU devices when the devices is set to auto."""
     try:
