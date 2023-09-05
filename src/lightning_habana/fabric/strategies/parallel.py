@@ -45,7 +45,7 @@ else:
 from torch import Tensor
 from torch.nn import Module
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana import HPU_AVAILABLE
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
@@ -73,7 +73,7 @@ class HPUParallelStrategy(DDPStrategy):
         start_method: Literal["popen", "spawn", "fork", "forkserver"] = "popen",
         **kwargs: Any,
     ) -> None:
-        if not _HPU_AVAILABLE:
+        if not HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
 
         self._process_group_backend: Optional[str] = "hccl"
