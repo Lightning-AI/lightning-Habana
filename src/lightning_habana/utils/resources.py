@@ -81,7 +81,7 @@ def get_gaudi_version() -> str:
     """Get Gaudi version."""
     try:
         proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
-    # FileNotFoundError: No such file or directory: 'hl-smi'
+    # TODO: FileNotFoundError: No such file or directory: 'hl-smi'
     except FileNotFoundError:
         return ""
     out = proc.communicate()[0]
