@@ -24,13 +24,13 @@ from lightning_utilities import module_available
 if module_available("lightning"):
     from lightning.pytorch.profilers.pytorch import PyTorchProfiler
     from lightning.pytorch.trainer.connectors.data_connector import warning_cache
-    from lightning.pytorch.utilities.imports import _KINETO_AVAILABLE
     from lightning.pytorch.utilities.rank_zero import rank_zero_warn
 elif module_available("pytorch_lightning"):
     from pytorch_lightning.profilers.pytorch import PyTorchProfiler
     from pytorch_lightning.trainer.connectors.data_connector import warning_cache
-    from pytorch_lightning.utilities.imports import _KINETO_AVAILABLE
     from pytorch_lightning.utilities.rank_zero import rank_zero_warn
+
+from lightning_habana.utils.imports import _KINETO_AVAILABLE
 
 if _KINETO_AVAILABLE:
     from torch.profiler import ProfilerActivity, profile, tensorboard_trace_handler
