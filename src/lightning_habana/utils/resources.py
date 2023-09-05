@@ -83,10 +83,10 @@ def get_gaudi_version() -> str:
         proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
     # TODO: FileNotFoundError: No such file or directory: 'hl-smi'
     except FileNotFoundError:
-        return ""
+        return "0.0.0"
     out = proc.communicate()[0]
     hl, fw = _parse_gaudi_versions(out.decode("utf-8"))
-    return hl
+    return hl or "0.0.0"
 
 
 def get_device_stats(device: _DEVICE) -> Dict[str, Any]:
