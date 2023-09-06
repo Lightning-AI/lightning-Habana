@@ -293,21 +293,21 @@ class SampleModel(LightningModule):
         x, y = batch
         logits = self(x)
         loss = torch.sum(torch.abs(y - logits)) / (2 * 10 * 50)
-        self.log("train_loss", loss.item(), sync_dist=True)
+        self.log("train_loss", loss.item(), sync_dist=True, reduce_fx="sum")
         return {"loss": loss, "logits": logits}
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
         loss = torch.sum(torch.abs(y - logits)) / (2 * 10 * 50)
-        self.log("valid_loss", loss, sync_dist=True)
+        self.log("valid_loss", loss, sync_dist=True, reduce_fx="sum")
         return {"loss": loss, "logits": logits}
 
     def test_step(self, batch, batch_idx):
         x, y = batch
         logits = self(x)
         loss = torch.sum(torch.abs(y - logits)) / (2 * 10 * 50)
-        self.log("test_loss", loss, sync_dist=True)
+        self.log("test_loss", loss, sync_dist=True, reduce_fx="sum")
         return {"loss": loss, "logits": logits}
 
     def configure_optimizers(self):
