@@ -17,16 +17,17 @@ from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from lightning_utilities import module_available
+from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 if module_available("lightning"):
     from lightning.fabric.utilities.exceptions import MisconfigurationException
     from lightning.fabric.utilities.types import _DEVICE
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.utilities.types import _DEVICE
     from lightning_fabric.utilities.exceptions import MisconfigurationException
+    from lightning_fabric.utilities.types import _DEVICE
 
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
@@ -78,10 +79,14 @@ def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
 @lru_cache
 def get_gaudi_version() -> str:
     """Get Gaudi version."""
-    proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
+    try:
+        proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
+    # TODO: FileNotFoundError: No such file or directory: 'hl-smi'
+    except FileNotFoundError:
+        return "0.0.0"
     out = proc.communicate()[0]
     hl, fw = _parse_gaudi_versions(out.decode("utf-8"))
-    return hl
+    return hl or "0.0.0"
 
 
 def get_device_stats(device: _DEVICE) -> Dict[str, Any]:

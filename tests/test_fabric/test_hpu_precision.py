@@ -59,7 +59,6 @@ class MixedPrecisionBoringFabric(BoringFabric):
     [
         pytest.param("bf16-mixed", torch.float32),
         pytest.param("32", torch.float32),
-        pytest.param("bf16-mixed", torch.float32),
     ],
 )
 def test_hpu(precision, expected_dtype):
