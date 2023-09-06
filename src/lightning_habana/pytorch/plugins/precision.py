@@ -26,7 +26,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.utils.imports import _GAUDI_GREATER_EQUAL_1_1_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
@@ -44,8 +44,8 @@ class HPUPrecisionPlugin(PrecisionPlugin):
         precision: _PRECISION_INPUT,
         device: str = "hpu",
     ) -> None:
-        if not _GAUDI_GREATER_EQUAL_1_1_0:
-            raise OSError("HPU precision plugin requires `Gaudi >= 1.1`.")
+        if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
+            raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(

@@ -52,7 +52,7 @@ def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
     return int(devices) if isinstance(devices, str) else devices
 
 
-def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
+def _parse_hpu_synapse_versions(line: str) -> Tuple[str, str]:
     """Parse the CMD output with version capture.
 
     Args:
@@ -61,9 +61,9 @@ def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
     Returns:
         versions of SW and fimware as string
 
-    >>> _parse_gaudi_versions("Habanalabs hl-smi/hlml version hl-1.11.0-fw-45.1.1.1 (Aug 04 2023 - 02:48:21)")
+    >>> _parse_hpu_synapse_versions("Habanalabs hl-smi/hlml version hl-1.11.0-fw-45.1.1.1 (Aug 04 2023 - 02:48:21)")
     ('1.11.0', '45.1.1.1')
-    >>> _parse_gaudi_versions("any string as fake CMD output")
+    >>> _parse_hpu_synapse_versions("any string as fake CMD output")
     ('', '')
     """
     try:
@@ -77,15 +77,15 @@ def _parse_gaudi_versions(line: str) -> Tuple[str, str]:
 
 
 @lru_cache
-def get_gaudi_version() -> str:
-    """Get Gaudi version."""
+def get_hpu_synapse_version() -> str:
+    """Get synapse AI version."""
     try:
         proc = subprocess.Popen(["hl-smi", "-v"], stdout=subprocess.PIPE)
     # TODO: FileNotFoundError: No such file or directory: 'hl-smi'
-    except FileNotFoundError:
+    except (FileNotFoundError, NotADirectoryError):
         return "0.0.0"
     out = proc.communicate()[0]
-    hl, fw = _parse_gaudi_versions(out.decode("utf-8"))
+    hl, fw = _parse_hpu_synapse_versions(out.decode("utf-8"))
     return hl or "0.0.0"
 
 
