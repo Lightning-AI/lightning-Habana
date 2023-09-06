@@ -28,7 +28,7 @@ else:
 
 
 from lightning_habana import HPU_AVAILABLE
-from lightning_habana.utils.imports import _GAUDI_GREATER_EQUAL_1_1_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0
 
 _PRECISION_INPUT = Literal["32", "bf16", "32-true", "bf16-mixed"]
 
@@ -48,8 +48,8 @@ class HPUPrecision(Precision):
     ) -> None:
         if not HPU_AVAILABLE:
             raise ValueError("HPU precision plugin requires HPU devices.")
-        if not _GAUDI_GREATER_EQUAL_1_1_0:
-            raise OSError("HPU precision plugin requires `Gaudi >= 1.1`.")
+        if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
+            raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
