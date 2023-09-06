@@ -171,7 +171,7 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
         trainer.fit(model)
 
 
-def test_deepspeed_config(tmpdir, deepspeed_zero_config):
+def test_deepspeed_config(tmpdir):
     """Test to ensure deepspeed config works correctly.
 
     DeepSpeed config object including
@@ -180,19 +180,19 @@ def test_deepspeed_config(tmpdir, deepspeed_zero_config):
 
     class TestCB(Callback):
         def on_train_start(self, trainer, pl_module) -> None:
-            from deepspeed.runtime.lr_schedules import WarmupLR
+            from torch.optim.lr_scheduler import StepLR
 
             assert isinstance(trainer.optimizers[0], DeepSpeedZeroOptimizer)
             assert isinstance(trainer.optimizers[0].optimizer, torch.optim.SGD)
-            assert isinstance(trainer.lr_scheduler_configs[0].scheduler, WarmupLR)
-            assert trainer.lr_scheduler_configs[0].interval == "step"
+            assert isinstance(trainer.lr_scheduler_configs[0].scheduler, StepLR)
+            assert trainer.lr_scheduler_configs[0].interval == "epoch"
 
     model = BoringModel()
     lr_monitor = LearningRateMonitor()
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        strategy=HPUDeepSpeedStrategy(config=deepspeed_zero_config),
+        strategy=HPUDeepSpeedStrategy(),
         default_root_dir=tmpdir,
         devices=1,
         log_every_n_steps=1,
@@ -210,7 +210,7 @@ def test_deepspeed_config(tmpdir, deepspeed_zero_config):
     trainer.fit(model)
     trainer.test(model)
     assert list(lr_monitor.lrs) == ["lr-SGD"]
-    assert len(set(lr_monitor.lrs["lr-SGD"])) == 8
+    assert len(set(lr_monitor.lrs["lr-SGD"])) == trainer.max_epochs
 
 
 class SomeDataset(Dataset):
@@ -264,5 +264,60 @@ def test_lightning_model():
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(), max_epochs=1, plugins=_plugins, devices=1
+    )
+    trainer.fit(model)
+
+
+def test_hpu_deepspeed_with_invalid_optimizer():
+    """Test to ensure if we pass an invalid optimizer and throws an exception."""
+
+    class DummyModel(BoringModel):
+        def configure_optimizers(self):
+            return None
+
+    import logging
+
+    model = DummyModel()
+    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO),
+        max_epochs=1,
+        plugins=_plugins,
+        devices=1,
+    )
+    with pytest.raises(
+        MisconfigurationException, match="You have specified an invalid optimizer to be run with deepspeed."
+    ):
+        trainer.fit(model)
+
+
+def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
+    """Test the preference of optimizer when configured both from deepspeed config and LightningModule."""
+
+    class DummyModel(BoringModel):
+        def configure_optimizers(self):
+            return torch.optim.AdamW(self.parameters(), lr=0.1)
+
+    class TestCB(Callback):
+        def on_train_start(self, trainer, pl_module) -> None:
+            from deepspeed.runtime.lr_schedules import WarmupLR
+
+            assert isinstance(trainer.optimizers[0], DeepSpeedZeroOptimizer)
+            assert isinstance(trainer.optimizers[0].optimizer, torch.optim.AdamW)
+            assert isinstance(trainer.lr_scheduler_configs[0].scheduler, WarmupLR)
+            assert trainer.lr_scheduler_configs[0].interval == "step"
+
+    import logging
+
+    model = DummyModel()
+    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO, config=deepspeed_zero_config),
+        callbacks=[TestCB()],
+        max_epochs=1,
+        plugins=_plugins,
+        devices=1,
     )
     trainer.fit(model)
