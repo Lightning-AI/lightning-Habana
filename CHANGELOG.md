@@ -12,7 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documentation with examples for using DeepSpeed with HPU ([#64](https://github.com/Lightning-AI/lightning-Habana/pull/64))
 
-- Add autocast using HPUPrecision plugin ([#66](https://github.com/Lightning-AI/lightning-Habana/pull/66))
+- Add autocast using HPUPrecision plugin ([#66](https://github.com/Lightning-AI/lightning-Habana/pull/66), [#75](https://github.com/Lightning-AI/lightning-Habana/pull/75))
+
+
+- Added version check helper to use right release ([#75](https://github.com/Lightning-AI/lightning-Habana/pull/75), [#76](https://github.com/Lightning-AI/lightning-Habana/pull/76))
 
 
 ### Changed
@@ -24,12 +27,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed optimizer priority based on deepspeed specification ([#36](https://github.com/Lightning-AI/lightning-Habana/pull/69))
 
-
 - Fixed missing extras in package ([#70](https://github.com/Lightning-AI/lightning-Habana/pull/70))
+
+-
+
 
 ### Removed
 
 -
+
 
 ### Deprecated
 
