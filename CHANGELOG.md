@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add autocast using HPUPrecision plugin ([#66](https://github.com/Lightning-AI/lightning-Habana/pull/66), [#75](https://github.com/Lightning-AI/lightning-Habana/pull/75))
 
 
+- Added version check helper to use right release ([#75](https://github.com/Lightning-AI/lightning-Habana/pull/75), [#76](https://github.com/Lightning-AI/lightning-Habana/pull/76))
+
+
 ### Changed
 
 - Changed HPU docker image based on synapse AI release 1.11.0 & upgraded deepspeed plugin to version 0.9.4 ([#61](https://github.com/Lightning-AI/lightning-Habana/pull/61))
@@ -26,11 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed missing extras in package ([#70](https://github.com/Lightning-AI/lightning-Habana/pull/70))
 
-- Fixed version check helper to use right release ([#76](https://github.com/Lightning-AI/lightning-Habana/pull/76))
+- 
+
 
 ### Removed
 
 -
+
 
 ### Deprecated
 
