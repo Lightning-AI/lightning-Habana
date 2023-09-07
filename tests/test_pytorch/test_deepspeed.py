@@ -591,4 +591,3 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
         devices=1,
     )
     trainer.fit(model)
-
