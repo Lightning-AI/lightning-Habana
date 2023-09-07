@@ -3,7 +3,7 @@
 [![lightning](https://img.shields.io/badge/-Lightning_2.0+-792ee5?logo=pytorchlightning&logoColor=white)](https://lightning.ai/)
 [![PyPI Status](https://badge.fury.io/py/lightning-habana.svg)](https://badge.fury.io/py/lightning-habana)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/lightning-habana)](https://pypi.org/project/lightning-habana/)
-[![PyPI Status](https://pepy.tech/badge/lightning-habana)](https://pepy.tech/project/lightning-habana)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/lightning-Habana)](https://pepy.tech/project/lightning-habana)
 [![Deploy Docs](https://github.com/Lightning-AI/lightning-Habana/actions/workflows/docs-deploy.yml/badge.svg)](https://lightning-ai.github.io/lightning-Habana/)
 
 [![General checks](https://github.com/Lightning-AI/lightning-habana/actions/workflows/ci-checks.yml/badge.svg?event=push)](https://github.com/Lightning-AI/lightning-habana/actions/workflows/ci-checks.yml)
@@ -63,12 +63,12 @@ The `devices>1` parameter with HPUs enables the Habana accelerator for distribut
 
 # Support Matrix
 
-| **SynapseAI**         | **1.10.0**                                         |
+| **SynapseAI**         | **1.11.0**                                         |
 | --------------------- | -------------------------------------------------- |
 | PyTorch               | 2.0.1                                              |
 | (PyTorch) Lightning\* | 2.0.x                                              |
-| **Lightning Habana**  | **1.0.1**                                          |
-| DeepSpeed             | Forked from v0.7.7 of the official DeepSpeed repo. |
+| **Lightning Habana**  | **1.1.0**                                          |
+| DeepSpeed\*\*         | Forked from v0.9.4 of the official DeepSpeed repo. |
 
 \* covers both packages [`lightning`](https://pypi.org/project/lightning/) and [`pytorch-lightning`](https://pypi.org/project/pytorch-lightning/)
 

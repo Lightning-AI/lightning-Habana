@@ -22,20 +22,24 @@ uses 32-bit precision. To enable mixed precision, set the ``precision`` flag.
 
 ----
 
-Customize Mixed Precision
--------------------------
+Customize Mixed Precision Using Autocast
+----------------------------------------
 
 Lightning supports following methods to enable mixed precision training with HPU.
 
 **HPUPrecisionPlugin**
+
+.. note::
+   Habana Mixed Precision (HMP) is being deprecated, and the precision plugin now supports `torch.autocast` by default
 
 Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` uses the Habana Mixed Precision (HMP) package to enable mixed precision training.
 
 You can execute the ops in FP32 or BF16 precision. The HMP package modifies the Python operators to add the appropriate cast operations for the arguments before execution.
 With the default settings, you can easily enable mixed precision training with minimal code.
 
-In addition to the default settings in HMP, you can choose to override these defaults and provide your own BF16 and FP32 operator lists by passing them as parameters
-to :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
+In addition to the default settings, you can choose to override these defaults and provide your own BF16 (LOWER_LIST) and FP32 (FP32_LIST)
+operator lists by passing them as parameters to :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
+The `LOWER_LIST` and `FP32_LIST` environment variables must be set before any instances begin.
 
 The following is an excerpt from an MNIST example implemented on a single HPU.
 
@@ -46,19 +50,13 @@ The following is an excerpt from an MNIST example implemented on a single HPU.
     from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 
     # Initialize a trainer with HPU accelerator for HPU strategy for single device,
-    # with mixed precision using overidden HMP settings
+    # with HPU precision plugin for autocast
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=1,
-        # Optional Habana mixed precision params to be set
-        # Checkout `examples/pl_hpu/ops_bf16_mnist.txt` for the format
         plugins=[
             HPUPrecisionPlugin(
                 precision="bf16-mixed",
-                opt_level="O1",
-                verbose=False,
-                bf16_file_path="ops_bf16_mnist.txt",
-                fp32_file_path="ops_fp32_mnist.txt",
             )
         ],
     )
@@ -71,7 +69,6 @@ The following is an excerpt from an MNIST example implemented on a single HPU.
     # Train the model ⚡
     trainer.fit(model, datamodule=dm)
 
-For more details, please refer to `PyTorch Mixed Precision Training on Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/PT_Mixed_Precision.html>`__.
 
 
 **Native PyTorch torch.autocast()**

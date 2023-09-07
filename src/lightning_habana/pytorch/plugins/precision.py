@@ -11,8 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Literal, Optional, cast
 
+from contextlib import contextmanager
+from typing import Generator, Literal
+
+import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
 
@@ -23,41 +26,40 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    from habana_frameworks.torch.hpex import hmp
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
 
 class HPUPrecisionPlugin(PrecisionPlugin):
-    """Plugin that enables bfloat/half support on HPUs.
+    """Plugin that enables bfloat support on HPUs.
 
     Args:
-        precision: The precision to use.
-        opt_level: Choose optimization level for hmp.
-        bf16_file_path: Path to bf16 ops list in hmp O1 mode.
-        fp32_file_path: Path to fp32 ops list in hmp O1 mode.
-        verbose: Enable verbose mode for hmp.
+        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
+        device: The device for ``torch.autocast``.
     """
 
     def __init__(
         self,
         precision: _PRECISION_INPUT,
-        opt_level: str = "O2",
-        bf16_file_path: Optional[str] = None,
-        fp32_file_path: Optional[str] = None,
-        verbose: bool = False,
+        device: str = "hpu",
     ) -> None:
+        if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
+            raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
                 f"`Trainer(accelerator='hpu', precision={precision!r})` is not supported."
                 f" `precision` must be one of: {supported_precision}."
             )
-        self.precision = cast(_PRECISION_INPUT, str(precision))
-        if self.precision in ("16-mixed", "bf16-mixed"):
-            hmp.convert(
-                opt_level=opt_level, bf16_file_path=bf16_file_path, fp32_file_path=fp32_file_path, isVerbose=verbose
-            )
+        self.precision = precision
+        self.device = device
+
+    def autocast_context_manager(self) -> torch.autocast:
+        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+
+    @contextmanager
+    def forward_context(self) -> Generator[None, None, None]:
+        """Enable autocast context."""
+        with self.autocast_context_manager():
+            yield

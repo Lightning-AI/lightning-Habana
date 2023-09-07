@@ -18,6 +18,8 @@ import pytest
 import torch
 from lightning_utilities import module_available
 
+from lightning_habana.utils.resources import device_count
+
 if module_available("lightning"):
     from lightning.pytorch import Callback, Trainer, seed_everything
     from lightning.pytorch.demos.boring_classes import BoringModel
@@ -28,7 +30,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 from tests.helpers import ClassifDataModule, ClassificationModel
 
@@ -61,7 +62,6 @@ def test_all_stages(tmpdir, hpus):
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
-    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     if hpus > 1:
         parallel_hpus = [torch.device("hpu")] * hpus
         _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
@@ -70,9 +70,7 @@ def test_all_stages(tmpdir, hpus):
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
-        plugins=_plugins,
         devices=hpus,
-        precision="bf16-mixed",
     )
     trainer.fit(model)
     trainer.validate(model)
@@ -88,7 +86,6 @@ def test_optimization(tmpdir):
     model = ClassificationModel()
 
     _strategy = SingleHPUStrategy()
-    # _plugins=[HPUPrecisionPlugin(precision="bf16-mixed")]
 
     trainer = Trainer(
         default_root_dir=tmpdir, max_epochs=1, max_steps=10, accelerator=HPUAccelerator(), devices=1, strategy=_strategy
@@ -193,7 +190,7 @@ def test_accelerator_with_single_device():
     assert isinstance(trainer.accelerator, HPUAccelerator_Registered)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices():
     trainer = Trainer(accelerator="hpu", devices=8)
     assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
@@ -205,7 +202,7 @@ def test_accelerator_with_multiple_devices():
     assert trainer.num_devices == HPUAccelerator_Registered.auto_device_count()
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_auto_with_devices_hpu():
     trainer = Trainer(accelerator="auto", devices=8)
     assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
@@ -221,7 +218,7 @@ def test_strategy_choice_single_strategy():
     assert isinstance(trainer.strategy, SingleHPUStrategy_Registered)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_strategy_choice_parallel_strategy():
     trainer = Trainer(
         strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8),

@@ -19,7 +19,7 @@ def _load_py_module(fname, pkg="lightning_habana"):
     return py
 
 
-def _load_requirements(path_dir: str = _PATH_ROOT, file_name: str = "requirements.txt") -> list:
+def _load_requirements(path_dir: str = _PATH_REQUIRES, file_name: str = "base.txt") -> list:
     reqs = parse_requirements(open(os.path.join(path_dir, file_name)).readlines())
     return list(map(str, reqs))
 

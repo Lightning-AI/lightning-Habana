@@ -41,12 +41,7 @@ def does_not_raise():
 @pytest.fixture()
 def hmp_params(request):
     """Returns params for HPUPrecisionPlugin."""
-    return {
-        "opt_level": "O1",
-        "verbose": False,
-        "bf16_file_path": request.config.getoption("--hmp-bf16"),
-        "fp32_file_path": request.config.getoption("--hmp-fp32"),
-    }
+    return {"device": "hpu"}
 
 
 @pytest.fixture()
@@ -187,7 +182,7 @@ def test_unsupported_precision_plugin():
             BaseBMActive,
             HPUPrecisionPlugin,
             "hmp_params",
-            pytest.raises(AssertionError, match="False = <function is_autocast_hpu_enabled"),
+            does_not_raise(),
         ),
     ],
     ids=[

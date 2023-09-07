@@ -78,11 +78,9 @@ if _HABANA_FRAMEWORK_AVAILABLE:
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
-# WA : TBD : there is an issue with internal habana pipelines wrt deepspeed package naming in 1.10.0 release
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0
-    RequirementCache("deepspeed==0.7.7+hpu.synapse.v1.10.0")
-    or RequirementCache("deepspeed==0.7.7+ca649af")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0
+    RequirementCache("deepspeed==0.9.4+hpu.synapse.v1.11.0")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -110,6 +108,11 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     Defaults have been set to enable ZeRO-Offload and some have been taken from the link below.
     These defaults have been set generally, but may require tuning for optimum performance based on your model size.
     `For more information: https://www.deepspeed.ai/docs/config-json/#zero-optimizations-for-fp16-training`.
+
+    .. note::
+    It is recommended to define the optimizer and otpmizer params in `LightningModule.configure_optimizers`.
+    The optimizer defined by LightningModule overrides any optimizer and optimizer params specified in
+    DeepSpeed configuration file.
 
     Arguments:
         zero_optimization: Enable ZeRO optimization. This is compatible with either `precision="16-mixed"` or
@@ -251,7 +254,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.10.0`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.11.0`."
             )
 
         super().__init__(
@@ -461,6 +464,13 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             raise MisconfigurationException(
                 "DeepSpeed currently only supports single optimizer, single optional scheduler."
             )
+        if str(optimizers[0]) == "No Optimizer":
+            raise MisconfigurationException(
+                "You have specified an invalid optimizer to be run with deepspeed."
+                "Please check deepspeed documentation for the supported optimizers"
+            )
+
+        rank_zero_info(f"Deepspeed will be configured with the optimizer {optimizers[0]}")
         return optimizers[0], lr_schedulers[0] if lr_schedulers else None
 
     @property
@@ -472,23 +482,19 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def _initialize_deepspeed_train(self, model: Module) -> None:
         optimizer, scheduler = None, None
         assert isinstance(self.config, dict)
+        optimizer, lr_scheduler = self._init_optimizers()
+        if lr_scheduler is not None:
+            scheduler = lr_scheduler.scheduler
+
         if "optimizer" in self.config:
             rank_zero_info(
                 "You have specified an optimizer and/or scheduler within the DeepSpeed config."
                 " It is recommended to define it in `LightningModule.configure_optimizers`."
+                " The optimizer defined by LightningModule overrides any optimizer specified in DeepSpeed config."
             )
-            lr_scheduler = None
-        else:
-            (
-                optimizer,
-                lr_scheduler,
-            ) = self._init_optimizers()
-            if lr_scheduler is not None:
-                scheduler = lr_scheduler.scheduler
 
         model, deepspeed_optimizer = self._setup_model_and_optimizer(model, optimizer, scheduler)
         self._set_deepspeed_activation_checkpointing()
-
         # although we set these here, deepspeed manages the specific optimizer logic
         self.optimizers = [deepspeed_optimizer]
 
@@ -604,8 +610,15 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 "To use DeepSpeed you must pass in a DeepSpeed config dict, or a path to a JSON config."
                 " See: https://lightning.ai/docs/pytorch/stable/advanced/model_parallel.html#deepspeed"
             )
+        self._validate_config()
         self._format_batch_size_and_grad_accum_config()
         self._format_precision_config()
+
+    def _validate_config(self) -> None:
+        assert isinstance(self.config, dict)
+
+        if "autotuning" in self.config and self.config["autotuning"]["enabled"] is True:
+            raise MisconfigurationException("HPU DeepSpeed strategy doesn't support `autotuning`")
 
     def _format_batch_size_and_grad_accum_config(self) -> None:
         # TODO: Using Fabric, we do not support these variables within the config

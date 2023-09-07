@@ -9,24 +9,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Added
+
+- Documentation with examples for using DeepSpeed with HPU ([#64](https://github.com/Lightning-AI/lightning-Habana/pull/64))
+
+- Add autocast using HPUPrecision plugin ([#66](https://github.com/Lightning-AI/lightning-Habana/pull/66), [#75](https://github.com/Lightning-AI/lightning-Habana/pull/75))
+
+- Demonstrate HPU Graphs support ([#67](https://github.com/Lightning-AI/lightning-Habana/pull/67))
+
 - Enhance test coverage of DeepSpeed strategy on HPU ([#68](https://github.com/Lightning-AI/lightning-Habana/pull/68))
+
+- Added version check helper to use right release ([#75](https://github.com/Lightning-AI/lightning-Habana/pull/75), [#76](https://github.com/Lightning-AI/lightning-Habana/pull/76))
 
 
 ### Changed
 
--
+- Changed HPU docker image based on synapse AI release 1.11.0 & upgraded deepspeed plugin to version 0.9.4 ([#61](https://github.com/Lightning-AI/lightning-Habana/pull/61))
+
 
 ### Fixed
 
+- Fixed optimizer priority based on deepspeed specification ([#36](https://github.com/Lightning-AI/lightning-Habana/pull/69))
+
+
+- Fixed missing extras in package ([#70](https://github.com/Lightning-AI/lightning-Habana/pull/70))
+
 -
+
 
 ### Removed
 
 -
 
+
 ### Deprecated
 
--
+- Warn on HMP deprecation from `HPUPrecision` plugin ([#65](https://github.com/Lightning-AI/lightning-Habana/pull/65))
 
 
 ## [1.0.1] - 2023-07-26

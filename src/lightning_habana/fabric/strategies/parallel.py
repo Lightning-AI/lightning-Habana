@@ -27,6 +27,7 @@ if module_available("lightning"):
     from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
     from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
     from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
+    from lightning.fabric.plugins.precision import Precision
     from lightning.fabric.strategies.ddp import DDPStrategy
     from lightning.fabric.utilities.types import Optimizable
 elif module_available("pytorch_lightning"):
@@ -35,6 +36,7 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
     from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
     from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
+    from lightning_fabric.plugins.precision import Precision
     from lightning_fabric.strategies.ddp import DDPStrategy
     from lightning_fabric.utilities.types import Optimizable
 else:
@@ -43,9 +45,8 @@ else:
 from torch import Tensor
 from torch.nn import Module
 
-from lightning_habana import _HPU_AVAILABLE
+from lightning_habana import HPU_AVAILABLE
 from lightning_habana.fabric.accelerator import HPUAccelerator
-from lightning_habana.fabric.plugins.precision import HPUPrecision
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -66,13 +67,13 @@ class HPUParallelStrategy(DDPStrategy):
         parallel_devices: Optional[List[torch.device]] = [torch.device("hpu")] * HPUAccelerator.auto_device_count(),
         cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
-        precision: Optional[HPUPrecision] = None,
+        precision: Optional[Precision] = None,
         process_group_backend: Optional[str] = "hccl",
         timeout: Optional[timedelta] = default_pg_timeout,
         start_method: Literal["popen", "spawn", "fork", "forkserver"] = "popen",
         **kwargs: Any,
     ) -> None:
-        if not _HPU_AVAILABLE:
+        if not HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
 
         self._process_group_backend: Optional[str] = "hccl"
