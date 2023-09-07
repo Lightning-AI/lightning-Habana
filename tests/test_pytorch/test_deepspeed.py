@@ -579,9 +579,10 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
 
     import logging
 
-    DummyModel()
+    model = DummyModel()
+
     _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
-    Trainer(
+    trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO, config=deepspeed_zero_config),
         callbacks=[TestCB()],
@@ -589,3 +590,5 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
         plugins=_plugins,
         devices=1,
     )
+    trainer.fit(model)
+
