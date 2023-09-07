@@ -24,13 +24,17 @@ from torch.utils.data import DataLoader, Dataset
 
 if module_available("lightning"):
     from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch.callbacks import Callback, LearningRateMonitor
     from lightning.pytorch.demos.boring_classes import BoringModel
+    from lightning.pytorch.loggers import CSVLogger
     from lightning.pytorch.plugins import DeepSpeedPrecisionPlugin
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer, LightningModule
     from pytorch_lightning.demos.boring_classes import BoringModel
+    from pytorch_lightning.loggers import CSVLogger
     from pytorch_lightning.plugins import DeepSpeedPrecisionPlugin
+    from pytorch_lightning.callbacks import Callback, LearningRateMonitor
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
@@ -39,6 +43,7 @@ from lightning_habana.pytorch.strategies.deepspeed import _HPU_DEEPSPEED_AVAILAB
 
 if _HPU_DEEPSPEED_AVAILABLE:
     from deepspeed.runtime.activation_checkpointing.checkpointing import checkpoint
+    from deepspeed.runtime.zero.stage_1_and_2 import DeepSpeedZeroOptimizer
 
 
 class ModelParallelBoringModel(BoringModel):
