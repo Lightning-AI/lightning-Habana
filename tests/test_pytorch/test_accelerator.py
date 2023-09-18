@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from unittest import mock
 from contextlib import contextmanager
 from typing import Any, Optional, Union
+from unittest import mock
 
 import pytest
 import torch
@@ -23,10 +23,10 @@ from lightning_utilities import module_available
 from lightning_habana.utils.resources import device_count
 
 if module_available("lightning"):
+    from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch import Callback, Trainer, seed_everything
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
-    from lightning.fabric.utilities.types import ReduceOp
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Callback, Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringModel
@@ -34,8 +34,8 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.types import ReduceOp
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
+from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 # The external strategies, accelerator gets registerd with trainer initialization
@@ -58,8 +58,7 @@ def test_device_name():
 
 
 def test_accelerator_selected():
-    trainer = Trainer(accelerator=HPUAccelerator(),
-                      strategy=SingleHPUStrategy())
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
@@ -185,8 +184,7 @@ def test_stages_correct(tmpdir):
 
 
 def test_accelerator_is_hpu():
-    trainer = Trainer(accelerator=HPUAccelerator(),
-                      devices=1, strategy=SingleHPUStrategy())
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy())
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 1
 
@@ -218,8 +216,7 @@ def test_accelerator_auto_with_devices_hpu():
 
 
 def test_strategy_choice_single_strategy():
-    trainer = Trainer(strategy=SingleHPUStrategy(
-        device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
+    trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
     trainer = Trainer(accelerator="hpu", devices=1)
@@ -229,8 +226,7 @@ def test_strategy_choice_single_strategy():
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_strategy_choice_parallel_strategy():
     trainer = Trainer(
-        strategy=HPUParallelStrategy(
-            parallel_devices=[torch.device("hpu")] * 8),
+        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 8),
         accelerator=HPUAccelerator(),
         devices=8,
     )
@@ -459,8 +455,7 @@ def test_reduce_op_strategy(tmpdir, reduce_op, expectation):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=8,
-        strategy=MockHPUParallelStrategy(
-            reduce_op=reduce_op, start_method="spawn"),
+        strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
     )
@@ -506,5 +501,4 @@ def test_reduce_op_logging(tmpdir, reduce_op, logged_value_epoch, logged_value_s
     assert torch.allclose(
         trainer.callback_metrics.get("logged_value_epoch"), torch.tensor(logged_value_epoch), atol=1e-4
     )
-    assert torch.allclose(trainer.callback_metrics.get(
-        "logged_value_step"), torch.tensor(logged_value_step), atol=1e-4)
+    assert torch.allclose(trainer.callback_metrics.get("logged_value_step"), torch.tensor(logged_value_step), atol=1e-4)
