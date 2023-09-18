@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added version check helper to use right release ([#75](https://github.com/Lightning-AI/lightning-Habana/pull/75), [#76](https://github.com/Lightning-AI/lightning-Habana/pull/76))
 
-- Implement reduce with parallel plugin
+- Implement reduce with parallel plugin ([#77](https://github.com/Lightning-AI/lightning-Habana/pull/77))
 
 ### Changed
 
