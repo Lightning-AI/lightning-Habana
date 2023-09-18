@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import torch
+from lightning_utilities.core.imports import module_available
 from torch import Tensor
 
-from lightning_utilities.core.imports import module_available
-
 if module_available("lightning"):
-    from lightning.fabric.utilities.types import ReduceOp
     from lightning.fabric.utilities.distributed import _sync_ddp
     from lightning.fabric.utilities.rank_zero import rank_zero_warn
+    from lightning.fabric.utilities.types import ReduceOp
 elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.types import ReduceOp
     from lightning_fabric.utilities.distributed import _sync_ddp

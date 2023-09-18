@@ -13,14 +13,15 @@
 # limitations under the License
 
 
-import torch
 import copy
+
+import torch
 from lightning_utilities import module_available
 
 if module_available("lightning"):
-    from lightning.pytorch import Trainer, Callback, seed_everything
-    from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.fabric.utilities.types import ReduceOp
+    from lightning.pytorch import Callback, Trainer, seed_everything
+    from lightning.pytorch.demos.boring_classes import BoringModel
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringModel
@@ -28,10 +29,11 @@ elif module_available("pytorch_lightning"):
 
 from contextlib import contextmanager
 from typing import Any, Optional, Union
-from torch import Tensor
-from lightning_habana.pytorch import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin
 
 import pytest
+from torch import Tensor
+
+from lightning_habana.pytorch import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin
 
 
 @contextmanager
@@ -45,7 +47,7 @@ class BaseBM(BoringModel):
 
     def __init__(self, reduce_op=None):
         """Init."""
-        super(BaseBM, self).__init__()
+        super().__init__()
         self.reduce_op = reduce_op
         self.logged_value_start = 42
 
@@ -86,7 +88,7 @@ class MockHPUParallelStrategy(HPUParallelStrategy):
         reduce_op="sum",
         **kwargs: Any,
     ):
-        super(MockHPUParallelStrategy, self).__init__()
+        super().__init__()
         self.reduce_op = reduce_op
         self.logged_messages = []
         print(f"{self.reduce_op=}")
