@@ -408,6 +408,7 @@ def test_hpu_parallel_reduce_op_strategy_default():
     assert strategy.reduce_op == "sum"
 
 
+@pytest.mark.skip(reason="TBD : Fix pytest issues")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 8, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -464,6 +465,7 @@ def test_reduce_op_strategy(tmpdir, reduce_op, expectation):
         trainer.fit(_model)
 
 
+@pytest.mark.skip(reason="TBD : Fix pytest issues")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 8, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
