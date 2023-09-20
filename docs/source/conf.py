@@ -274,6 +274,18 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable/", None),
 }
 
+nitpicky = True
+
+nitpick_ignore = [
+    ("py:class", "typing.Self"),
+    # TODO: generated list of all existing ATM, need to be fixed
+    ("py:class", "HPUAccelerator"),
+    ("py:class", "lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin"),
+    ("py:class", "lightning_habana.pytorch.strategies.HPUParallelStrategy"),
+    ("py:class", "lightning_habana.pytorch.strategies.SingleHPUStrategy"),
+    ("py:class", "pytorch_lightning.callbacks.device_stats_monitor.DeviceStatsMonitor"),
+]
+
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
@@ -284,15 +296,6 @@ def setup(app):
     # this is for hiding doctest decoration,
     # see: http://z4r.github.io/python/2011/12/02/hides-the-prompts-and-output/
     app.add_js_file("copybutton.js")
-
-
-# copy all notebooks to local folder
-path_nbs = os.path.join(_PATH_HERE, "notebooks")
-if not os.path.isdir(path_nbs):
-    os.mkdir(path_nbs)
-for path_ipynb in glob.glob(os.path.join(_PATH_ROOT, "notebooks", "*.ipynb")):
-    path_ipynb2 = os.path.join(path_nbs, os.path.basename(path_ipynb))
-    shutil.copy(path_ipynb, path_ipynb2)
 
 
 # Ignoring Third-party packages
