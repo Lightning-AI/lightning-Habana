@@ -18,11 +18,12 @@ from torch import Tensor
 
 if module_available("lightning"):
     from lightning.fabric.utilities.distributed import _sync_ddp
-    from lightning.fabric.utilities.rank_zero import rank_zero_warn
+    from lightning.fabric.utilities.rank_zero import rank_zero_warn, rank_zero_info
     from lightning.fabric.utilities.types import ReduceOp
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.utilities.types import ReduceOp
     from lightning_fabric.utilities.distributed import _sync_ddp
+    from lightning_fabric.utilities.rank_zero import rank_zero_warn, rank_zero_info
+    from lightning_fabric.utilities.types import ReduceOp
 
 from typing import Any, Optional, Union
 
@@ -42,15 +43,17 @@ def _distributed_available() -> bool:
     )
 
 
-def check_reduce_op_support(reduce_op: Union[ReduceOp, str]) -> bool:
+def _is_reduce_op_supported(reduce_op: Union[ReduceOp, str]) -> bool:
     """Function to check if reduce_op is supported with hccl backend."""
     reduce_op = reduce_op.lower() if isinstance(reduce_op, str) else reduce_op
     if reduce_op in ("mean", "avg") or reduce_op == ReduceOp.AVG:
         rank_zero_warn(f"{reduce_op} is not supported with HCCL. Going to simulate it")
         return True
-    if reduce_op in supported_reduce_ops or any(reduce_op is op for op in supported_reduce_ops.values()):
-        return True
-    return False
+    if reduce_op not in supported_reduce_ops and not any(reduce_op is op for op in supported_reduce_ops.values()):
+        raise TypeError(
+            f"Unsupported ReduceOp {reduce_op}. Supported ops in HCCL are: {', '.join(supported_reduce_ops)}"
+        )
+    return True
 
 
 def _sync_ddp_if_available(
@@ -67,10 +70,7 @@ def _sync_ddp_if_available(
         reduced value
 
     """
-    if _distributed_available():
-        assert check_reduce_op_support(
-            reduce_op
-        ), f"Unsupported ReduceOp {reduce_op}. Only 'sum', 'min', and 'max' are supported with HCCL"
+    if _distributed_available() and _is_reduce_op_supported(reduce_op):
         return _sync_ddp_hpu(result, group=group, reduce_op=reduce_op)
     return result
 
@@ -100,5 +100,13 @@ def _sync_ddp_hpu(
         # Compute mean from sum
         group = torch.distributed.group.WORLD if group is None else group
         world_size = torch.distributed.get_world_size(group)
+
+        # HPU doesn't support Long types, forcefully set it to float
+        if result.type() in (
+            "torch.LongTensor",
+            "torch.hpu.LongTensor",
+        ):
+            rank_zero_info("Long tensor unsupported on HPU, casting to float")
+            result = result.float()
         return result.div_(world_size)
     return result

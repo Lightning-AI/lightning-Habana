@@ -13,7 +13,7 @@
 # limitations under the License.
 import copy
 import os
-from contextlib import contextmanager
+from contextlib import nullcontext
 from typing import Any, Optional, Union
 from unittest import mock
 
@@ -22,6 +22,7 @@ import torch
 from lightning_utilities import module_available
 
 from lightning_habana.utils.resources import device_count
+from lightning_habana.utils.hpu_distributed import supported_reduce_ops
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
@@ -338,12 +339,6 @@ def test_hpu_device_stats_monitor():
         assert any(f in h for h in hpu_stats)
 
 
-@contextmanager
-def does_not_raise():
-    """No-op context manager as a complement to pytest.raises."""
-    yield
-
-
 class BaseBM(BoringModel):
     """Model to test with reduce ops."""
 
@@ -413,26 +408,26 @@ def test_hpu_parallel_reduce_op_strategy_default():
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
     [
-        ("sum", does_not_raise()),
-        ("max", does_not_raise()),
-        ("min", does_not_raise()),
-        ("mean", does_not_raise()),
+        ("sum", nullcontext()),
+        ("max", nullcontext()),
+        ("min", nullcontext()),
+        ("mean", nullcontext()),
         (
             "product",
             pytest.raises(
-                AssertionError,
-                match="Unsupported ReduceOp product. Only 'sum', 'min', and 'max' are supported with HCCL",
+                TypeError,
+                match=f"Unsupported ReduceOp product. Supported ops in HCCL are: {', '.join(supported_reduce_ops)}",
             ),
         ),
-        (ReduceOp.SUM, does_not_raise()),
-        (ReduceOp.MIN, does_not_raise()),
-        (ReduceOp.MAX, does_not_raise()),
-        (ReduceOp.AVG, does_not_raise()),
+        (ReduceOp.SUM, nullcontext()),
+        (ReduceOp.MIN, nullcontext()),
+        (ReduceOp.MAX, nullcontext()),
+        (ReduceOp.AVG, nullcontext()),
         (
             ReduceOp.PRODUCT,
             pytest.raises(
-                AssertionError,
-                match="Unsupported ReduceOp RedOpType.PRODUCT. Only 'sum', 'min', and 'max' are supported with HCCL",
+                TypeError,
+                match=f"Unsupported ReduceOp RedOpType.PRODUCT. Supported ops in HCCL are: {', '.join(supported_reduce_ops)}",
             ),
         ),
     ],
@@ -460,6 +455,7 @@ def test_reduce_op_strategy(tmpdir, reduce_op, expectation):
         strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
+        plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
     )
     with expectation:
         trainer.fit(_model)
