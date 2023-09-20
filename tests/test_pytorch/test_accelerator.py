@@ -403,7 +403,7 @@ def test_hpu_parallel_reduce_op_strategy_default():
     assert strategy.reduce_op == "sum"
 
 
-@pytest.mark.skip(reason="TBD : Fix pytest issues")
+# @pytest.mark.skip(reason="TBD : Fix pytest issues")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 8, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -427,7 +427,10 @@ def test_hpu_parallel_reduce_op_strategy_default():
             ReduceOp.PRODUCT,
             pytest.raises(
                 TypeError,
-                match=f"Unsupported ReduceOp RedOpType.PRODUCT. Supported ops in HCCL are: {', '.join(supported_reduce_ops)}",
+                match=(
+                    "Unsupported ReduceOp RedOpType.PRODUCT. "
+                    f"Supported ops in HCCL are: {', '.join(supported_reduce_ops)}"
+                ),
             ),
         ),
     ],
@@ -451,7 +454,7 @@ def test_reduce_op_strategy(tmpdir, reduce_op, expectation):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=8,
+        devices=2,
         strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
