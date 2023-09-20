@@ -21,8 +21,8 @@ import pytest
 import torch
 from lightning_utilities import module_available
 
-from lightning_habana.utils.resources import device_count
 from lightning_habana.utils.hpu_distributed import supported_reduce_ops
+from lightning_habana.utils.resources import device_count
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
