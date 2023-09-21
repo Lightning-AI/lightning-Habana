@@ -22,6 +22,7 @@ from lightning_utilities import module_available
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning.fabric.utilities.distributed import group as _group
+    from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
@@ -30,6 +31,7 @@ if module_available("lightning"):
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning_fabric.utilities.distributed import group as _group
+    from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
@@ -37,10 +39,12 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.strategies.ddp import DDPStrategy
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+from torch import Tensor
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
+from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -150,6 +154,13 @@ class HPUParallelStrategy(DDPStrategy):
         # Break lazy accumulation of graph after every step
         htcore.mark_step()
         return super().predict_step(batch, batch_idx)
+
+    def reduce(
+        self, tensor: Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
+    ) -> Tensor:
+        if isinstance(tensor, Tensor):
+            return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
+        return tensor
 
     @classmethod
     def register_strategies(cls, strategy_registry: Dict) -> None:

@@ -12,7 +12,7 @@ Using HPUProfiler
 -----------------
 
 HPUProfiler is a Lightning implementation of PyTorch profiler for HPU. It aids in obtaining profiling summary of PyTorch functions.
-It subclasses PyTorch Lightning's `PyTorch profiler <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html#pytorch_lightning.profilers.PyTorchProfiler>`_.
+It subclasses PyTorch Lightning's `PyTorch profiler <https://lightning.ai/docs/pytorch/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html>`_.
 
 Default Profiling
 ^^^^^^^^^^^^^^^^^^

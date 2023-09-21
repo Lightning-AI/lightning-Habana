@@ -21,7 +21,7 @@ On the software side, the PyTorch Habana bridge interfaces between the framework
 
 Gaudi offers a substantial price/performance advantage -- so you get to do more deep learning training while spending less.
 
-For more information, check out `Gaudi Architecture <https://docs.habana.ai/en/latest/Gaudi_Overview/Gaudi_Overview.html#gaudi-architecture>`__ and `Gaudi Developer Docs <https://developer.habana.ai>`__.
+For more information, check out `Gaudi Architecture <https://docs.habana.ai/en/latest/Gaudi_Overview/Gaudi_Overview.html>`__ and `Gaudi Developer Docs <https://developer.habana.ai>`__.
 
 ----
 
