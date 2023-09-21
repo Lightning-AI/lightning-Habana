@@ -57,7 +57,7 @@ scale-out across multiple nodes.
 
 .. note::
    accelerator="auto" or accelerator="hpu" is not yet enabled with lightning>2.0.0 and lightning-habana.
-   However passing class object :class:`HPUAccelerator()` is supported.
+   However passing class object :class:`HPUAccelerator` is supported.
 
 ----
 
