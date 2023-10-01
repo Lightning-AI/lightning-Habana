@@ -1,2 +1,2 @@
 mypy ==1.5.1
-pytorch-lightning ==2.0.9.post0
+pytorch-lightning ==2.0.9
