@@ -1,4 +1,4 @@
-"""Cofigure local testing."""
+"""Configure local testing."""
 
 import os
 

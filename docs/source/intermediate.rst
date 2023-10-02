@@ -98,7 +98,7 @@ These also allow for fine tuning with `enabled` for enabling and disabling mixed
             return
 
     # Initialize a trainer with HPU accelerator for HPU strategy for single device,
-    # with mixed precision using overidden HMP settings
+    # with mixed precision using overridden HMP settings
     trainer = Trainer(
         accelerator="hpu",
         devices=1,

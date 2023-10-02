@@ -59,7 +59,7 @@ def _parse_hpu_synapse_versions(line: str) -> Tuple[str, str]:
         line: output of `hl-smi -v`
 
     Returns:
-        versions of SW and fimware as string
+        versions of SW and firmware as string
 
     >>> _parse_hpu_synapse_versions("Habanalabs hl-smi/hlml version hl-1.11.0-fw-45.1.1.1 (Aug 04 2023 - 02:48:21)")
     ('1.11.0', '45.1.1.1')
