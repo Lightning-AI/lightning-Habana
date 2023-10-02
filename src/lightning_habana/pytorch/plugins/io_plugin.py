@@ -46,6 +46,7 @@ class HPUCheckpointIO(TorchCheckpointIO):
         Raises:
             TypeError:
                 If ``storage_options`` arg is passed in
+
         """
         if storage_options is not None:
             raise TypeError(

@@ -51,7 +51,7 @@ if _HABANA_FRAMEWORK_AVAILABLE:
         raise ModuleNotFoundError("`habana_dataloader` package is not installed.")
 
     class ResnetMediaPipe(MediaPipe):
-        """resnet classifier with media pipe.
+        """Resnet classifier with media pipe.
 
         Args:
             is_training: True if ResnetMediaPipe handles training data, False in case of evaluation.
@@ -63,6 +63,7 @@ if _HABANA_FRAMEWORK_AVAILABLE:
             num_instances: number of devices.
             instance_id: instance id of current device.
             device: media device to run mediapipe on. <hpu/hpu:0>
+
         """
 
         instance_count = 0
@@ -162,6 +163,7 @@ if _HABANA_FRAMEWORK_AVAILABLE:
 
             Rreturns:
                 output images, labels
+
             """
             jpegs, data = self.input()
             images = self.decode(jpegs)
@@ -184,6 +186,7 @@ if _HABANA_FRAMEWORK_AVAILABLE:
             shape: output shape
             dtype: output data type
             seed: seed to be used
+
         """
 
         def __init__(self, params):  # type: ignore[no-untyped-def]

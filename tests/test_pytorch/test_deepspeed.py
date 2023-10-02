@@ -333,8 +333,8 @@ class SampleModel(LightningModule):
 def test_deepspeed_config(tmpdir):
     """Test to ensure deepspeed config works correctly.
 
-    DeepSpeed config object including
-    optimizers/schedulers and saves the model weights to load correctly.
+    DeepSpeed config object including optimizers/schedulers and saves the model weights to load correctly.
+
     """
 
     class TestCB(Callback):

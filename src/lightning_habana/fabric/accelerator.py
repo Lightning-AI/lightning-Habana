@@ -40,6 +40,7 @@ class HPUAccelerator(Accelerator):
         Raises:
             ValueError:
                 If the selected device is not HPU.
+
         """
         if device.type != "hpu":
             raise ValueError(f"Device should be HPU, got {device} instead.")

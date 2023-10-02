@@ -39,6 +39,7 @@ class HPUPrecision(Precision):
     Args:
         precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
         device: The device for ``torch.autocast``.
+
     """
 
     def __init__(

@@ -194,6 +194,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         load_full_weights: True when loading a single checkpoint file containing the model state dict
             when using ZeRO Stage 3. This differs from the DeepSpeed checkpoint which contains shards
             per worker.
+
     """
 
     strategy_name = "hpu_deepspeed"
@@ -389,6 +390,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         Return:
             The model wrapped into a :class:`deepspeed.DeepSpeedEngine` and a list with a single
             deepspeed optimizer.
+
         """
         if len(optimizers) != 1:
             raise ValueError(
@@ -414,6 +416,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         """Initialize one model and one optimizer with an optional learning rate scheduler.
 
         This calls :func:`deepspeed.initialize` internally.
+
         """
         import deepspeed
 
@@ -589,6 +592,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         Args:
             trainer: the Trainer, these optimizers should be connected to.
+
         """
         if trainer.state.fn != TrainerFn.FITTING:
             return
@@ -767,6 +771,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         Raises:
             TypeError:
                 If ``storage_options`` arg is passed in.
+
         """
         # broadcast the filepath from rank 0 to ensure all the states are saved in a common filepath
         filepath = self.broadcast(filepath)
@@ -839,6 +844,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         Args:
             ckpt: The ckpt file.
+
         """
         import deepspeed
 
