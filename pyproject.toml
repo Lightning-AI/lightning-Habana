@@ -36,7 +36,6 @@ filterwarnings = [
 ]
 xfail_strict = true
 junit_duration_report = "call"
-
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
@@ -48,15 +47,6 @@ exclude_lines = [
 # https://github.com/psf/black
 line-length = 120
 exclude = "(.eggs|.git|.hg|.mypy_cache|.venv|_build|buck-out|build|dist)"
-
-[tool.isort]
-known_first_party = [
-    "lightning_habana",
-    "tests",
-]
-skip_glob = []
-profile = "black"
-line_length = 120
 
 
 [tool.mypy]
@@ -84,6 +74,7 @@ line-length = 120
 select = [
     "E", "W",  # see: https://pypi.org/project/pycodestyle
     "F",  # see: https://pypi.org/project/pyflakes
+    "I",  # Isort
     "D",  # see: https://pypi.org/project/pydocstyle
     "N",  # see: https://pypi.org/project/pep8-naming
 ]
