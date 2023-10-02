@@ -54,9 +54,9 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
-    from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning.accelerators import Accelerator
+    from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
     from pytorch_lightning.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.utils import _fp_to_half

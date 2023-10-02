@@ -241,9 +241,7 @@ def test_mixed_precision_compare_accuracy(tmpdir, model_plugin_list, request):
         # Reset seed before each trainer.fit call
         seed_everything(42)
         loss_list.append(run_training(tmpdir, model, _plugin))
-    assert all(x == loss_list[0] for x in loss_list), [
-        (item1, item2) for item1, item2 in zip(model_plugin_list, loss_list)
-    ]
+    assert all(x == loss_list[0] for x in loss_list), list(zip(model_plugin_list, loss_list))
 
 
 def test_autocast_enable_disable(tmpdir):

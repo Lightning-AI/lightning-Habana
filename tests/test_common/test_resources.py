@@ -1,5 +1,4 @@
 import pytest
-
 from lightning_habana.utils.resources import device_count, get_gaudi_version
 
 
