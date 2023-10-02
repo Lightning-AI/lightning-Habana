@@ -18,7 +18,7 @@ import torch
 from lightning_utilities.core.imports import RequirementCache, compare_version
 from packaging.version import Version
 
-from lightning_habana.utils.resources import get_hpu_synapse_version
+from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE, get_hpu_synapse_version  # noqa: F401
 
 _HPU_SYNAPSE_GREATER_EQUAL_1_11_0 = Version(get_hpu_synapse_version()) >= Version("1.11.0")
 _TORCH_LESSER_EQUAL_1_13_1 = compare_version("torch", operator.le, "1.13.1")
