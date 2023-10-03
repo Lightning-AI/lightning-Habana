@@ -22,7 +22,7 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.8.0
+    rev: v3.14.0
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
@@ -47,13 +47,13 @@ repos:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.9.1
     hooks:
       - id: black
         name: Black code
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
+    rev: 0.7.17
     hooks:
       - id: mdformat
         additional_dependencies:
@@ -75,7 +75,7 @@ repos:
           #- flake8-simplify
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.0.276
+    rev: v0.0.292
     hooks:
       - id: ruff
         args: ["--fix"]
