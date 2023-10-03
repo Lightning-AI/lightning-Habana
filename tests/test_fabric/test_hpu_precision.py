@@ -17,9 +17,9 @@ import pytest
 import torch
 import torch.nn as nn
 from lightning.fabric import Fabric, seed_everything
-
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
+
 from tests.test_fabric.fabric_helpers import BoringFabric
 
 

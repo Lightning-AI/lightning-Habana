@@ -51,8 +51,8 @@ _DATASETS_PATH = "/tmp/data"
 def patch_aeon_length(self) -> int:  # type: ignore[no-untyped-def]
     """WA to avoid hang in aeon dataloader with PyTorch Lightning version >= 2.0.0.
 
-    Returns adjusted length if lightning version >= 2.0.0
-    Returns default length otherwise.
+    Returns adjusted length if lightning version >= 2.0.0 Returns default length otherwise.
+
     """
     length = len(self.dataloader)
     # If Lightning version is >= 2.0.0, and dataloader is aeon,

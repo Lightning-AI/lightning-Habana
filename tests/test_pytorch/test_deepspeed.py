@@ -30,11 +30,11 @@ if module_available("lightning"):
     from lightning.pytorch.plugins import DeepSpeedPrecisionPlugin
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning import Trainer, LightningModule
+    from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning.callbacks import Callback, LearningRateMonitor
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.loggers import CSVLogger
     from pytorch_lightning.plugins import DeepSpeedPrecisionPlugin
-    from pytorch_lightning.callbacks import Callback, LearningRateMonitor
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
@@ -333,8 +333,8 @@ class SampleModel(LightningModule):
 def test_deepspeed_config(tmpdir):
     """Test to ensure deepspeed config works correctly.
 
-    DeepSpeed config object including
-    optimizers/schedulers and saves the model weights to load correctly.
+    DeepSpeed config object including optimizers/schedulers and saves the model weights to load correctly.
+
     """
 
     class TestCB(Callback):

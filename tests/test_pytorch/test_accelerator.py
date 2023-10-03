@@ -19,10 +19,9 @@ from unittest import mock
 
 import pytest
 import torch
-from lightning_utilities import module_available
-
 from lightning_habana.utils.hpu_distributed import supported_reduce_ops
 from lightning_habana.utils.resources import device_count
+from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
@@ -30,14 +29,15 @@ if module_available("lightning"):
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
+    from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning import Callback, Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
-    from lightning_fabric.utilities.types import ReduceOp
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 # The external strategies, accelerator gets registerd with trainer initialization
