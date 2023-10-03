@@ -65,6 +65,7 @@ def _parse_hpu_synapse_versions(line: str) -> Tuple[str, str]:
     ('1.11.0', '45.1.1.1')
     >>> _parse_hpu_synapse_versions("any string as fake CMD output")
     ('', '')
+
     """
     try:
         # Item "None" of "Optional[Match[str]]" has no attribute "group"
@@ -104,6 +105,7 @@ def get_device_stats(device: _DEVICE) -> Dict[str, Any]:
         - TotalSystemAllocs: total number of system allocations.
         - TotalSystemFrees: total number of system frees.
         - TotalActiveAllocs: total number of active allocations.
+
     """
     try:
         return torch_hpu.hpu.memory_stats(device)

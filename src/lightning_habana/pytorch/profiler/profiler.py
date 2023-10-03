@@ -75,6 +75,7 @@ class HPUProfiler(PyTorchProfiler):
             If arg ``sort_by_key`` is not present in ``AVAILABLE_SORT_KEYS``.
             If arg ``schedule`` is not a ``Callable``.
             If arg ``schedule`` does not return a ``torch.profiler.ProfilerAction``.
+
     """
 
     def __init__(

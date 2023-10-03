@@ -44,6 +44,7 @@ class HPUAccelerator(Accelerator):
         Raises:
             MisconfigurationException:
                 If the selected device is not HPU.
+
         """
         if device.type != "hpu":
             raise MisconfigurationException(f"Device should be HPU, got {device} instead.")

@@ -22,7 +22,7 @@ if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
 elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.distributed import _sync_ddp
-    from lightning_fabric.utilities.rank_zero import rank_zero_warn, rank_zero_info
+    from lightning_fabric.utilities.rank_zero import rank_zero_info, rank_zero_warn
     from lightning_fabric.utilities.types import ReduceOp
 
 from typing import Any, Optional, Union
