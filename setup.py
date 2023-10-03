@@ -25,8 +25,8 @@ def _load_requirements(path_dir: str = _PATH_REQUIRES, file_name: str = "base.tx
 
 
 about = _load_py_module("__about__.py")
-with open(os.path.join(_PATH_ROOT, "README.md"), encoding="utf-8") as fo:
-    readme = fo.read()
+with open(os.path.join(_PATH_ROOT, "README.md"), encoding="utf-8") as fopen:
+    readme = fopen.read()
 
 
 def _prepare_extras(requirements_dir: str = _PATH_REQUIRES, skip_files: tuple = ("devel.txt", "docs.txt")) -> dict:

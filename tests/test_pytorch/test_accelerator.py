@@ -40,7 +40,7 @@ from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUSt
 
 from tests.helpers import ClassifDataModule, ClassificationModel
 
-# The external strategies, accelerator gets registerd with trainer initialization
+# The external strategies, accelerator gets registered with trainer initialization
 if module_available("lightning"):
     from lightning.pytorch.accelerators import HPUAccelerator as HPUAccelerator_Registered
     from lightning.pytorch.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered

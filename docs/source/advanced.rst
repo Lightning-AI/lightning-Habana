@@ -62,7 +62,7 @@ reference a profiler in the ``LightningModule``.
     # To profile in any part of your code, use the self.profiler.profile() function
         def custom_processing_step_basic(self, data):
             with self.profiler.profile("my_custom_action"):
-                print("do somthing")
+                print("do something")
             return data
 
     # Alternatively, use self.profiler.start("my_custom_action")
@@ -70,7 +70,7 @@ reference a profiler in the ``LightningModule``.
     # to enclose the part of code to be profiled.
         def custom_processing_step_granular(self, data):
             self.profiler.start("my_custom_action")
-            print("do somthing")
+            print("do something")
             self.profiler.stop("my_custom_action")
             return data
 
@@ -460,7 +460,7 @@ Capture and Replay Inference
 The implementation is similar to Capture and Replay in training.
 
 #. Create a HPUGraph instance.
-#. Create placeholders for input, target and predicitons.
+#. Create placeholders for input, target and predictions.
 #. Capture graph by wrapping the required portion of test / validation step in HPUGraph ContextManager in first pass.
 #. Finally replay the graph for remaining iterations.
 
