@@ -45,6 +45,7 @@ def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
     Raises:
         MisconfigurationException:
             If devices aren't of type `int` or `str`
+
     """
     if devices is not None and not isinstance(devices, (int, str)):
         raise MisconfigurationException("`devices` for `HPUAccelerator` must be int, string or None.")

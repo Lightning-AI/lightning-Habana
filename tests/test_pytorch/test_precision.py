@@ -155,7 +155,7 @@ def test_mixed_precision_plugin(tmpdir, plugin, params, request):
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         devices=1,
-        strategy=SingleHPUStrategy(),  # TBD- set default in accelertor
+        strategy=SingleHPUStrategy(),  # TBD- set default in accelerator
         plugins=[plugin(precision="bf16-mixed", **request.getfixturevalue(params))],
         callbacks=TestCallback(),
     )
