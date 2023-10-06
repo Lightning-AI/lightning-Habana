@@ -103,7 +103,6 @@ class HPUParallelStrategy(DDPStrategy):
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
-            os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
             _ws = self.cluster_environment.world_size()
             _grank = self.cluster_environment.global_rank()
             _lrank = self.cluster_environment.local_rank()
@@ -170,10 +169,6 @@ class HPUParallelStrategy(DDPStrategy):
             description=f"{cls.__class__.__name__}",
         )
 
-    def teardown(self) -> None:
-        super().teardown()
-        os.environ.pop("HCCL_DISTRIBUTED_BACKEND", None)
-
 
 # The code underneath is taken from PyTorch `torch/distributed/distributed_c10d.py`
 # the distributed backend and tensor type updates for habana backend is done here before broadcast
@@ -200,7 +195,7 @@ def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # 
     # broadcasted to this device.
     group_backend = get_backend(group)
     is_nccl_backend = group_backend == Backend.NCCL
-    is_hpu_backend = os.environ.get("HCCL_DISTRIBUTED_BACKEND") == "1"
+    is_hpu_backend = group_backend == "hccl"
     if device is not None:
         if is_nccl_backend and device.type != "cuda":
             raise ValueError("device type must be cuda for nccl backend")

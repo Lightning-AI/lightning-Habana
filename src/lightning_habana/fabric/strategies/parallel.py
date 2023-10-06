@@ -104,12 +104,6 @@ class HPUParallelStrategy(DDPStrategy):
     def process_group_backend(self) -> Optional[str]:
         return self._process_group_backend
 
-    def setup_environment(self) -> None:
-        if self._process_group_backend == "hccl":
-            # this env is used in overrides to check the backend initiated
-            os.environ["HCCL_DISTRIBUTED_BACKEND"] = str(1)
-        super().setup_environment()
-
     def determine_ddp_device_ids(self) -> None:
         return None
 
@@ -145,7 +139,3 @@ class HPUParallelStrategy(DDPStrategy):
             cls,
             description=f"{cls.__class__.__name__}",
         )
-
-    def teardown(self) -> None:
-        super().teardown()
-        os.environ.pop("HCCL_DISTRIBUTED_BACKEND", None)
