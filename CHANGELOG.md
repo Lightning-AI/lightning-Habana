@@ -7,7 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased] - 2023-MM-DD
 
-
 ### Added
 
 -
@@ -18,8 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Changed HPU docker image based on synapse AI release 1.12.0 ([#90](https://github.com/Lightning-AI/lightning-Habana/pull/90))
 - Remove redundant env variable for HPU distributed backend ([#91](https://github.com/Lightning-AI/lightning-Habana/pull/91))
-
 
 ### Removed
 
