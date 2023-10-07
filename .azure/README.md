@@ -1,5 +1,14 @@
 # Creation HPU self-hosted agent pool
 
+## Upgrade machine
+
+In general follow instructions in [Bare Metal Fresh OS Installation](https://docs.habana.ai/en/v1.10.0/Installation_Guide/Bare_Metal_Fresh_OS.html#) and in particular [Habana Driver Unattended Upgrade](https://docs.habana.ai/en/v1.10.0/Installation_Guide/Bare_Metal_Fresh_OS.html#habana-driver-unattended-upgrade).
+
+1. check what is the actual state and version of HW - `hl-smi`
+2. check the actual OS version - `lsb_release -a`
+3. run upgrade to the latest - `sudo apt install --only-upgrade habanalabs-dkms`
+4. reboot the machine...
+
 ## Prepare the machine
 
 This is a slightly modified version of the script from
