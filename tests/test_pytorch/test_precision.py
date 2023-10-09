@@ -135,7 +135,7 @@ def test_precision_plugin_fit(tmpdir, plugin, precision_plugin_params):
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         devices=1,
-        strategy=SingleHPUStrategy(),  # TBD- set default in accelertor
+        strategy=SingleHPUStrategy(),  # TBD- set default in accelerator
         plugins=[plugin(**(precision_plugin_params))],
         callbacks=TestCallback(),
     )

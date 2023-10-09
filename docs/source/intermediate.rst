@@ -29,7 +29,7 @@ Lightning supports following methods to enable mixed precision training with HPU
 
 **HPUPrecisionPlugin**
 
-Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` sub-classes :class:`~PrecisionPlugin` to enable mixed precision training.
+Internally, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin` sub-classes :class:`~lightning.pytorch.plugins.precision.PrecisionPlugin` to enable mixed precision training.
 
 In addition to the default settings, you can choose to override these defaults and provide your own BF16 (LOWER_LIST) and FP32 (FP32_LIST)
 The `LOWER_LIST` and `FP32_LIST` environment variables must be set before any instances begin.
