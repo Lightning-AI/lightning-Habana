@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import warnings
-import argparse
-from mnist_sample import LitClassifier, LitAutocastClassifier
 
 from lightning_utilities import module_available
+from mnist_sample import LitAutocastClassifier, LitClassifier
 
 if module_available("lightning"):
     from lightning.pytorch import Trainer, seed_everything
-    from lightning.pytorch.plugins.precision import MixedPrecisionPlugin
     from lightning.pytorch.demos.mnist_datamodule import MNISTDataModule
+    from lightning.pytorch.plugins.precision import MixedPrecisionPlugin
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer, seed_everything
-    from pytorch_lightning.plugins.precision import MixedPrecisionPlugin
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
+    from pytorch_lightning.plugins.precision import MixedPrecisionPlugin
 
-from lightning_habana import HPUAccelerator, SingleHPUStrategy, HPUPrecisionPlugin
+from lightning_habana import HPUAccelerator, HPUPrecisionPlugin, SingleHPUStrategy
 
 RUN_TYPE = ["basic", "autocast"]
 
@@ -64,8 +64,8 @@ def run_model(run_type, plugin, verbose):
     if run_type == "basic":
         _model = LitClassifier()
     elif run_type == "autocast":
-        if plugin != None:
-            warnings.warn(f"Skipping precision plugins. Redundant with autocast run.")
+        if plugin is not None:
+            warnings.warn("Skipping precision plugins. Redundant with autocast run.")
         if "LOWER_LIST" in os.environ or "FP32_LIST" in os.environ:
             _model = LitAutocastClassifier(op_override=True)
         else:
