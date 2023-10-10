@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added tests, examples and updated documentation for HPUPrecisionPlugin ([#94](https://github.com/Lightning-AI/lightning-Habana/pull/94))
+- Added tests, examples and updated documentation for HPUPrecisionPlugin with autocast ([#94](https://github.com/Lightning-AI/lightning-Habana/pull/94))
 
 ### Changed
 
