@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+import os
 from typing import Any, Callable, Dict, List, Optional, Union
 
 import torch
@@ -72,8 +73,13 @@ class HPUParallelStrategy(DDPStrategy):
         ddp_comm_wrapper: Optional[Callable] = None,
         model_averaging_period: Optional[int] = None,
         process_group_backend: Optional[str] = "hccl",
+        recipe_cache_path: Optional[str] = None,
+        recipe_cache_clean: Optional[bool] = True,
+        recipe_cache_size: Optional[int] = 0,
         **kwargs: Any,
     ) -> None:
+        if recipe_cache_path is not None and recipe_cache_size != 0:
+            os.environ["PT_HPU_RECIPE_CACHE_CONFIG"] = f"{recipe_cache_path},{recipe_cache_clean},{recipe_cache_size}"
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -171,6 +177,11 @@ class HPUParallelStrategy(DDPStrategy):
             cls,
             description=f"{cls.__class__.__name__}",
         )
+
+    def teardown(self) -> None:
+        super().teardown()
+        os.environ.pop("HCCL_DISTRIBUTED_BACKEND", None)
+        os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
 
 # The code underneath is taken from PyTorch `torch/distributed/distributed_c10d.py`

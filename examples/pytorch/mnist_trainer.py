@@ -28,20 +28,53 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
     from pytorch_lightning.plugins.precision import MixedPrecisionPlugin
 
-from lightning_habana import HPUAccelerator, HPUPrecisionPlugin, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin, SingleHPUStrategy
+from lightning_habana.utils.resources import device_count
 
-RUN_TYPE = ["basic", "autocast"]
+RUN_TYPE = ["basic", "autocast", "recipe_caching"]
+PLUGINS = ["None", "HPUPrecisionPlugin", "MixedPrecisionPlugin"]
 
 
-def run_trainer(model, plugin):
+def parse_args():
+    """Cmdline arguments parser."""
+    parser = argparse.ArgumentParser(description="Example to showcase mixed precision training with HPU.")
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbosity")
+    parser.add_argument(
+        "-r", "--run_types", nargs="+", choices=RUN_TYPE, default=RUN_TYPE, help="Select run type for example"
+    )
+    parser.add_argument(
+        "-p",
+        "--plugins",
+        nargs="+",
+        default=PLUGINS,
+        choices=PLUGINS,
+        help="Plugins for use in training",
+    )
+    return parser.parse_args()
+
+
+def run_trainer(model, plugin, run_type):
     """Run trainer.fit and trainer.test with given parameters."""
     _data_module = MNISTDataModule(batch_size=32)
+    _devices = 1
+    _strategy = SingleHPUStrategy()
+    if run_type == "recipe_caching":
+        if device_count() < 2:
+            warnings.warn("Recipe caching not required for single device.")
+        else:
+            _devices = 2
+            _strategy = HPUParallelStrategy(
+                recipe_cache_path="/tmp/recipes",
+                recipe_cache_clean=True,
+                recipe_cache_size=1024,
+            )
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=1,
-        strategy=SingleHPUStrategy(),
+        devices=_devices,
+        strategy=_strategy,
         plugins=plugin,
-        fast_dev_run=True,
+        fast_dev_run=3,
     )
     trainer.fit(model, _data_module)
     trainer.test(model, _data_module)
@@ -61,9 +94,8 @@ def check_and_init_plugin(plugin, verbose):
 
 def run_model(run_type, plugin, verbose):
     """Picks appropriate model and plugin."""
-    if run_type == "basic":
-        _model = LitClassifier()
-    elif run_type == "autocast":
+    _model = LitClassifier()
+    if run_type == "autocast":
         if plugin is not None:
             warnings.warn("Skipping precision plugins. Redundant with autocast run.")
         if "LOWER_LIST" in os.environ or "FP32_LIST" in os.environ:
@@ -76,29 +108,10 @@ def run_model(run_type, plugin, verbose):
             "https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html#override-options"
         )
 
-    _plugin = check_and_init_plugin(plugin, verbose)
+    _plugin = check_and_init_plugin(plugin, verbose) if plugin != "None" else None
     if verbose:
         print(f"With run type: {run_type}, running model: {_model} with plugin: {plugin}")
-    run_trainer(_model, _plugin)
-
-
-def parse_args():
-    """Cmdline arguments parser."""
-    parser = argparse.ArgumentParser(description="Example to showcase mixed precision training with HPU.")
-
-    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbosity")
-    parser.add_argument(
-        "-r", "--run_types", nargs="+", choices=RUN_TYPE, default=RUN_TYPE, help="Select run type for example"
-    )
-    parser.add_argument(
-        "-p",
-        "--plugins",
-        nargs="+",
-        default=[],
-        choices=["HPUPrecisionPlugin", "MixedPrecisionPlugin"],
-        help="Plugins for use in training",
-    )
-    return parser.parse_args()
+    run_trainer(_model, _plugin, run_type)
 
 
 if __name__ == "__main__":
@@ -108,7 +121,7 @@ if __name__ == "__main__":
         print(f"Running MNIST mixed precision training with options: {options}")
 
     # Run model and print accuracy
-    for run_type in options.run_types:
+    for _run_type in options.run_types:
         for plugin in options.plugins:
             seed_everything(42)
-            run_model(run_type, plugin, options.verbose)
+            run_model(_run_type, plugin, options.verbose)
