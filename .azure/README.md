@@ -5,17 +5,17 @@
 In general follow instructions in [Bare Metal Fresh OS Installation](https://docs.habana.ai/en/v1.10.0/Installation_Guide/Bare_Metal_Fresh_OS.html#) and in particular [Habana Driver Unattended Upgrade](https://docs.habana.ai/en/v1.10.0/Installation_Guide/Bare_Metal_Fresh_OS.html#habana-driver-unattended-upgrade).
 
 1. check what is the actual state and version of HW - `hl-smi`
-2. check the actual OS version - `lsb_release -a`
-3. update sources - `sudo apt update --fix-missing`
-3. run upgrade to the latest - `sudo apt upgrade`
-4. reboot the machine...
+1. check the actual OS version - `lsb_release -a`
+1. update sources - `sudo apt update --fix-missing`
+1. run upgrade to the latest - `sudo apt upgrade`
+1. reboot the machine...
 
 ### Troubleshooting
 
 In some cases you may get stack with hanged libs linked to past kernel (for example `sudo apt purge habanalabs-dkms` errors), in such case do not follow with purge old libs and just continue with new
 
 1. list available libs: `sudo apt list | grep habana | grep 1.12`
-2. install all libs from the output list above:
+1. install all libs from the output list above:
    ```bash
    sudo apt install \
      habanalabs-container-runtime \
