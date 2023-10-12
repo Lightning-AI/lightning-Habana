@@ -6,8 +6,30 @@ In general follow instructions in [Bare Metal Fresh OS Installation](https://doc
 
 1. check what is the actual state and version of HW - `hl-smi`
 2. check the actual OS version - `lsb_release -a`
-3. run upgrade to the latest - `sudo apt install --only-upgrade habanalabs-dkms`
+3. update sources - `sudo apt update --fix-missing`
+3. run upgrade to the latest - `sudo apt upgrade`
 4. reboot the machine...
+
+### Troubleshooting
+
+In some cases you may get stack with hanged libs linked to past kernel (for example `sudo apt purge habanalabs-dkms` errors), in such case do not follow with purge old libs and just continue with new
+
+1. list available libs: `sudo apt list | grep habana | grep 1.12`
+2. install all libs from the output list above:
+   ```bash
+   sudo apt install \
+     habanalabs-container-runtime \
+     habanalabs-dkms \
+     habanalabs-firmware-tools \
+     habanalabs-firmware \
+     habanalabs-graph \
+     habanalabs-qual \
+     habanalabs-rdma-core \
+     habanalabs-thunk \
+     habanatools
+   ```
+
+Overall if you touch kernel version, follow with reboot before any eventual other updates.
 
 ## Prepare the machine
 
