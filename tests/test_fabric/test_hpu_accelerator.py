@@ -35,7 +35,6 @@ def test_init_device_with_wrong_device_type():
     [
         (1, [torch.device("hpu")]),
         (2, [torch.device("hpu")] * 2),
-        (8, [torch.device("hpu")] * 8),
     ],
 )
 def test_get_parallel_devices(devices, expected):

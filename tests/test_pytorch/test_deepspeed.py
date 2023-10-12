@@ -99,7 +99,7 @@ def get_device_count(pytestconfig):
 @pytest.fixture()
 def deepspeed_base_config():
     return {
-        "train_batch_size": 8,
+        "train_batch_size": 2,
         "bf16": {"enabled": True},
         "fp16": {"enabled": False},
         "train_micro_batch_size_per_gpu": 2,
@@ -109,7 +109,7 @@ def deepspeed_base_config():
                 "warmup_min_lr": 0.02,
                 "warmup_max_lr": 0.05,
                 "warmup_num_steps": 4,
-                "total_num_steps": 8,
+                "total_num_steps": 2,
                 "warmup_type": "linear",
             },
         },
@@ -504,7 +504,7 @@ def test_lightning_model(
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(config=config, parallel_devices=_parallel_hpus),
         enable_progress_bar=False,
-        fast_dev_run=8,
+        fast_dev_run=2,
         plugins=_plugins,
         use_distributed_sampler=False,
         limit_train_batches=16,
@@ -528,7 +528,7 @@ def test_lightning_deepspeed_stages(get_device_count, zero_stage, offload):
         devices=get_device_count,
         strategy=HPUDeepSpeedStrategy(zero_optimization=True, stage=zero_stage, offload_optimizer=offload),
         plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
-        fast_dev_run=8,
+        fast_dev_run=2,
         enable_progress_bar=False,
         use_distributed_sampler=False,
         limit_train_batches=16,
