@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--
+- Added test to validate checkpoint resuming with Deepspeed strategy on HPU ([#95](https://github.com/Lightning-AI/lightning-Habana/pull/95))
 
 ### Changed
 
