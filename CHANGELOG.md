@@ -14,14 +14,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed HPU docker image based on synapse AI release 1.12.0 ([#90](https://github.com/Lightning-AI/lightning-Habana/pull/90))
+- Use standard API's and Remove env variable to get HPU distributed backend ([#91](https://github.com/Lightning-AI/lightning-Habana/pull/91))
+
 
 ### Fixed
 
 -
 
+
 ### Removed
 
 -
+
 
 ### Deprecated
 
