@@ -54,7 +54,7 @@ class MixedPrecisionBoringFabric(BoringFabric):
         assert model.layer.weight.grad.dtype == torch.float32
 
 
-@pytest.mark.xfail(reason="TBD: Resolve issues with lightning 2.1")
+@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 @pytest.mark.parametrize(
     ("precision", "expected_dtype"),
     [
@@ -72,7 +72,7 @@ def test_hpu(precision, expected_dtype):
     fabric.run()
 
 
-@pytest.mark.xfail(reason="TBD: Resolve issues with lightning 2.1")
+@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_fused_optimizer():
     def run():
         seed_everything(1234)
