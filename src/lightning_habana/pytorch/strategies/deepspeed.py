@@ -13,59 +13,60 @@
 # limitations under the License.
 
 import argparse
-import contextlib
 import json
 import logging
 import os
 import platform
 from collections import OrderedDict
+from contextlib import contextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Generator, List, Mapping, Optional, Tuple, Union
 
-import torch
 from lightning_utilities import module_available
-from lightning_utilities.core.apply_func import apply_to_collection
 from lightning_utilities.core.imports import RequirementCache
-from torch import Tensor
-from torch.nn import Module
-from torch.optim import Optimizer
 
 if module_available("lightning"):
+    import lightning.pytorch as pl
     from lightning.fabric.plugins import ClusterEnvironment
     from lightning.fabric.strategies import _StrategyRegistry
+    from lightning.fabric.strategies.deepspeed import (
+        _format_precision_config,
+        _validate_checkpoint_directory,
+    )
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
     from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from lightning.pytorch import LightningModule, Trainer
-    from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
-    from lightning.pytorch.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from lightning.pytorch.plugins.precision import PrecisionPlugin
-    from lightning.pytorch.strategies.utils import _fp_to_half
     from lightning.pytorch.trainer.states import TrainerFn
     from lightning.pytorch.utilities import GradClipAlgorithmType
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
-    from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
-    from lightning.pytorch.utilities.types import STEP_OUTPUT, LRSchedulerConfig
+    from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_warn
+    from lightning.pytorch.utilities.types import LRSchedulerConfig
 elif module_available("pytorch_lightning"):
+    import pytorch_lightning as pl
     from lightning_fabric.plugins import ClusterEnvironment
     from lightning_fabric.strategies import _StrategyRegistry
+    from lightning_fabric.strategies.deepspeed import (
+        _format_precision_config,
+        _validate_checkpoint_directory,
+    )
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from pytorch_lightning import LightningModule, Trainer
-    from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
-    from pytorch_lightning.overrides.base import _LightningModuleWrapperBase, _LightningPrecisionModuleWrapperBase
     from pytorch_lightning.plugins.precision import PrecisionPlugin
-    from pytorch_lightning.strategies.utils import _fp_to_half
     from pytorch_lightning.trainer.states import TrainerFn
     from pytorch_lightning.utilities import GradClipAlgorithmType
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
     from pytorch_lightning.utilities.model_helpers import is_overridden
-    from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_only, rank_zero_warn
-    from pytorch_lightning.utilities.types import STEP_OUTPUT, LRSchedulerConfig
+    from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_warn
+    from pytorch_lightning.utilities.types import LRSchedulerConfig
+
+import torch
+from torch.nn import Module
+from torch.optim import Optimizer
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
@@ -99,113 +100,17 @@ def remove_module_hooks(model: torch.nn.Module) -> None:
 
 
 class HPUDeepSpeedStrategy(HPUParallelStrategy):
-    """Strategy to support deepspeed with HPU devices.
-
-    Provides capabilities to run training using the DeepSpeed library, with training optimizations for large
-    billion parameter models. `For more information: https://pytorch-
-    lightning.readthedocs.io/en/stable/advanced/model_parallel.html#deepspeed`.
-    .. warning::  This is an :ref:`experimental <versioning:Experimental API>` feature.
-    Defaults have been set to enable ZeRO-Offload and some have been taken from the link below.
-    These defaults have been set generally, but may require tuning for optimum performance based on your model size.
-    `For more information: https://www.deepspeed.ai/docs/config-json/#zero-optimizations-for-fp16-training`.
-
-    .. note::
-    It is recommended to define the optimizer and otpmizer params in `LightningModule.configure_optimizers`.
-    The optimizer defined by LightningModule overrides any optimizer and optimizer params specified in
-    DeepSpeed configuration file.
-
-    Arguments:
-        zero_optimization: Enable ZeRO optimization. This is compatible with either `precision="16-mixed"` or
-            `precision="bf16-mixed"`.
-        stage: Different stages of the ZeRO Optimizer. 0 is disabled,
-            1 is optimizer state partitioning, 2 is optimizer+gradient state partitioning,
-            3 is optimizer+gradient_parameter partitioning using the infinity engine.
-        remote_device: Device to instantiate the model on initially (``cpu`` or ``nvme``).
-        offload_optimizer: Enable offloading optimizer memory and computation to CPU or NVMe
-            based on ``offload_optimizer_device``.
-        offload_parameters: When using ZeRO Stage 3, Enable offloading parameter memory and computation
-            to CPU or NVMe based on ``offload_params_device``.
-        offload_params_device: When offloading parameters choose the device to offload to, ``cpu`` or ``nvme``.
-        offload_optimizer_device: When offloading optimizer state choose the device to offload to,
-            ``cpu`` or ``nvme``.
-        params_buffer_count: Number of buffers in buffer pool for
-            parameter offloading when ``offload_params_device`` is ``nvme``.
-        params_buffer_size: Size of buffers in buffer pool for parameter offloading
-            when ``offload_params_device`` is ``nvme``.
-        max_in_cpu: Number of parameter elements to maintain in CPU memory when offloading to NVMe is enabled.
-        nvme_path: Filesystem path for NVMe device for optimizer/parameter state offloading.
-        optimizer_buffer_count: Number of buffers in buffer pool for optimizer state offloading
-            when ``offload_optimizer_device`` is set to to ``nvme``.
-            This should be at least the number of states maintained per parameter by the optimizer.
-            For example, Adam optimizer has 4 states (parameter, gradient, momentum, and variance).
-        block_size: When using NVMe Offloading, the I/O block size in bytes.
-        queue_depth: When using NVMe Offloading, the I/O queue depth.
-        single_submit: When using NVMe Offloading,
-            submit requests to storage device as multiple individual requests,
-            as opposed to one block of requests.
-        overlap_events: When using NVMe Offloading,
-            submit requests to storage device in an overlapped fashion
-            without waiting for completion of earlier requests.
-        thread_count: When using NVMe Offloading,
-            Intra-request parallelism for each read/write submitted by a user thread.
-        pin_memory: When using ZeRO stage 3, pin optimizer state memory on CPU.
-            This could boost throughput at the cost of extra memory overhead.
-        sub_group_size: When using ZeRO stage 3, defines the number of parameters
-            within a sub group to offload at a time.
-            Smaller numbers require more communication, but improve memory efficiency.
-        contiguous_gradients: Copies gradients to a continuous buffer as they are produced.
-            Avoids memory fragmentation during backwards. Useful when training large models.
-        overlap_comm: Overlap the reduction (synchronization) of gradients with the backwards computation.
-            This is a speed optimization when training across multiple GPUs/machines.
-        allgather_partitions: All gather updated parameters at the end of training step,
-            instead of using a series of broadcast collectives.
-        reduce_scatter: Use reduce/scatter instead of allreduce to average gradients.
-        allgather_bucket_size: Number of elements to allgather at once.
-            Used to limit the memory required for larger model sizes, with a tradeoff with speed.
-        reduce_bucket_size: Number of elements to reduce at once.
-            Used to limit the memory required for larger model sizes, with a tradeoff with speed.
-        zero_allow_untested_optimizer: Allow untested optimizers to be used with ZeRO. Currently only Adam is a
-            DeepSpeed supported optimizer when using ZeRO.
-        logging_batch_size_per_gpu: Config used in DeepSpeed to calculate verbose timing for logging
-            on a per sample per second basis (only displayed if logging=logging.INFO).
-            If set to "auto", the plugin tries to infer this from
-            the train DataLoader's BatchSampler, else defaults to 1.
-            To obtain accurate logs when using datasets that do not support batch samplers,
-            set this to the actual per gpu batch size (trainer.batch_size).
-        config: Pass in a deepspeed formatted config dict,
-            or path to a deepspeed config: https://www.deepspeed.ai/docs/config-json.
-            All defaults will be ignored if a config is passed in.
-        logging_level: Set logging level for deepspeed.
-        loss_scale: Loss scaling value for FP16 training.
-            0.0 results in dynamic loss scaling, otherwise static.
-        initial_scale_power: Power of the initial dynamic loss scale value. Loss scale is computed
-            by ``2^initial_scale_power``.
-        loss_scale_window: Window in which to raise/lower the dynamic FP16 loss scaling value.
-        hysteresis: FP16 Delay shift in Dynamic Loss scaling.
-        min_loss_scale: The minimum FP16 dynamic loss scaling value.
-        partition_activations: Enables partition activation when used with ZeRO stage 3 and model parallelism.
-            Still requires you to wrap your forward functions in deepspeed.checkpointing.checkpoint.
-            See `deepspeed tutorial
-            <https://www.deepspeed.ai/tutorials/megatron/#deepspeed-activation-checkpoints-optional>`_.
-        cpu_checkpointing: Offloads partitioned activations to CPU if ``partition_activations`` is enabled.
-        contiguous_memory_optimization: Copies partitioned activations so that they are contiguous in memory.
-            Not supported by all models.
-        synchronize_checkpoint_boundary: Insert :func:`torch.cuda.synchronize` at each checkpoint boundary.
-        load_full_weights: True when loading a single checkpoint file containing the model state dict
-            when using ZeRO Stage 3. This differs from the DeepSpeed checkpoint which contains shards
-            per worker.
-
-    """
+    """Strategy to support deepspeed with HPU devices."""
 
     strategy_name = "hpu_deepspeed"
     DEEPSPEED_ENV_VAR = "PL_DEEPSPEED_CONFIG_PATH"
 
     def __init__(
         self,
-        accelerator: Optional[Accelerator] = None,
+        accelerator: Optional["pl.accelerators.Accelerator"] = None,
         zero_optimization: bool = True,
         stage: int = 2,
-        remote_device: str = "cpu",
+        remote_device: Optional[str] = None,
         offload_optimizer: bool = False,
         offload_parameters: bool = False,
         offload_params_device: str = "cpu",
@@ -247,6 +152,140 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         precision_plugin: Optional[PrecisionPlugin] = None,
         process_group_backend: Optional[str] = "hccl",
     ) -> None:
+        """Strategy to support deepspeed with HPU devices.
+
+        Provides capabilities to run training using the DeepSpeed library, with training optimizations for large
+        billion parameter models. `For more information: https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html`.
+
+        Arguments:
+            accelerator: HPUAccelerator supporting deepspeed strategy
+
+            zero_optimization: Enable ZeRO optimization. This is compatible with `precision="bf16-mixed"`.
+
+            stage: Different stages of the ZeRO Optimizer. 0 is disabled,
+                1 is optimizer state partitioning, 2 is optimizer+gradient state partitioning,
+                3 is optimizer+gradient_parameter partitioning using the infinity engine.
+
+            remote_device: Device to instantiate the model on initially (``cpu`` or ``nvme``). Defaults to HPU.
+
+            offload_optimizer: Enable offloading optimizer memory and computation to CPU or NVMe
+                based on ``offload_optimizer_device``.
+
+            offload_parameters: When using ZeRO Stage 3, Enable offloading parameter memory and computation
+                to CPU or NVMe based on ``offload_params_device``.
+
+            offload_params_device: When offloading parameters choose the device to offload to, ``cpu`` or ``nvme``.
+
+            offload_optimizer_device: When offloading optimizer state choose the device to offload to,
+                ``cpu`` or ``nvme``.
+
+            params_buffer_count: Number of buffers in buffer pool for
+                parameter offloading when ``offload_params_device`` is ``nvme``.
+
+            params_buffer_size: Size of buffers in buffer pool for parameter offloading
+                when ``offload_params_device`` is ``nvme``.
+
+            max_in_cpu: Number of parameter elements to maintain in CPU memory when offloading to NVMe is enabled.
+
+            nvme_path: Filesystem path for NVMe device for optimizer/parameter state offloading.
+
+            optimizer_buffer_count: Number of buffers in buffer pool for optimizer state offloading
+                when ``offload_optimizer_device`` is set to to ``nvme``.
+                This should be at least the number of states maintained per parameter by the optimizer.
+                For example, Adam optimizer has 4 states (parameter, gradient, momentum, and variance).
+
+            block_size: When using NVMe Offloading, the I/O block size in bytes.
+
+            queue_depth: When using NVMe Offloading, the I/O queue depth.
+
+            single_submit: When using NVMe Offloading,
+                submit requests to storage device as multiple individual requests,
+                as opposed to one block of requests.
+
+            overlap_events: When using NVMe Offloading,
+                submit requests to storage device in an overlapped fashion
+                without waiting for completion of earlier requests.
+
+            thread_count: When using NVMe Offloading,
+                Intra-request parallelism for each read/write submitted by a user thread.
+
+            pin_memory: When using ZeRO stage 3, pin optimizer state memory on CPU.
+                This could boost throughput at the cost of extra memory overhead.
+
+            sub_group_size: When using ZeRO stage 3, defines the number of parameters
+                within a sub group to offload at a time.
+                Smaller numbers require more communication, but improve memory efficiency.
+
+            contiguous_gradients: Copies gradients to a continuous buffer as they are produced.
+                Avoids memory fragmentation during backwards. Useful when training large models.
+
+            overlap_comm: Overlap the reduction (synchronization) of gradients with the backwards computation.
+                This is a speed optimization when training across multiple GPUs/machines.
+
+            allgather_partitions: All gather updated parameters at the end of training step,
+                instead of using a series of broadcast collectives.
+
+            reduce_scatter: Use reduce/scatter instead of allreduce to average gradients.
+
+            allgather_bucket_size: Number of elements to allgather at once.
+                Used to limit the memory required for larger model sizes, with a tradeoff with speed.
+
+            reduce_bucket_size: Number of elements to reduce at once.
+                Used to limit the memory required for larger model sizes, with a tradeoff with speed.
+
+            zero_allow_untested_optimizer: Allow untested optimizers to be used with ZeRO. Currently only Adam is a
+                DeepSpeed supported optimizer when using ZeRO.
+
+            logging_batch_size_per_gpu: Config used in DeepSpeed to calculate verbose timing for logging
+                on a per sample per second basis (only displayed if logging=logging.INFO).
+                If set to "auto", the strategy tries to infer this from
+                the train DataLoader's BatchSampler, else defaults to 1.
+                To obtain accurate logs when using datasets that do not support batch samplers,
+                set this to the actual per gpu batch size (trainer.batch_size).
+
+            config: Pass in a deepspeed formatted config dict,
+                or path to a deepspeed config: https://www.deepspeed.ai/docs/config-json.
+                All defaults will be ignored if a config is passed in.
+
+            logging_level: Set logging level for deepspeed.
+
+            parallel_devices: HPU parallel devices
+
+            cluster_environment: cluster_environment
+
+            loss_scale: Loss scaling value for bf16 training.
+                0.0 results in dynamic loss scaling, otherwise static.
+
+            initial_scale_power: Power of the initial dynamic loss scale value. Loss scale is computed
+                by ``2^initial_scale_power``.
+
+            loss_scale_window: Window in which to raise/lower the dynamic bf16 loss scaling value.
+
+            hysteresis: bf16 Delay shift in Dynamic Loss scaling.
+
+            min_loss_scale: The minimum bf16 dynamic loss scaling value.
+
+            partition_activations: Enables partition activation when used with ZeRO stage 3 and model parallelism.
+                Still requires you to wrap your forward functions in deepspeed.checkpointing.checkpoint.
+                See `deepspeed tutorial
+                <https://www.deepspeed.ai/tutorials/megatron/#deepspeed-activation-checkpoints-optional>`_.
+
+            cpu_checkpointing: Offloads partitioned activations to CPU if ``partition_activations`` is enabled.
+
+            contiguous_memory_optimization: Copies partitioned activations so that they are contiguous in memory.
+                Not supported by all models.
+
+            synchronize_checkpoint_boundary: Insert :func:`hpu.synchronize` at each checkpoint boundary.
+
+            load_full_weights: True when loading a single checkpoint file containing the model state dict
+                when using ZeRO Stage 3. This differs from the DeepSpeed checkpoint which contains shards
+                per worker.
+
+            precision_plugin: precision_plugin
+
+            process_group_backend: hccl backend to be used
+
+        """
         os.environ["DEEPSPEED_USE_HPU"] = "true"
         # TBD - remove these work arounds
         os.environ["PT_HPU_LAZY_ACC_PAR_MODE"] = "0"
@@ -309,7 +348,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         self.remote_device = remote_device
         self.load_full_weights = load_full_weights
 
-        # default FP16 parameters.
+        # default bf16 parameters.
         self.loss_scale = loss_scale
         self.initial_scale_power = initial_scale_power
         self.loss_scale_window = loss_scale_window
@@ -333,13 +372,12 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def setup_distributed(self) -> None:
         reset_seed()
         self.set_world_ranks()
-        rank_zero_only.rank = self.global_rank
         self._init_deepspeed_distributed()
         if not self._config_initialized:
             self._format_config()
             self._config_initialized = True
 
-    def setup(self, trainer: Trainer) -> None:
+    def setup(self, trainer: "pl.Trainer") -> None:
         assert self.accelerator is not None
         self.accelerator.setup(trainer)
         # habana deepspeed needs model to be moved to device before initialization
@@ -435,7 +473,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def init_deepspeed(self) -> None:
         assert self.lightning_module is not None
         # deepspeed handles gradient clipping internally
-        if is_overridden("configure_gradient_clipping", self.lightning_module, LightningModule):
+        if is_overridden("configure_gradient_clipping", self.lightning_module, pl.LightningModule):
             rank_zero_warn(
                 "Since DeepSpeed handles gradient clipping internally, the default"
                 " `LightningModule.configure_gradient_clipping` implementation will not actually clip gradients."
@@ -452,13 +490,11 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 f"DeepSpeed strategy is only supported on HPU but `{self.accelerator.__class__.__name__}` is used."
             )
 
-        assert isinstance(self.model, (LightningModule, _LightningPrecisionModuleWrapperBase))
-        model = _LightningModuleWrapperBase(forward_module=self.model)
-
+        assert isinstance(self.model, pl.LightningModule)
         if self.lightning_module.trainer and self.lightning_module.trainer.training:
-            self._initialize_deepspeed_train(model)
+            self._initialize_deepspeed_train(self.model)
         else:
-            self._initialize_deepspeed_inference(model)
+            self._initialize_deepspeed_inference(self.model)
 
     def _init_optimizers(self) -> Tuple[Optimizer, Optional[LRSchedulerConfig]]:
         assert self.lightning_module is not None
@@ -485,6 +521,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def _initialize_deepspeed_train(self, model: Module) -> None:
         optimizer, scheduler = None, None
         assert isinstance(self.config, dict)
+
         optimizer, lr_scheduler = self._init_optimizers()
         if lr_scheduler is not None:
             scheduler = lr_scheduler.scheduler
@@ -495,6 +532,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 " It is recommended to define it in `LightningModule.configure_optimizers`."
                 " The optimizer defined by LightningModule overrides any optimizer specified in DeepSpeed config."
             )
+            lr_scheduler = None
 
         model, deepspeed_optimizer = self._setup_model_and_optimizer(model, optimizer, scheduler)
         self._set_deepspeed_activation_checkpointing()
@@ -512,27 +550,28 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             self.lr_scheduler_configs = [lr_scheduler]
         self.model = model
 
-    @contextlib.contextmanager
+    @contextmanager
+    def tensor_init_context(self, empty_init: Optional[bool] = None) -> Generator[None, None, None]:
+        if self.zero_stage_3:
+            if empty_init is False:
+                raise NotImplementedError(
+                    f"`{empty_init=}` is not a valid choice with `DeepSpeedStrategy` when ZeRO stage 3 is enabled."
+                )
+            yield
+            return
+        with super().tensor_init_context(empty_init=empty_init):
+            yield
+
+    @contextmanager
     def model_sharded_context(self) -> Generator[None, None, None]:
         import deepspeed
 
-        if self.zero_stage_3:
-            assert self._config_initialized
-
-            if self.precision_plugin.precision == "16-mixed":
-                dtype = torch.float16
-            elif self.precision_plugin.precision == "bf16-mixed":
-                dtype = torch.bfloat16
-            else:
-                dtype = torch.float32
-
-            model_parallel_context = deepspeed.zero.Init(
-                remote_device=self.remote_device, pin_memory=True, config_dict_or_path=self.config, dtype=dtype
-            )
-        else:
-            model_parallel_context = super().model_sharded_context()
-
-        with model_parallel_context:
+        assert self._config_initialized
+        with deepspeed.zero.Init(
+            enabled=self.zero_stage_3,
+            remote_device=self.remote_device,
+            config_dict_or_path=self.config,
+        ):
             yield
 
     def _set_deepspeed_activation_checkpointing(self) -> None:
@@ -557,8 +596,6 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         # todo: this is required for DeepSpeed throughput timers
         inference_config = {"train_micro_batch_size_per_gpu": 1}
-        if "fp16" in self.config:
-            inference_config.update({"fp16": self.config["fp16"]})
         if "bf16" in self.config:
             inference_config.update({"bf16": self.config["bf16"]})
         if self.zero_stage_3:
@@ -587,11 +624,11 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def distributed_sampler_kwargs(self) -> Dict[str, int]:
         return {"num_replicas": self.world_size, "rank": self.global_rank}
 
-    def setup_optimizers(self, trainer: Trainer) -> None:
+    def setup_optimizers(self, trainer: "pl.Trainer") -> None:
         """Creates optimizers and schedulers.
 
         Args:
-            trainer: the Trainer, these optimizers should be connected to.
+            trainer: the Trainer, these optimizers should be connected to
 
         """
         if trainer.state.fn != TrainerFn.FITTING:
@@ -605,7 +642,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
     @property
     def handles_gradient_accumulation(self) -> bool:
-        """Whether the plugin handles gradient accumulation internally."""
+        """Whether the strategy handles gradient accumulation internally."""
         return True
 
     def _format_config(self) -> None:
@@ -616,7 +653,15 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             )
         self._validate_config()
         self._format_batch_size_and_grad_accum_config()
-        self._format_precision_config()
+        _format_precision_config(
+            config=self.config,
+            precision=self.precision_plugin.precision,
+            loss_scale=self.loss_scale,
+            loss_scale_window=self.loss_scale_window,
+            min_loss_scale=self.min_loss_scale,
+            initial_scale_power=self.initial_scale_power,
+            hysteresis=self.hysteresis,
+        )
 
     def _validate_config(self) -> None:
         assert isinstance(self.config, dict)
@@ -661,28 +706,10 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                 if self.global_rank == 0:
                     deepspeed.utils.logging.logger.warning(
                         "Tried to infer the batch size for internal deepspeed logging from the `train_dataloader()`. "
-                        "To ensure DeepSpeed logging remains correct, please manually pass the plugin with the "
-                        "batch size, `Trainer(strategy=DeepSpeedStrategy(logging_batch_size_per_gpu=batch_size))`."
+                        "To ensure DeepSpeed logging remains correct, please manually pass the strategy with the "
+                        "batch size, `Trainer(strategy=HPUDeepSpeedStrategy(logging_batch_size_per_gpu=batch_size))`."
                     )
         return batch_size
-
-    def _format_precision_config(self) -> None:
-        assert isinstance(self.config, dict)
-        if self.precision_plugin.precision == "16-mixed":
-            if "fp16" not in self.config:
-                # FP16 is a DeepSpeed standalone AMP implementation
-                rank_zero_info("Enabling DeepSpeed FP16.")
-                self.config["fp16"] = {
-                    "enabled": True,
-                    "loss_scale": self.loss_scale,
-                    "initial_scale_power": self.initial_scale_power,
-                    "loss_scale_window": self.loss_scale_window,
-                    "hysteresis": self.hysteresis,
-                    "min_loss_scale": self.min_loss_scale,
-                }
-        elif "bf16" not in self.config and self.precision_plugin.precision == "bf16-mixed":
-            rank_zero_info("Enabling DeepSpeed BF16.")
-            self.config["bf16"] = {"enabled": True}
 
     def _create_default_config(
         self,
@@ -770,7 +797,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             storage_options: not used for ``DeepSpeedStrategy`` as ``CheckpointIO`` is not used
         Raises:
             TypeError:
-                If ``storage_options`` arg is passed in.
+                If ``storage_options`` arg is passed in
 
         """
         # broadcast the filepath from rank 0 to ensure all the states are saved in a common filepath
@@ -803,8 +830,12 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             checkpoint_path = self.broadcast(checkpoint_path)
             return super().load_checkpoint(checkpoint_path)
 
+        _validate_checkpoint_directory(checkpoint_path)
+
         # Rely on deepspeed to load the checkpoint and necessary information
         assert self.lightning_module is not None
+
+        from lightning.pytorch.trainer.states import TrainerFn
 
         is_fitting = self.lightning_module.trainer.state.fn == TrainerFn.FITTING
         _, client_state = self.deepspeed_engine.load_checkpoint(
@@ -838,9 +869,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
     def _restore_zero_state(self, ckpt: Mapping[str, Any]) -> None:
         """Overrides the normal load_state_dict behaviour in PyTorch.
 
-        This is to ensure we gather parameters that may be
-        sharded across processes before loading the state dictionary when using ZeRO stage 3. This is then
-        automatically synced across processes.
+        Ensure we gather parameters that may be sharded across processes before loading the
+        state dictionary when using ZeRO stage 3. This is then automatically synced across processes.
 
         Args:
             ckpt: The ckpt file.
@@ -885,7 +915,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         load(self.lightning_module, prefix="")
 
     def load_optimizer_state_dict(self, checkpoint: Mapping[str, Any]) -> None:
-        # override to do nothing, deepspeed engine already loaded the states in `load_checkpoint()`
+        # Override to do nothing, the deepspeed engine already loaded the states in `load_checkpoint()`
         pass
 
     @classmethod
@@ -924,22 +954,3 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             offload_params_device="nvme",
             offload_optimizer_device="nvme",
         )
-
-    def batch_to_device(self, batch: Any, device: Optional[torch.device] = None, dataloader_idx: int = 0) -> Any:
-        batch = apply_to_collection(batch, Tensor, function=_fp_to_half, precision=self.precision_plugin.precision)
-        return super().batch_to_device(batch, device, dataloader_idx)
-
-    def validation_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
-        assert self.model is not None
-        with self.precision_plugin.val_step_context():
-            return self.model(*args, **kwargs)
-
-    def test_step(self, *args: Any, **kwargs: Any) -> Optional[STEP_OUTPUT]:
-        assert self.model is not None
-        with self.precision_plugin.test_step_context():
-            return self.model(*args, **kwargs)
-
-    def predict_step(self, *args: Any, **kwargs: Any) -> STEP_OUTPUT:
-        assert self.model is not None
-        with self.precision_plugin.predict_step_context():
-            return self.model(*args, **kwargs)
