@@ -235,7 +235,7 @@ def test_autocast_enable_disable(tmpdir):
     assert run_training(tmpdir, BMAutocastGranularControl, []) is not None
 
 
-@pytest.mark.xfail(reason="Env needs to be set")
+@pytest.mark.xfail(strict=False, reason="Env needs to be set")
 def test_autocast_operators_override(tmpdir):
     """Tests operator dtype overriding with torch autocast."""
     # The override lists are set in cmdline
