@@ -158,7 +158,7 @@ class HPUParallelStrategy(DDPStrategy):
     ) -> Tensor:
         if isinstance(tensor, Tensor):
             if tensor.device != self.root_device:
-                tensor=tensor.to(self.root_device)
+                tensor = tensor.to(self.root_device)
             return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
         return tensor
 

@@ -35,10 +35,10 @@ if module_available("lightning"):
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
     from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
-    from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
+    from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
+    from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.trainer.states import TrainerFn
     from lightning.pytorch.utilities import GradClipAlgorithmType
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
@@ -55,10 +55,10 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
     from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
-    from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
-    from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
+    from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
+    from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.trainer.states import TrainerFn
     from pytorch_lightning.utilities import GradClipAlgorithmType
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
