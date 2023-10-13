@@ -157,6 +157,8 @@ class HPUParallelStrategy(DDPStrategy):
         self, tensor: Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
     ) -> Tensor:
         if isinstance(tensor, Tensor):
+            if tensor.device != self.root_device:
+                tensor=tensor.to(self.root_device)
             return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
         return tensor
 
