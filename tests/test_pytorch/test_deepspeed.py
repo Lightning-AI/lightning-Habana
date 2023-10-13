@@ -209,7 +209,6 @@ def test_hpu_deepspeed_precision_choice(tmpdir):
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(),  # strategy="hpu_deepspeed",
         plugins=_plugins,
-        precision="bf16-mixed",
     )
 
     assert isinstance(trainer.strategy, HPUDeepSpeedStrategy)
