@@ -28,7 +28,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
     from pytorch_lightning.plugins.precision import MixedPrecisionPlugin
 
-from lightning_habana import HPUAccelerator, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUPrecisionPlugin, SingleHPUStrategy
 
 RUN_TYPE = ["basic", "autocast"]
 
@@ -47,30 +47,25 @@ def run_trainer(model, plugin):
     trainer.test(model, _data_module)
 
 
-def check_and_init_plugins(plugins, run_type, verbose):
+def check_and_init_plugin(plugin, verbose):
     """Initialise plugins with appropriate checks."""
-    _plugins = []
-    for plugin in plugins:
-        if verbose:
-            print(f"Initializing {plugin}")
-        if plugin == "MixedPrecisionPlugin":
-            warnings.warn("Operator overriding is not supported with MixedPrecisionPlugin on Habana devices.")
-            if run_type != "autocast":
-                _plugins.append(MixedPrecisionPlugin(device="hpu", precision="bf16-mixed"))
-            else:
-                warnings.warn("Skipping MixedPrecisionPlugin. Redundant with autocast run.")
-        else:
-            print(f"Unsupported or invalid plugin: {plugin}")
-    return _plugins
+    if verbose:
+        print(f"Initializing {plugin}")
+    if plugin == "HPUPrecisionPlugin":
+        return [HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")]
+    if plugin == "MixedPrecisionPlugin":
+        warnings.warn("Operator overriding is not supported with MixedPrecisionPlugin on Habana devices.")
+        return [MixedPrecisionPlugin(device="hpu", precision="bf16-mixed")]
+    return []
 
 
-def run_model(run_type, plugins, verbose):
-    """Picks appropriate model and plugins."""
-    # Initialise plugins
-    _plugins = check_and_init_plugins(plugins, run_type, verbose)
+def run_model(run_type, plugin, verbose):
+    """Picks appropriate model and plugin."""
     if run_type == "basic":
         _model = LitClassifier()
     elif run_type == "autocast":
+        if plugin is not None:
+            warnings.warn("Skipping precision plugins. Redundant with autocast run.")
         if "LOWER_LIST" in os.environ or "FP32_LIST" in os.environ:
             _model = LitAutocastClassifier(op_override=True)
         else:
@@ -81,9 +76,10 @@ def run_model(run_type, plugins, verbose):
             "https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html#override-options"
         )
 
+    _plugin = check_and_init_plugin(plugin, verbose)
     if verbose:
-        print(f"With run type: {run_type}, running model: {_model} with plugin: {_plugins}")
-    return run_trainer(_model, _plugins)
+        print(f"With run type: {run_type}, running model: {_model} with plugin: {plugin}")
+    run_trainer(_model, _plugin)
 
 
 def parse_args():
@@ -95,7 +91,12 @@ def parse_args():
         "-r", "--run_types", nargs="+", choices=RUN_TYPE, default=RUN_TYPE, help="Select run type for example"
     )
     parser.add_argument(
-        "-p", "--plugins", nargs="+", default=[], choices=["MixedPrecisionPlugin"], help="Plugins for use in training"
+        "-p",
+        "--plugins",
+        nargs="+",
+        default=[],
+        choices=["HPUPrecisionPlugin", "MixedPrecisionPlugin"],
+        help="Plugins for use in training",
     )
     return parser.parse_args()
 
@@ -108,5 +109,6 @@ if __name__ == "__main__":
 
     # Run model and print accuracy
     for run_type in options.run_types:
-        seed_everything(42)
-        run_model(run_type, options.plugins, options.verbose)
+        for plugin in options.plugins:
+            seed_everything(42)
+            run_model(run_type, plugin, options.verbose)
