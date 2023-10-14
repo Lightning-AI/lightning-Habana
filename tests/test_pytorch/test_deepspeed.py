@@ -503,7 +503,7 @@ def test_lightning_model(
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(config=config, parallel_devices=_parallel_hpus),
         enable_progress_bar=False,
-        fast_dev_run=2,
+        fast_dev_run=10,
         plugins=_plugins,
         use_distributed_sampler=False,
         limit_train_batches=16,
