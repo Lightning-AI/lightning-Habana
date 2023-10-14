@@ -9,7 +9,7 @@ on:
     paths:
       - ".github/workflows/ci-dockers.yml"
       - "dockers/**"
-      - "_requirements/*.txt"
+      - "requirements/*.txt"
       - "setup.py"
       - "!*.md"
       - "!**/*.md"
