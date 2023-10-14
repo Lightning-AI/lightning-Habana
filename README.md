@@ -64,7 +64,7 @@ The `devices>1` parameter with HPUs enables the Habana accelerator for distribut
 # Support Matrix
 
 | **SynapseAI**         | **1.12.0**                                         |
-| --------------------- |----------------------------------------------------|
+| --------------------- | -------------------------------------------------- |
 | PyTorch               | 2.0.1                                              |
 | (PyTorch) Lightning\* | 2.1.x                                              |
 | **Lightning Habana**  | **1.1.0**                                          |
