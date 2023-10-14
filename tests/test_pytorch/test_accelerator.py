@@ -40,16 +40,6 @@ from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUSt
 
 from tests.helpers import ClassifDataModule, ClassificationModel
 
-# The external strategies, accelerator gets registered with trainer initialization
-if module_available("lightning"):
-    from lightning.pytorch.accelerators import HPUAccelerator as HPUAccelerator_Registered
-    from lightning.pytorch.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
-    from lightning.pytorch.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
-elif module_available("pytorch_lightning"):
-    from pytorch_lightning.accelerators import HPUAccelerator as HPUAccelerator_Registered
-    from pytorch_lightning.strategies import HPUParallelStrategy as HPUParallelStrategy_Registered
-    from pytorch_lightning.strategies import SingleHPUStrategy as SingleHPUStrategy_Registered
-
 
 def test_availability():
     assert HPUAccelerator.is_available()
@@ -193,28 +183,28 @@ def test_accelerator_is_hpu():
 
 def test_accelerator_with_single_device():
     trainer = Trainer(accelerator="hpu", devices=1)
-    assert isinstance(trainer.strategy, SingleHPUStrategy_Registered)
-    assert isinstance(trainer.accelerator, HPUAccelerator_Registered)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices():
     trainer = Trainer(accelerator="hpu", devices=2)
-    assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
-    assert isinstance(trainer.accelerator, HPUAccelerator_Registered)
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 2
 
     trainer = Trainer(accelerator="hpu")
-    assert isinstance(trainer.accelerator, HPUAccelerator_Registered)
-    assert trainer.num_devices == HPUAccelerator_Registered.auto_device_count()
+    assert isinstance(trainer.accelerator, HPUAccelerator)
+    assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_auto_with_devices_hpu():
     trainer = Trainer(accelerator="auto", devices=2)
-    assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
-    assert isinstance(trainer.accelerator, HPUAccelerator_Registered)
-    assert trainer.num_devices == HPUAccelerator_Registered.auto_device_count()
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
+    assert isinstance(trainer.accelerator, HPUAccelerator)
+    assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
 
 def test_strategy_choice_single_strategy():
@@ -222,7 +212,7 @@ def test_strategy_choice_single_strategy():
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
     trainer = Trainer(accelerator="hpu", devices=1)
-    assert isinstance(trainer.strategy, SingleHPUStrategy_Registered)
+    assert isinstance(trainer.strategy, SingleHPUStrategy)
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
@@ -235,7 +225,7 @@ def test_strategy_choice_parallel_strategy():
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
     trainer = Trainer(accelerator="hpu", devices=2)
-    assert isinstance(trainer.strategy, HPUParallelStrategy_Registered)
+    assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
 def test_devices_auto_choice_hpu():
