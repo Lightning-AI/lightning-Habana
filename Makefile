@@ -6,14 +6,14 @@ export SLURM_LOCALID=0
 export SPHINX_MOCK_REQUIREMENTS=0
 
 test: clean
-	pip install -q -r _requirements/base.txt -r _requirements/test.txt
+	pip install -q -r requirements/base.txt -r requirements/_test.txt
 
 	# use this to run tests
 	python -m coverage run --source lightning_habana -m pytest src tests -v --flake8
 	python -m coverage report
 
 docs: clean
-	pip install . --quiet -r _requirements/docs.txt
+	pip install . --quiet -r requirements/_docs.txt
 	python -m sphinx -b html -W --keep-going docs/source docs/build
 
 clean:
