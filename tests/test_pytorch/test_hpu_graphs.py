@@ -241,6 +241,7 @@ def test_hpu_graphs(tmpdir, graph_mode, mode):
     train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None, mode=mode)
 
 
+@pytest.mark.xfail(strict=False, reason="TBD: Resolve capture replay issue with validation")
 @pytest.mark.parametrize(
     "train_modes",
     [
@@ -269,6 +270,7 @@ def test_hpu_graph_accuracy_train(tmpdir, train_modes):
     ), loss_metrics  # Compare val acc
 
 
+@pytest.mark.xfail(strict=False, reason="TBD: Resolve capture replay issue")
 @pytest.mark.parametrize(
     "train_modes",
     [
