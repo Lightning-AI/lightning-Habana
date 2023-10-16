@@ -222,6 +222,9 @@ if _HABANA_FRAMEWORK_AVAILABLE:
             self.batch_size = batch_size
             self.num_workers = num_workers
             self.collate_fn = None  # type: ignore
+            #TBD: make use of user set params instead of hardcodes
+            self.multiprocessing_context=None
+            self.persistent_workers=False
 
             self.shuffle = isinstance(self.sampler, torch.utils.data.RandomSampler) or (
                 isinstance(self.sampler, torch.utils.data.distributed.DistributedSampler)

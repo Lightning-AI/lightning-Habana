@@ -64,14 +64,18 @@ class NetHPUGraphs(LightningModule):
             or self.graph_mode == HPUGraphMode.INFERENCE_CAPTURE_AND_REPLAY
         ):
             self.g = htcore.hpu.HPUGraph()
+            self.g_val = htcore.hpu.HPUGraph()
             self.automatic_optimization = False
             self.training_step = self.train_with_capture_and_replay
-            self.static_input = torch.randn((batch_size), 1, 28, 28, device="hpu")
+            self.static_input = torch.zeros((batch_size), 1, 28, 28, device="hpu")
             self.static_target = torch.randint(0, 10, (batch_size,), device="hpu")
             self.static_y_pred = torch.randint(0, 10, (batch_size,), device="hpu")
             self.static_loss = None
+            self.acc = None
+            self.validation_step = self.validation_step_capture_replay
         else:
             self.training_step = self.training_step_automatic
+            self.validation_step = self.validation_step_automatic
 
     def forward(self, x):
         """Forward."""
@@ -120,7 +124,23 @@ class NetHPUGraphs(LightningModule):
         # result is available in static_loss tensor after graph is replayed
         return self.static_loss
 
-    def validation_step(self, batch, batch_idx):
+    def validation_step_capture_replay(self, batch, batch_idx):
+        """Validation step."""
+        x, y = batch
+        if batch_idx == 0 and self.current_epoch == 0:
+            probs = self(self.static_input)
+            self.acc = self.accuracy(probs, self.static_target)
+        if batch_idx == 1 and self.current_epoch == 0:
+            with htcore.hpu.graph(self.g_val):
+                probs = self(self.static_input)
+                self.acc = self.accuracy(probs, self.static_target)
+        else:
+            self.static_input.copy_(x)
+            self.static_target.copy_(y)
+            self.g_val.replay()
+            self.log("val_acc", self.acc)
+
+    def validation_step_automatic(self, batch, batch_idx):
         """Validation step."""
         x, y = batch
         probs = self(x)
@@ -169,7 +189,7 @@ def train_model(root_dir, hpus, model, data_module, profiler=None, mode="fit"):
         devices=hpus,
         strategy=_strategy,
         max_epochs=1,
-        fast_dev_run=100,
+        fast_dev_run=3,
     )
     if hasattr(trainer, mode):
         func = getattr(trainer, mode)
@@ -221,7 +241,6 @@ def test_hpu_graphs(tmpdir, graph_mode, mode):
     train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None, mode=mode)
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 @pytest.mark.parametrize(
     "train_modes",
     [
