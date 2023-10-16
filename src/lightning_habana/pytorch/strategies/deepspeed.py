@@ -154,7 +154,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         precision_plugin: Optional[PrecisionPlugin] = None,
         process_group_backend: Optional[str] = "hccl",
     ) -> None:
-        """ Provides capabilities to run training using the DeepSpeed library
+        """Provides capabilities to run training using the DeepSpeed library.
 
         `For more information: https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html`.
 
