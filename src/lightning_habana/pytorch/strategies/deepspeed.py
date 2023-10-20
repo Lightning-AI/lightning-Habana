@@ -154,10 +154,9 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         precision_plugin: Optional[PrecisionPlugin] = None,
         process_group_backend: Optional[str] = "hccl",
     ) -> None:
-        """Strategy to support deepspeed with HPU devices.
+        """Provides capabilities to run training using the DeepSpeed library.
 
-        Provides capabilities to run training using the DeepSpeed library, with training optimizations for large
-        billion parameter models. `For more information: https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html`.
+        `For more information: https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html`.
 
         Arguments:
             accelerator: HPUAccelerator supporting deepspeed strategy
@@ -836,8 +835,6 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         # Rely on deepspeed to load the checkpoint and necessary information
         assert self.lightning_module is not None
-
-        from lightning.pytorch.trainer.states import TrainerFn
 
         is_fitting = self.lightning_module.trainer.state.fn == TrainerFn.FITTING
         _, client_state = self.deepspeed_engine.load_checkpoint(

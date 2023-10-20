@@ -24,14 +24,14 @@ from torch.utils.data import DataLoader, Dataset
 
 if module_available("lightning"):
     from lightning.pytorch import LightningModule, Trainer
-    from lightning.pytorch.callbacks import Callback, LearningRateMonitor
+    from lightning.pytorch.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.loggers import CSVLogger
     from lightning.pytorch.plugins import DeepSpeedPrecisionPlugin
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer
-    from pytorch_lightning.callbacks import Callback, LearningRateMonitor
+    from pytorch_lightning.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.loggers import CSVLogger
     from pytorch_lightning.plugins import DeepSpeedPrecisionPlugin
@@ -590,3 +590,78 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
         devices=1,
     )
     trainer.fit(model)
+
+
+@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+def test_deepspeed_resume_training(tmpdir, deepspeed_base_config, get_device_count):
+    """Test to ensure with Stage 3 and single GPU that we can resume training."""
+    initial_model = SampleModel()
+    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _zero_stage = 3
+    config = config_generator(
+        deepspeed_base_config,
+        _zero_stage,
+        True,
+        True,
+        False,
+        False,
+        True,
+    )
+    _accumulate_grad_batches = config["train_micro_batch_size_per_gpu"]
+    _batch_size = 2
+    _parallel_hpus = [torch.device("hpu")] * get_device_count
+
+    config["train_batch_size"] = get_device_count * _accumulate_grad_batches * _batch_size
+    config_copy = config.copy()
+    ck = ModelCheckpoint(monitor="train_loss", mode="max", save_last=True, save_top_k=-1)
+    initial_trainer = Trainer(
+        default_root_dir=tmpdir,
+        max_epochs=1,
+        strategy=HPUDeepSpeedStrategy(config=config, parallel_devices=_parallel_hpus),
+        accelerator=HPUAccelerator(),
+        accumulate_grad_batches=_accumulate_grad_batches,
+        plugins=_plugins,
+        callbacks=[ck],
+        enable_progress_bar=False,
+        enable_model_summary=False,
+    )
+    initial_trainer.fit(initial_model)
+
+    class TestCallback(Callback):
+        def on_train_epoch_start(self, trainer: Trainer, pl_module: LightningModule) -> None:
+            original_deepspeed_strategy = initial_trainer.strategy
+            current_deepspeed_strategy = trainer.strategy
+
+            assert isinstance(original_deepspeed_strategy, HPUDeepSpeedStrategy)
+            assert isinstance(current_deepspeed_strategy, HPUDeepSpeedStrategy)
+            # assert optimizer states are the correctly loaded
+            original_optimizer_dict = original_deepspeed_strategy.deepspeed_engine.optimizer.state_dict()
+            current_optimizer_dict = current_deepspeed_strategy.deepspeed_engine.optimizer.state_dict()
+            for orig_tensor, current_tensor in zip(
+                original_optimizer_dict["fp32_flat_groups"], current_optimizer_dict["fp32_flat_groups"]
+            ):
+                assert torch.all(orig_tensor.eq(current_tensor))
+            # assert model state is loaded correctly
+            for current_param, initial_param in zip(pl_module.parameters(), initial_model.parameters()):
+                assert torch.equal(current_param.cpu(), initial_param.cpu())
+            # assert epoch has correctly been restored
+            assert trainer.current_epoch == 1
+
+            # assert lr-scheduler states are loaded correctly
+            original_lr_scheduler = initial_trainer.lr_scheduler_configs[0].scheduler
+            current_lr_scheduler = trainer.lr_scheduler_configs[0].scheduler
+            assert original_lr_scheduler.state_dict() == current_lr_scheduler.state_dict()
+
+    model = SampleModel()
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        max_epochs=1,
+        strategy=HPUDeepSpeedStrategy(config=config_copy, parallel_devices=_parallel_hpus),
+        accelerator=HPUAccelerator(),
+        accumulate_grad_batches=_accumulate_grad_batches,
+        plugins=_plugins,
+        callbacks=TestCallback(),
+        enable_progress_bar=False,
+        enable_model_summary=False,
+    )
+    trainer.fit(model, ckpt_path=ck.best_model_path)
