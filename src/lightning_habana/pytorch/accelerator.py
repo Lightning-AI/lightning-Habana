@@ -14,6 +14,7 @@
 
 from typing import Any, Dict, List, Optional, Union
 
+import os
 import torch
 from lightning_utilities import module_available
 
@@ -54,6 +55,9 @@ class HPUAccelerator(Accelerator):
         return get_device_stats(device)
 
     def teardown(self) -> None:
+        os.environ.pop("HABANA_PROFILE", None)
+        os.environ.pop("HLS_MODULE_ID", None)
+        os.environ.pop("ID", None)
         pass
 
     @staticmethod

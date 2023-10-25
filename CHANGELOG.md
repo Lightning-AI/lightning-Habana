@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-
+
+### Changed
+
+-
+
+### Fixed
+
+-
+
+### Removed
+
+-
+
+### Deprecated
+
+-
+
+
+## [1.2.0*] - 2023-MM-DD
+
+### Added
+
 - Added tests, examples and documentation for HPUPrecisionPlugin with autocast ([#94](https://github.com/Lightning-AI/lightning-Habana/pull/94))
 - Added test to validate checkpoint resuming with HPUDeepSpeedStrategy ([#95](https://github.com/Lightning-AI/lightning-Habana/pull/95))
 - Added support for lightning 2.1 ([#100](https://github.com/Lightning-AI/lightning-Habana/pull/100), [#105](https://github.com/Lightning-AI/lightning-Habana/pull/105))
@@ -17,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed HPU docker image based on synapse AI release 1.12.0 ([#90](https://github.com/Lightning-AI/lightning-Habana/pull/90))
 - Use standard API's and Remove env variable to get HPU distributed backend ([#91](https://github.com/Lightning-AI/lightning-Habana/pull/91))
+- Changed HPU docker image based on synapse AI release 1.12.1, updated hooks ([#106](https://github.com/Lightning-AI/lightning-Habana/pull/106))
 
 
 ### Fixed
