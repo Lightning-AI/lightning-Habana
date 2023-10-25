@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 from typing import Any, Dict, List, Optional, Union
 
 import torch
@@ -54,6 +55,9 @@ class HPUAccelerator(Accelerator):
         return get_device_stats(device)
 
     def teardown(self) -> None:
+        os.environ.pop("HABANA_PROFILE", None)
+        os.environ.pop("HLS_MODULE_ID", None)
+        os.environ.pop("ID", None)
         pass
 
     @staticmethod
