@@ -171,14 +171,15 @@ Recipe caching is disabled by default. To enable recipe caching, initialize HPUP
 Following example shows how to enable recipe caching.
 
 .. code-block:: python
+
     from lightning.pytorch import Trainer
     from lightning_habana import HPUAccelerator, HPUParallelStrategy
 
-     _strategy = HPUParallelStrategy(
-                recipe_cache_path="/tmp/recipes",
-                recipe_cache_clean=True,
-                recipe_cache_size=1024,
-            )
+    _strategy = HPUParallelStrategy(
+        recipe_cache_path="/tmp/recipes",
+        recipe_cache_clean=True,
+        recipe_cache_size=1024,
+    )
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=_strategy,
