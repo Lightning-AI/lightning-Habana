@@ -155,26 +155,24 @@ The below shows how ``DeviceStatsMonitor`` can be enabled.
 
 For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/latest/PyTorch/PyTorch_User_Guide/Python_Packages.html#memory-stats-apis>`__.
 
-----
+
+-------------------------------------
 
 Enabling recipe caching with HPU
 -------------------------------------
 
-Recipe caching helps reduce graph compiles when training on multiple HPUs.
-This is helpful when dealing with models that have dynamicity. Graphs are compiled once and cached to a user-specified location where others hpu devices may reuse them.
+Recipe caching helps to reduce graph compilations when training on multiple HPUs.
+This is helpful when dealing with models that have dynamicity. Graphs are compiled once and cached to a user-specified location where other HPU devices may reuse them.
 Recipe caching is disabled by default. To enable recipe caching, initialize HPUParallelStrategy with following parameters:
-
-1. `recipe_cache_path`: Specifies the path to cache recipes. User must have write permissions for this location. Required.
-2. `recipe_cache_clean`: Clean recipe directory if already present. Optional. Default: True.
-3. `recipe_cache_size`: Recipe cache directory size in MB. Required. If size limit is reached, oldest recipes are removed.
-
+1. `recipe_cache_path`: Specifies path to cache recipes. User must have write permissions for this location. Required.
+2. `recipe_cache_clean`: Cleans recipe directory if it's already present. Optional. Default: True.
+3. `recipe_cache_size`: Recipe cache directory size in MB. If size limit is reached, previous recipes are removed. Require
 Following example shows how to enable recipe caching.
 
 .. code-block:: python
 
     from lightning.pytorch import Trainer
     from lightning_habana import HPUAccelerator, HPUParallelStrategy
-
     _strategy = HPUParallelStrategy(
         recipe_cache_path="/tmp/recipes",
         recipe_cache_clean=True,
@@ -184,7 +182,6 @@ Following example shows how to enable recipe caching.
         accelerator=HPUAccelerator(),
         strategy=_strategy,
     )
-
     trainer.fit(model)
 
 For more information, refer to `Handling Dynamic Shapes <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/Dynamic_Shapes.html?highlight=PT_HPU_METRICS_FILE#detecting-and-mitigating-dynamicity-overview>`__.
