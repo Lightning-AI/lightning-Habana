@@ -160,7 +160,7 @@ For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/
 Enabling recipe caching with HPU
 -------------------------------------
 
-Recipe caching helps reduce graph compiles when training on multiple HPUs using :class:`~lightning_habana.pytorch.strategies.parallel.HPUParallelStrategy`.
+Recipe caching helps reduce graph compiles when training on multiple HPUs.
 This is helpful when dealing with models that have dynamicity. Graphs are compiled once and cached to a user-specified location where others hpu devices may reuse them.
 Recipe caching is disabled by default. To enable recipe caching, initialize HPUParallelStrategy with following parameters:
 
