@@ -283,7 +283,6 @@ nitpick_ignore = [
     ("py:class", "lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin"),
     ("py:class", "lightning_habana.pytorch.strategies.HPUParallelStrategy"),
     ("py:class", "lightning_habana.pytorch.strategies.SingleHPUStrategy"),
-    ("py:class", "pytorch_lightning.callbacks.device_stats_monitor.DeviceStatsMonitor"),
 ]
 
 # -- Options for todo extension ----------------------------------------------
