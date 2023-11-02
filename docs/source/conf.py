@@ -272,6 +272,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "torch": ("https://pytorch.org/docs/stable/", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
+    "lightning": ("https://lightning.ai/docs/pytorch/stable/", None),
 }
 
 nitpicky = True
@@ -283,7 +284,6 @@ nitpick_ignore = [
     ("py:class", "lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin"),
     ("py:class", "lightning_habana.pytorch.strategies.HPUParallelStrategy"),
     ("py:class", "lightning_habana.pytorch.strategies.SingleHPUStrategy"),
-    ("py:class", "pytorch_lightning.callbacks.device_stats_monitor.DeviceStatsMonitor"),
 ]
 
 # -- Options for todo extension ----------------------------------------------
