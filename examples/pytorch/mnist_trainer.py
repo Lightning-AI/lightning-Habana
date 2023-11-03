@@ -28,8 +28,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
     from pytorch_lightning.plugins.precision import MixedPrecisionPlugin
 
-from lightning_habana import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin, SingleHPUStrategy
-from lightning_habana.utils.resources import device_count
+from lightning_habana import HPUAccelerator, HPUPrecisionPlugin, SingleHPUStrategy
 
 RUN_TYPE = ["basic", "autocast", "recipe_caching"]
 PLUGINS = ["None", "HPUPrecisionPlugin", "MixedPrecisionPlugin"]
@@ -60,15 +59,7 @@ def run_trainer(model, plugin, run_type):
     _devices = 1
     _strategy = SingleHPUStrategy()
     if run_type == "recipe_caching":
-        if device_count() < 2:
-            warnings.warn("Recipe caching not required for single device.")
-        else:
-            _devices = 2
-            _strategy = HPUParallelStrategy(
-                recipe_cache_path="/tmp/recipes",
-                recipe_cache_clean=True,
-                recipe_cache_size=1024,
-            )
+        os.environ["PT_HPU_RECIPE_CACHE_CONFIG"] = "tmp/recipes,True,1024"
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=_devices,
@@ -78,6 +69,8 @@ def run_trainer(model, plugin, run_type):
     )
     trainer.fit(model, _data_module)
     trainer.test(model, _data_module)
+    if run_type == "recipe_caching":
+        os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
 
 def check_and_init_plugin(plugin, verbose):
