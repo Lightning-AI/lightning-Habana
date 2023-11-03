@@ -180,7 +180,6 @@ class HPUParallelStrategy(DDPStrategy):
 
     def teardown(self) -> None:
         super().teardown()
-        os.environ.pop("HCCL_DISTRIBUTED_BACKEND", None)
         os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
 
