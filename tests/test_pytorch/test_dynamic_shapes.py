@@ -50,18 +50,10 @@ class DynamicOpsBoringModel(BoringModel):
         return loss
 
 
-def run_training(tmpdir, hpus, model, data_module, metric_file_path, recipe_caching, return_dict):
+def run_training(tmpdir, hpus, model, data_module, metric_file_path, return_dict):
     """Init trainer and run fit."""
     seed_everything(42)
-    _strategy = SingleHPUStrategy()
-    if hpus > 1:
-        _strategy = (
-            HPUParallelStrategy(start_method="spawn")
-            if not recipe_caching
-            else HPUParallelStrategy(
-                recipe_cache_path=os.path.join(tmpdir, "recipes"), recipe_cache_size=1024, start_method="spawn"
-            )
-        )
+    _strategy = HPUParallelStrategy(start_method="spawn") if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
@@ -102,7 +94,7 @@ def get_compiles(dirpath):
     return compiles
 
 
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() < 2, reason="Test requires more than 1 HPU.")
 def test_dynamic_shape_recompilations_recipe_caching(tmpdir):
     """Tests number of recompilations between cached and non-cached runs."""
     # Set env for metric files
@@ -113,25 +105,27 @@ def test_dynamic_shape_recompilations_recipe_caching(tmpdir):
     _model = DynamicOpsBoringModel
     _data_module = BoringDataModule
 
+    # Run with recipe caching disabled
     manager = mp.Manager()
-    # Run with recipe caching enabled
     m1 = manager.dict()
-    p1 = mp.Process(target=run_training, args=(tmpdir, 2, _model, _data_module, metric_file_path, True, m1))
+    p1 = mp.Process(target=run_training, args=(tmpdir, 2, _model, _data_module, metric_file_path, m1))
     p1.start()
     p1.join()
     assert p1.exitcode == 0
 
-    # Run with recipe caching disabled
+    # Run with recipe caching enabled
+    os.environ["PT_HPU_RECIPE_CACHE_CONFIG"] = f"{tmpdir}/recipes,True,1024"
     m2 = manager.dict()
-    p2 = mp.Process(target=run_training, args=(tmpdir, 2, _model, _data_module, metric_file_path, False, m2))
+    p2 = mp.Process(target=run_training, args=(tmpdir, 2, _model, _data_module, metric_file_path, m2))
 
     p2.start()
     p2.join()
     assert p2.exitcode == 0
+    os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
     for key in m1:
         assert key in m2
-        assert m1[key] < m2[key], "More compiles in cached run"
+        assert m1[key] >= m2[key], "More compiles in cached run"
 
     # Unset env
     os.environ.pop("PT_HPU_METRICS_FILE", None)

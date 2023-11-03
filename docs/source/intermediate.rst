@@ -163,25 +163,10 @@ Enabling recipe caching with HPU
 
 Recipe caching helps to reduce graph compilations when training on multiple HPUs.
 This is helpful when dealing with models that have dynamicity. Graphs are compiled once and cached to a user-specified location where other HPU devices may reuse them.
-Recipe caching is disabled by default. To enable recipe caching, initialize HPUParallelStrategy with following parameters:
-1. `recipe_cache_path`: Specifies path to cache recipes. User must have write permissions for this location. Required.
-2. `recipe_cache_clean`: Cleans recipe directory if it's already present. Optional. Default: True.
-3. `recipe_cache_size`: Recipe cache directory size in MB. If size limit is reached, previous recipes are removed. Require
-Following example shows how to enable recipe caching.
-
-.. code-block:: python
-
-    from lightning.pytorch import Trainer
-    from lightning_habana import HPUAccelerator, HPUParallelStrategy
-    _strategy = HPUParallelStrategy(
-        recipe_cache_path="/tmp/recipes",
-        recipe_cache_clean=True,
-        recipe_cache_size=1024,
-    )
-    trainer = Trainer(
-        accelerator=HPUAccelerator(),
-        strategy=_strategy,
-    )
-    trainer.fit(model)
+Recipe caching is disabled by default. To enable recipe caching, se the `PT_HPU_RECIPE_CACHE_CONFIG` environment variable. 
+Configuration is encoded as a comma separated list in the following format: ‘<RECIPE_CACHE_PATH>,<RECIPE_CACHE_DELETE>,<RECIPE_CACHE_SIZE_MB>’.:
+1. <RECIPE_CACHE_PATH> - Path (directory), where compiled graph recipes are stored to accelerate a scale up scenario. Only one process compiles the recipe, and other processes read it from disk.
+2. <RECIPE_CACHE_DELETE> - Bool flag (true/false). If set to True, the directory provided as <RECIPE_CACHE_PATH> will be cleared when the workload starts.
+3. <RECIPE_CACHE_SIZE_MB> - Max size in MB of recipe cache directory. If size limit is reached then the oldest recipes (by creation time on file system) are removed.
 
 For more information, refer to `Handling Dynamic Shapes <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/Dynamic_Shapes.html?highlight=PT_HPU_METRICS_FILE#detecting-and-mitigating-dynamicity-overview>`__.
