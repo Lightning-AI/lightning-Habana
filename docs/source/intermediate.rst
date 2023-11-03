@@ -163,7 +163,7 @@ Enabling recipe caching with HPU
 
 Recipe caching helps to reduce graph compilations when training on multiple HPUs.
 This is helpful when dealing with models that have dynamicity. Graphs are compiled once and cached to a user-specified location where other HPU devices may reuse them.
-Recipe caching is disabled by default. To enable recipe caching, se the `PT_HPU_RECIPE_CACHE_CONFIG` environment variable. 
+Recipe caching is disabled by default. To enable recipe caching, se the `PT_HPU_RECIPE_CACHE_CONFIG` environment variable.
 Configuration is encoded as a comma separated list in the following format: ‘<RECIPE_CACHE_PATH>,<RECIPE_CACHE_DELETE>,<RECIPE_CACHE_SIZE_MB>’.:
 1. <RECIPE_CACHE_PATH> - Path (directory), where compiled graph recipes are stored to accelerate a scale up scenario. Only one process compiles the recipe, and other processes read it from disk.
 2. <RECIPE_CACHE_DELETE> - Bool flag (true/false). If set to True, the directory provided as <RECIPE_CACHE_PATH> will be cleared when the workload starts.
