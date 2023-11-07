@@ -700,11 +700,10 @@ class InferenceModel(LightningModule):
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("enable_cuda_graph", [False, True])
-@pytest.mark.parametrize("tp_size", ["1", "2"])
-def test_lightning_deepspeed_inference(get_device_count, enable_cuda_graph, tp_size):
+def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_count):
     model = InferenceModel()
     kwargs = {"dtype": torch.float}
-    kwargs["tensor_parallel"] = {"tp_size": int(tp_size)}
+    kwargs["tensor_parallel"] = {"tp_size": get_device_count}
     kwargs["enable_cuda_graph"] = enable_cuda_graph
     kwargs["replace_method"] = "auto"
     kwargs["replace_with_kernel_inject"] = False
@@ -715,6 +714,77 @@ def test_lightning_deepspeed_inference(get_device_count, enable_cuda_graph, tp_s
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         strategy=HPUDeepSpeedStrategy(parallel_devices=_parallel_hpus, **kwargs),
+        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        use_distributed_sampler=False,
+    )
+    preds = trainer.predict(model)
+    expected = torch.tensor([32768.0, 32768.0])
+    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.float,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="FP16 is not supported by Gaudi1"
+            ),
+        ),
+    ],
+)
+def test_lightning_deepspeed_inference_params(get_device_count, dtype):
+    model = InferenceModel()
+    _parallel_hpus = [torch.device("hpu")] * get_device_count
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=get_device_count,
+        strategy=HPUDeepSpeedStrategy(
+            parallel_devices=_parallel_hpus,
+            tensor_parallel={"tp_size": get_device_count},
+            dtype=dtype,
+            replace_with_kernel_inject=True,
+        ),
+        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        use_distributed_sampler=False,
+    )
+    preds = trainer.predict(model)
+    expected = torch.tensor([32768.0, 32768.0])
+    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.float,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="FP16 is not supported by Gaudi1"
+            ),
+        ),
+    ],
+)
+def test_lightning_deepspeed_inference_config(get_device_count, dtype):
+    model = InferenceModel()
+    _parallel_hpus = [torch.device("hpu")] * get_device_count
+    print(f"{HPUAccelerator.get_device_name()}")
+    _config = {
+        "replace_with_kernel_inject": True,
+        "tensor_parallel": {"tp_size": get_device_count},
+        "dtype": dtype,
+        "enable_cuda_graph": False,
+    }
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=get_device_count,
+        strategy=HPUDeepSpeedStrategy(
+            parallel_devices=_parallel_hpus,
+            config=_config,
+        ),
         plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         use_distributed_sampler=False,
     )

@@ -599,23 +599,30 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         assert isinstance(self.config, dict)
 
-        # todo: this is required for DeepSpeed throughput timers
-        inference_config = {"train_micro_batch_size_per_gpu": 1}
-        if "bf16" in self.config:
-            inference_config.update({"bf16": self.config["bf16"]})
-        if self.zero_stage_3:
-            inference_config.update(
-                {
-                    "zero_allow_untested_optimizer": self.config["zero_allow_untested_optimizer"],
-                    "zero_optimization": self.config["zero_optimization"],
-                }
-            )
         # Remove all module hooks before initializing new model
         remove_module_hooks(model)
 
-        if any(key in self.kwargs for key in deepspeed.default_inference_config()):
-            model = deepspeed.init_inference(model=model, **self.kwargs)
+        if any(key in self.kwargs for key in deepspeed.default_inference_config()) or any(
+            key in self.config for key in deepspeed.default_inference_config()
+        ):
+            # Format config to keep deepspeed inference parameters only
+            inference_config = {
+                k: self.config[k] for k in set(deepspeed.default_inference_config()).intersection(self.config)
+            }
+            model = deepspeed.init_inference(model=model, config=inference_config, **self.kwargs)
         else:
+            # todo: this is required for DeepSpeed throughput timers
+            inference_config = {"train_micro_batch_size_per_gpu": 1}
+            if "bf16" in self.config:
+                inference_config.update({"bf16": self.config["bf16"]})
+            if self.zero_stage_3:
+                inference_config.update(
+                    {
+                        "zero_allow_untested_optimizer": self.config["zero_allow_untested_optimizer"],
+                        "zero_optimization": self.config["zero_optimization"],
+                    }
+                )
+
             model, _, _, _ = deepspeed.initialize(
                 args=argparse.Namespace(use_hpu=True),
                 config=inference_config,
