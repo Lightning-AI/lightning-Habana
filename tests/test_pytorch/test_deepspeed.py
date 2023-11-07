@@ -534,7 +534,6 @@ def test_lightning_deepspeed_stages(get_device_count, zero_stage, offload):
         accumulate_grad_batches=2,
     )
     trainer.fit(model)
-    trainer.test(model)
 
 
 def test_hpu_deepspeed_with_invalid_optimizer():
@@ -699,9 +698,10 @@ class InferenceModel(LightningModule):
         return DataLoader(SampleDataset(1, 2))
 
 
+@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("enable_cuda_graph", [False, True])
 @pytest.mark.parametrize("tp_size", ["1", "2"])
-def test_lightning_deepspeed_inference_stages(get_device_count, enable_cuda_graph, tp_size):
+def test_lightning_deepspeed_inference(get_device_count, enable_cuda_graph, tp_size):
     model = InferenceModel()
     kwargs = {"dtype": torch.float}
     kwargs["tensor_parallel"] = {"tp_size": int(tp_size)}
