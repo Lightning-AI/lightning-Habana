@@ -602,9 +602,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         # Remove all module hooks before initializing new model
         remove_module_hooks(model)
 
-        if any(key in self.kwargs for key in deepspeed.default_inference_config()) or any(
-            key in self.config for key in deepspeed.default_inference_config()
-        ):
+        if any(key in self.kwargs or key in self.config for key in deepspeed.default_inference_config()):
             # Format config to keep deepspeed inference parameters only
             inference_config = {
                 k: self.config[k] for k in set(deepspeed.default_inference_config()).intersection(self.config)
