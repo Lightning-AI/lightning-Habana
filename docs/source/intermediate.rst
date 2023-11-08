@@ -156,17 +156,11 @@ The below shows how ``DeviceStatsMonitor`` can be enabled.
 For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/latest/PyTorch/PyTorch_User_Guide/Python_Packages.html#memory-stats-apis>`__.
 
 
--------------------------------------
+----
 
-Enabling recipe caching with HPU
--------------------------------------
+Runtime Enviroment Variables
+----------------------------
 
-Recipe caching helps to reduce graph compilations when training on multiple HPUs.
-This is helpful when dealing with models that have dynamicity. Graphs are compiled once and cached to a user-specified location where other HPU devices may reuse them.
-Recipe caching is disabled by default. To enable recipe caching, se the `PT_HPU_RECIPE_CACHE_CONFIG` environment variable.
-Configuration is encoded as a comma separated list in the following format: ‘<RECIPE_CACHE_PATH>,<RECIPE_CACHE_DELETE>,<RECIPE_CACHE_SIZE_MB>’.:
-1. <RECIPE_CACHE_PATH> - Path (directory), where compiled graph recipes are stored to accelerate a scale up scenario. Only one process compiles the recipe, and other processes read it from disk.
-2. <RECIPE_CACHE_DELETE> - Bool flag (true/false). If set to True, the directory provided as <RECIPE_CACHE_PATH> will be cleared when the workload starts.
-3. <RECIPE_CACHE_SIZE_MB> - Max size in MB of recipe cache directory. If size limit is reached then the oldest recipes (by creation time on file system) are removed.
+Habana runtime environment flags are used to change the behavior as well as enable or disable some features.
 
-For more information, refer to `Handling Dynamic Shapes <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/Dynamic_Shapes.html?highlight=PT_HPU_METRICS_FILE#detecting-and-mitigating-dynamicity-overview>`__.
+For more information, refer to `Runtime Flags <https://docs.habana.ai/en/latest/PyTorch/Runtime_Flags.html#pytorch-runtime-flags>`__.
