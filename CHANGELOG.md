@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added tests, examples, and documentation for dynamic shapes with recipe caching ([#107](https://github.com/Lightning-AI/lightning-Habana/pull/107))
 -
 
 ### Changed
@@ -35,7 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added tests, examples and documentation for HPUPrecisionPlugin with autocast ([#94](https://github.com/Lightning-AI/lightning-Habana/pull/94))
 - Added test to validate checkpoint resuming with HPUDeepSpeedStrategy ([#95](https://github.com/Lightning-AI/lightning-Habana/pull/95))
 - Added support for lightning 2.1 ([#100](https://github.com/Lightning-AI/lightning-Habana/pull/100), [#105](https://github.com/Lightning-AI/lightning-Habana/pull/105))
-- Added tests, examples, and documentation for recipe caching for dynamic shapes ([#107](https://github.com/Lightning-AI/lightning-Habana/pull/107))
 
 ### Changed
 
