@@ -349,11 +349,13 @@ Activation Checkpointing
 DeepSpeed inference on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-HPUDeepSpeedStrategy can be used for inference with Deepspeed on HPU. Examples of inference with HPUDeepSpeedStrategy are shown below.
+HPUDeepSpeedStrategy can be used for inference with Deepspeed on HPU.
+For more information, refer to `Inference Using DeepSpeed <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/Inference_Using_DeepSpeed.html>`__.
 
+There are  different ways to initialize inference
 
-Using arguments
-""""""""""""""""
+1. Using arguments
+""""""""""""""""""
 
 .. code-block:: python
 
@@ -375,8 +377,8 @@ Using arguments
     trainer.predict(model)
 
 
-Using kwargs
-""""""""""""""
+2. Using kwargs
+""""""""""""""""
 
 .. code-block:: python
 
@@ -399,8 +401,8 @@ Using kwargs
     trainer.predict(model)
 
 
-Using configuration
-""""""""""""""""""""""
+3. Using configuration
+""""""""""""""""""""""""
 
 .. code-block:: python
 
