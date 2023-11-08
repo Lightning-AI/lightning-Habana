@@ -159,7 +159,7 @@ For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/
 ----
 
 Runtime Environment Variables
-----------------------------
+----------------------------------------
 
 Habana runtime environment flags are used to change the behavior as well as enable or disable some features.
 
