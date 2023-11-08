@@ -770,7 +770,7 @@ def test_lightning_deepspeed_inference_params(get_device_count, dtype):
 def test_lightning_deepspeed_inference_config(get_device_count, dtype):
     model = InferenceModel()
     _parallel_hpus = [torch.device("hpu")] * get_device_count
-    print(f"{HPUAccelerator.get_device_name()}")
+
     _config = {
         "replace_with_kernel_inject": True,
         "tensor_parallel": {"tp_size": get_device_count},
