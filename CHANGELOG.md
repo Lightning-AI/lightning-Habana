@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--
+- Added support for multi-tenant workloads ([#111](https://github.com/Lightning-AI/lightning-Habana/pull/111))
 
 ### Changed
 
