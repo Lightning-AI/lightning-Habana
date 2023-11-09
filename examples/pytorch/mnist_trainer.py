@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 import argparse
 import os
 import warnings
 
+import torch.multiprocessing as mp
 from lightning_utilities import module_available
 from mnist_sample import LitAutocastClassifier, LitClassifier
 
@@ -28,36 +30,35 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
     from pytorch_lightning.plugins.precision import MixedPrecisionPlugin
 
-from lightning_habana import HPUAccelerator, HPUPrecisionPlugin, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin, SingleHPUStrategy
 
-RUN_TYPE = ["basic", "autocast", "recipe_caching"]
-PLUGINS = ["None", "HPUPrecisionPlugin", "MixedPrecisionPlugin"]
+RUN_TYPE = [
+    "basic",
+    "autocast",
+    "HPUPrecisionPlugin",
+    "MixedPrecisionPlugin",
+    "recipe_caching",
+    "multi_tenancy",
+]
 
 
 def parse_args():
     """Cmdline arguments parser."""
-    parser = argparse.ArgumentParser(description="Example to showcase mixed precision training with HPU.")
+    parser = argparse.ArgumentParser(description="Example to showcase features when training on HPU.")
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbosity")
     parser.add_argument(
         "-r", "--run_types", nargs="+", choices=RUN_TYPE, default=RUN_TYPE, help="Select run type for example"
     )
-    parser.add_argument(
-        "-p",
-        "--plugins",
-        nargs="+",
-        default=PLUGINS,
-        choices=PLUGINS,
-        help="Plugins for use in training",
-    )
+    parser.add_argument("-n", "--num_tenants", type=int, default=2, help="Number of tenants to run on node")
+    parser.add_argument("-c", "--devices_per_tenant", type=int, default=2, help="Number of devices per tenant")
     return parser.parse_args()
 
 
-def run_trainer(model, plugin, run_type):
+def run_trainer(model, data_module, plugin, run_type, devices=1):
     """Run trainer.fit and trainer.test with given parameters."""
-    _data_module = MNISTDataModule(batch_size=32)
-    _devices = 1
-    _strategy = SingleHPUStrategy()
+    _devices = devices
+    _strategy = HPUParallelStrategy(start_method="spawn") if _devices > 1 else SingleHPUStrategy()
     if run_type == "recipe_caching":
         os.environ["PT_HPU_RECIPE_CACHE_CONFIG"] = "tmp/recipes,True,1024"
     trainer = Trainer(
@@ -67,54 +68,79 @@ def run_trainer(model, plugin, run_type):
         plugins=plugin,
         fast_dev_run=3,
     )
-    trainer.fit(model, _data_module)
-    trainer.test(model, _data_module)
+    trainer.fit(model, data_module)
+    trainer.test(model, data_module)
     if run_type == "recipe_caching":
         os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
 
-def check_and_init_plugin(plugin, verbose):
-    """Initialise plugins with appropriate checks."""
-    if verbose:
-        print(f"Initializing {plugin}")
-    if plugin == "HPUPrecisionPlugin":
-        return [HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")]
-    if plugin == "MixedPrecisionPlugin":
-        warnings.warn("Operator overriding is not supported with MixedPrecisionPlugin on Habana devices.")
-        return [MixedPrecisionPlugin(device="hpu", precision="bf16-mixed")]
-    return []
+def spawn_tenants(model, data_module, run_type, devices, num_tenants):
+    """Spawn multiple WL tenants on a single node."""
+    processes = []
+    for _ in range(num_tenants):
+        processes.append(mp.Process(target=run_trainer, args=(model, data_module, [], run_type, devices)))
+
+    for tenant, process in enumerate(processes):
+        modules = ",".join(str(i) for i in range(tenant * devices, (tenant + 1) * devices))
+        # Cannot dynamically check for port availability as main launches all the processes
+        # before the launched process can bind the ports.
+        # So check for free port on any given port always returns True
+        port = 12345 + tenant * 10
+        custom_env = {"HABANA_VISIBLE_MODULES": str(modules), "MASTER_PORT": str(port)}
+        os.environ.update(custom_env)
+        process.start()
+
+    for process in processes:
+        process.join()
 
 
-def run_model(run_type, plugin, verbose):
+def init_model_and_plugins(run_type, options):
     """Picks appropriate model and plugin."""
-    _model = LitClassifier()
+    # Defaults
+    model = LitClassifier()
+    data_module = MNISTDataModule(batch_size=32)
+
+    # Init model and data_module
     if run_type == "autocast":
-        if plugin is not None:
-            warnings.warn("Skipping precision plugins. Redundant with autocast run.")
         if "LOWER_LIST" in os.environ or "FP32_LIST" in os.environ:
-            _model = LitAutocastClassifier(op_override=True)
+            model = LitAutocastClassifier(op_override=True)
         else:
-            _model = LitAutocastClassifier()
+            model = LitAutocastClassifier()
         warnings.warn(
             "To override operators with autocast, set LOWER_LIST and FP32_LIST file paths as env variables."
             "Example: LOWER_LIST=<path_to_bf16_ops> python example.py"
             "https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html#override-options"
         )
 
-    _plugin = check_and_init_plugin(plugin, verbose) if plugin != "None" else None
-    if verbose:
-        print(f"With run type: {run_type}, running model: {_model} with plugin: {plugin}")
-    run_trainer(_model, _plugin, run_type)
+    # Add plugins here
+
+    if options.verbose:
+        print(f"With run type: {run_type}, running model: {model} with plugin: {plugin}")
+
+    devices_per_tenant = options.devices_per_tenant
+    if run_type == "multi_tenancy":
+        max_devices = 8
+        num_tenants = options.num_tenants
+        if max_devices < num_tenants * devices_per_tenant:
+            devices_per_tenant = max_devices if devices_per_tenant > max_devices else devices_per_tenant
+            num_tenants = max_devices // devices_per_tenant
+            warnings.warn(
+                f"""More cards requested than available.
+                Launching {num_tenants} tenants, with {devices_per_tenant} cards each"""
+            )
+        if options.verbose:
+            print(f"Running with {num_tenants} tenants, using {devices_per_tenant} cards per tenant")
+        spawn_tenants(model, data_module, run_type, devices_per_tenant, num_tenants)
+    else:
+        run_trainer(model, data_module, plugin, run_type, devices_per_tenant)
 
 
 if __name__ == "__main__":
     # Get options
     options = parse_args()
     if options.verbose:
-        print(f"Running MNIST mixed precision training with options: {options}")
 
     # Run model and print accuracy
     for _run_type in options.run_types:
-        for plugin in options.plugins:
-            seed_everything(42)
-            run_model(_run_type, plugin, options.verbose)
+        seed_everything(42)
+        init_model_and_plugins(_run_type, options)

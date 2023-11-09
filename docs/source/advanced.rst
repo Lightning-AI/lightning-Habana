@@ -709,3 +709,27 @@ The following compile backends are now available to support HPU: `aot_hpu_traini
     compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
 
 Please refer to `GAUDI Release Notes <https://docs.habana.ai/en/latest/Release_Notes/GAUDI_Release_Notes.html>`_
+
+
+----
+
+Support for Multiple tenants
+------------------------------
+
+The following section describe the changes required for running a workload with partial Gaudi processors.
+Add Environment Variable `HABANA_VISIBLE_MODULES`. In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.
+To run a 4-Gaudi workload, set this in environment before running the workload:
+
+.. code-block:: bash
+
+    export HABANA_VISIBLE_MODULES="0,1,2,3"
+
+To run another 4-Gaudi workload in parallel, set the modules as follows before running the second workload:
+
+.. code-block:: bash
+
+    export HABANA_VISIBLE_MODULES="4,5,6,7"
+
+In addition to setting `HABANA_VISIBLE_MODULES`, also set a unqiue `MASTER_PORT` as environment variable for each tenant instance.
+
+Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/latest/PyTorch/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
