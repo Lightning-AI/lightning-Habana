@@ -18,6 +18,8 @@ import os
 import pytest
 import torch.multiprocessing as mp
 
+from lightning_utilities import module_available
+
 if module_available("lightning"):
     from lightning.pytorch import Trainer, seed_everything
     from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
