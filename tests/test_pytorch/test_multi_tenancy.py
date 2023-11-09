@@ -13,12 +13,13 @@
 # limitations under the License.
 
 
-from lightning.pytorch import Trainer, seed_everything
-from lightning.pytorch.demos.boring_classes import BoringModel, BoringDataModule
-from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
-import torch.multiprocessing as mp
 import os
+
 import pytest
+import torch.multiprocessing as mp
+from lightning.pytorch import Trainer, seed_everything
+from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
+from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
 
 
 def run_train(tmpdir, _devices, tenant, status):
