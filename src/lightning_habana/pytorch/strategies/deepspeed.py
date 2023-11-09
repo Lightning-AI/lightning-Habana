@@ -153,6 +153,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         load_full_weights: bool = False,
         precision_plugin: Optional[PrecisionPlugin] = None,
         process_group_backend: Optional[str] = "hccl",
+        **kwargs: Any,
     ) -> None:
         """Provides capabilities to run training using the DeepSpeed library.
 
@@ -286,6 +287,8 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
             process_group_backend: hccl backend to be used
 
+            kwargs: Additional arguments that will be passed to the :func:`deepspeed.init_inference`
+
         """
         os.environ["DEEPSPEED_USE_HPU"] = "true"
         # TBD - remove these work arounds
@@ -355,6 +358,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         self.loss_scale_window = loss_scale_window
         self.hysteresis = hysteresis
         self.min_loss_scale = min_loss_scale
+        self.kwargs = kwargs
 
     def _load_config(self, config: Optional[Union[_PATH, Dict[str, Any]]]) -> Optional[Dict[str, Any]]:
         if config is None and self.DEEPSPEED_ENV_VAR in os.environ:
@@ -595,29 +599,38 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         assert isinstance(self.config, dict)
 
-        # todo: this is required for DeepSpeed throughput timers
-        inference_config = {"train_micro_batch_size_per_gpu": 1}
-        if "bf16" in self.config:
-            inference_config.update({"bf16": self.config["bf16"]})
-        if self.zero_stage_3:
-            inference_config.update(
-                {
-                    "zero_allow_untested_optimizer": self.config["zero_allow_untested_optimizer"],
-                    "zero_optimization": self.config["zero_optimization"],
-                }
-            )
         # Remove all module hooks before initializing new model
         remove_module_hooks(model)
 
-        model, _, _, _ = deepspeed.initialize(
-            args=argparse.Namespace(use_hpu=True),
-            config=inference_config,
-            model=model,
-            optimizer=None,
-            lr_scheduler=None,
-            model_parameters=[],
-            dist_init_required=False,
-        )
+        if any(key in self.kwargs or key in self.config for key in deepspeed.default_inference_config()):
+            # Format config to keep deepspeed inference parameters only
+            inference_config = {
+                k: self.config[k] for k in set(deepspeed.default_inference_config()).intersection(self.config)
+            }
+            model = deepspeed.init_inference(model=model, config=inference_config, **self.kwargs)
+        else:
+            # todo: this is required for DeepSpeed throughput timers
+            inference_config = {"train_micro_batch_size_per_gpu": 1}
+            if "bf16" in self.config:
+                inference_config.update({"bf16": self.config["bf16"]})
+            if self.zero_stage_3:
+                inference_config.update(
+                    {
+                        "zero_allow_untested_optimizer": self.config["zero_allow_untested_optimizer"],
+                        "zero_optimization": self.config["zero_optimization"],
+                    }
+                )
+
+            model, _, _, _ = deepspeed.initialize(
+                args=argparse.Namespace(use_hpu=True),
+                config=inference_config,
+                model=model,
+                optimizer=None,
+                lr_scheduler=None,
+                model_parameters=[],
+                dist_init_required=False,
+            )
+
         model = model.to("hpu")
         self.model = model
 
