@@ -737,7 +737,7 @@ def test_lightning_deepspeed_inference_params(get_device_count, dtype):
             parallel_devices=_parallel_hpus,
             tensor_parallel={"tp_size": get_device_count},
             dtype=dtype,
-            replace_with_kernel_inject=True,
+            replace_with_kernel_inject=False,
         ),
         plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         use_distributed_sampler=False,
@@ -756,7 +756,7 @@ def test_lightning_deepspeed_inference_config(get_device_count, dtype):
     _parallel_hpus = [torch.device("hpu")] * get_device_count
 
     _config = {
-        "replace_with_kernel_inject": True,
+        "replace_with_kernel_inject": False,
         "tensor_parallel": {"tp_size": get_device_count},
         "dtype": dtype,
         "enable_cuda_graph": False,
