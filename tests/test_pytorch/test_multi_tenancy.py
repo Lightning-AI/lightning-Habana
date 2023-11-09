@@ -17,8 +17,16 @@ import os
 
 import pytest
 import torch.multiprocessing as mp
-from lightning.pytorch import Trainer, seed_everything
-from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
+
+if module_available("lightning"):
+    from lightning.pytorch import Trainer, seed_everything
+    from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning import Trainer, seed_everything
+    from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
+else:
+    raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
 from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
 
 
