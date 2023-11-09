@@ -608,3 +608,27 @@ Limitations of HPU Graphs
 * Using HPU Graphs with `torch.compile` is not supported.
 
 Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis>`_
+
+
+----
+
+Support for Multiple tenants
+------------------------------
+
+The following section describe the changes required for running a workload with partial Gaudi processors.
+Add Environment Variable `HABANA_VISIBLE_MODULES`. In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.
+To run a 4-Gaudi workload, set this in environment before running the workload:
+
+.. code-block:: bash
+
+    export HABANA_VISIBLE_MODULES="0,1,2,3"
+
+To run another 4-Gaudi workload in parallel, set the modules as follows before running the second workload:
+
+.. code-block:: bash
+
+    export HABANA_VISIBLE_MODULES="4,5,6,7"
+
+In addition to setting `HABANA_VISIBLE_MODULES`, also set a unqiue `MASTER_PORT` as environment variable for each tenant instance.
+
+Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/latest/PyTorch/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
