@@ -17,7 +17,6 @@ import os
 
 import pytest
 import torch.multiprocessing as mp
-
 from lightning_utilities import module_available
 
 if module_available("lightning"):
