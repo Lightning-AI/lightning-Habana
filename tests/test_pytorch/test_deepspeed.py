@@ -665,3 +665,113 @@ def test_deepspeed_resume_training(tmpdir, deepspeed_base_config, get_device_cou
         enable_model_summary=False,
     )
     trainer.fit(model, ckpt_path=ck.best_model_path)
+
+
+class TestLayer(torch.nn.Module):
+    def __init__(self, data_size):
+        super().__init__()
+        self.w = torch.nn.Parameter(torch.ones([data_size]))
+
+    def forward(self, input):
+        return input * torch.matmul(input, self.w)
+
+
+class InferenceModel(LightningModule):
+    def __init__(self):
+        super().__init__()
+        self.l1 = TestLayer(2)
+        self.l2 = TestLayer(2)
+        self.l3 = TestLayer(2)
+        self.l4 = TestLayer(2)
+
+    def forward(self, x):
+        l1_out = self.l1(x)
+        l2_out = self.l2(l1_out)
+        l3_out = self.l3(l2_out)
+        return self.l4(l3_out)
+
+    def predict_step(self, batch, batch_idx):
+        x, y = batch
+        return self(x)
+
+    def predict_dataloader(self):
+        return DataLoader(SampleDataset(1, 2))
+
+
+@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.parametrize("enable_cuda_graph", [False, True])
+def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_count):
+    model = InferenceModel()
+    kwargs = {"dtype": torch.float}
+    kwargs["tensor_parallel"] = {"tp_size": get_device_count}
+    kwargs["enable_cuda_graph"] = enable_cuda_graph
+    kwargs["replace_method"] = "auto"
+    kwargs["replace_with_kernel_inject"] = False
+    kwargs["injection_policy"] = {InferenceModel: ("l1")}
+    _parallel_hpus = [torch.device("hpu")] * get_device_count
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=get_device_count,
+        strategy=HPUDeepSpeedStrategy(parallel_devices=_parallel_hpus, **kwargs),
+        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        use_distributed_sampler=False,
+    )
+    preds = trainer.predict(model)
+    expected = torch.tensor([32768.0, 32768.0])
+    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+
+
+@pytest.mark.parametrize("dtype", [torch.float, torch.float16])
+def test_lightning_deepspeed_inference_params(get_device_count, dtype):
+    if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
+        pytest.skip(reason="FP16 is not supported by Gaudi1")
+
+    model = InferenceModel()
+    _parallel_hpus = [torch.device("hpu")] * get_device_count
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=get_device_count,
+        strategy=HPUDeepSpeedStrategy(
+            parallel_devices=_parallel_hpus,
+            tensor_parallel={"tp_size": get_device_count},
+            dtype=dtype,
+            replace_with_kernel_inject=False,
+        ),
+        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        use_distributed_sampler=False,
+    )
+    preds = trainer.predict(model)
+    expected = torch.tensor([32768.0, 32768.0])
+    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+
+
+@pytest.mark.parametrize("dtype", [torch.float, torch.float16])
+def test_lightning_deepspeed_inference_config(get_device_count, dtype):
+    if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
+        pytest.skip(reason="FP16 is not supported by Gaudi1")
+
+    model = InferenceModel()
+    _parallel_hpus = [torch.device("hpu")] * get_device_count
+
+    _config = {
+        "replace_with_kernel_inject": False,
+        "tensor_parallel": {"tp_size": get_device_count},
+        "dtype": dtype,
+        "enable_cuda_graph": False,
+    }
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=get_device_count,
+        strategy=HPUDeepSpeedStrategy(
+            parallel_devices=_parallel_hpus,
+            config=_config,
+        ),
+        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        use_distributed_sampler=False,
+    )
+    preds = trainer.predict(model)
+    expected = torch.tensor([32768.0, 32768.0])
+    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
