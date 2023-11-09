@@ -615,8 +615,9 @@ Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyT
 Support for Multiple tenants
 ------------------------------
 
-The following section describe the changes required for running a workload with partial Gaudi processors.
-Add Environment Variable `HABANA_VISIBLE_MODULES`. In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.
+Running a workload with partial Gaudi processors can be enabled with a simple environment variable setting `HABANA_VISIBLE_MODULES`.
+In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.
+
 To run a 4-Gaudi workload, set this in environment before running the workload:
 
 .. code-block:: bash
