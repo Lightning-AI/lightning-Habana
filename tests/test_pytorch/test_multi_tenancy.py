@@ -65,7 +65,7 @@ def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port):
         port = _base_port + tenant
         custom_env = {"HABANA_VISIBLE_MODULES": str(modules), "MASTER_PORT": str(port)}
         os.environ.update(custom_env)
-        process.start_method = 'spawn'
+        process.start_method = "spawn"
         process.start()
 
     for process in processes:
