@@ -50,7 +50,7 @@ def run_train(tmpdir, _devices, tenant, status):
         status[tenant] = str(e)
 
 
-def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant):
+def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port):
     processes = []
     manager = mp.Manager()
     status = manager.dict()
@@ -62,13 +62,14 @@ def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant):
         # Cannot dynamically check for port availability as main launches all the processes
         # before the launched process can bind the ports.
         # So check for free port on any given port always returns True
-        port = 12345 + tenant * 10
+        port = _base_port + tenant
         custom_env = {"HABANA_VISIBLE_MODULES": str(modules), "MASTER_PORT": str(port)}
         os.environ.update(custom_env)
+        process.start_method = 'spawn'
         process.start()
 
     for process in processes:
-        process.join()
+        process.join(300)
 
     return status
 
@@ -86,8 +87,8 @@ def test_multi_tenancy_more_cards_than_visible(tmpdir):
 
 
 @pytest.mark.parametrize(
-    ("num_tenants", "cards_per_tenant"),
-    [(2, 4), (4, 2)],
+    ("num_tenants", "cards_per_tenant", "base_port"),
+    [(2, 4, 12345), (4, 2, 12477)],
     ids=[
         "num_tenants_2_cards_per_tenant_4",
         "num_tenants_4_cards_per_tenant_2",
@@ -95,7 +96,7 @@ def test_multi_tenancy_more_cards_than_visible(tmpdir):
 )
 # Though using partial Gaudi is possible, only 2 and 4 card scenarios are recommended and supported:
 # https://docs.habana.ai/en/latest/PyTorch/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html#number-of-supported-gaudis-for-multi-tenancy-workload
-def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant):
-    status = spawn_tenants(tmpdir, num_tenants, cards_per_tenant)
+def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant, base_port):
+    status = spawn_tenants(tmpdir, num_tenants, cards_per_tenant, base_port)
     for _, error in status.items():
         assert error is None
