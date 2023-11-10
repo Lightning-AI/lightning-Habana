@@ -88,12 +88,13 @@ def test_multi_tenancy_more_cards_than_visible(tmpdir):
 
 @pytest.mark.parametrize(
     ("num_tenants", "cards_per_tenant", "base_port"),
-    [(2, 4, 12345),
-     #(4, 2, 12477)
+    [
+        (2, 4, 12345),
+        # (4, 2, 12477)
     ],
     ids=[
         "num_tenants_2_cards_per_tenant_4",
-        #"num_tenants_4_cards_per_tenant_2",
+        # "num_tenants_4_cards_per_tenant_2",
     ],
 )
 # Though using partial Gaudi is possible, only 2 and 4 card scenarios are recommended and supported:
