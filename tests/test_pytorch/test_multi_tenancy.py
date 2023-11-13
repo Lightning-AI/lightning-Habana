@@ -104,4 +104,3 @@ def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant
     for _, error in status.items():
         assert error is None
     del os.environ["HABANA_VISIBLE_MODULES"]
-
