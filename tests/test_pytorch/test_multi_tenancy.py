@@ -103,3 +103,5 @@ def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant
     status = spawn_tenants(tmpdir, num_tenants, cards_per_tenant, base_port)
     for _, error in status.items():
         assert error is None
+    del os.environ["HABANA_VISIBLE_MODULES"]
+
