@@ -85,7 +85,7 @@ def spawn_tenants(model, data_module, run_type, devices, num_tenants):
         # Cannot dynamically check for port availability as main launches all the processes
         # before the launched process can bind the ports.
         # So check for free port on any given port always returns True
-        port = 12345 + tenant * 10
+        port = 1234 + tenant
         custom_env = {"HABANA_VISIBLE_MODULES": str(modules), "MASTER_PORT": str(port)}
         os.environ.update(custom_env)
         process.start()
