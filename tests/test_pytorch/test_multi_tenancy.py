@@ -84,6 +84,7 @@ def test_multi_tenancy_more_cards_than_visible(tmpdir):
     error_status = status[0]
     assert expected in error_status
     del os.environ["HABANA_VISIBLE_MODULES"]
+    del os.environ["MASTER_PORT"]
 
 
 @pytest.mark.parametrize(
@@ -104,3 +105,4 @@ def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant
     for _, error in status.items():
         assert error is None
     del os.environ["HABANA_VISIBLE_MODULES"]
+    del os.environ["MASTER_PORT"]
