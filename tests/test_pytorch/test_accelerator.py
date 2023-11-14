@@ -208,7 +208,7 @@ def test_accelerator_auto_with_devices_hpu(hpus):
     trainer = Trainer(accelerator="auto", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == HPUAccelerator.auto_device_count()
+    assert trainer.num_devices == hpus
 
 
 def test_strategy_choice_single_strategy():
