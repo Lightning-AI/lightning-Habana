@@ -188,8 +188,8 @@ def test_accelerator_with_single_device():
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_accelerator_with_multiple_devices():
-    trainer = Trainer(accelerator="hpu", devices=2)
+def test_accelerator_with_multiple_devices(hpus):
+    trainer = Trainer(accelerator="hpu", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == 2
@@ -200,8 +200,8 @@ def test_accelerator_with_multiple_devices():
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_accelerator_auto_with_devices_hpu():
-    trainer = Trainer(accelerator="auto", devices=2)
+def test_accelerator_auto_with_devices_hpu(hpus):
+    trainer = Trainer(accelerator="auto", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == HPUAccelerator.auto_device_count()
@@ -216,15 +216,15 @@ def test_strategy_choice_single_strategy():
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_strategy_choice_parallel_strategy():
+def test_strategy_choice_parallel_strategy(hpus):
     trainer = Trainer(
-        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * 2),
+        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * hpus),
         accelerator=HPUAccelerator(),
-        devices=2,
+        devices=hpus,
     )
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
-    trainer = Trainer(accelerator="hpu", devices=2)
+    trainer = Trainer(accelerator="hpu", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
@@ -437,14 +437,14 @@ def test_hpu_parallel_reduce_op_strategy_default():
         "ReduceOp.PRODUCT",
     ],
 )
-def test_reduce_op_strategy(tmpdir, reduce_op, expectation):
+def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
     """Tests all reduce in HPUParallel strategy."""
     seed_everything(42)
     _model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=2,
+        devices=hpus,
         strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
@@ -469,7 +469,7 @@ def test_reduce_op_strategy(tmpdir, reduce_op, expectation):
         ("mean", 43.0, 44.0),
     ],
 )
-def test_reduce_op_logging(tmpdir, reduce_op, logged_value_epoch, logged_value_step):
+def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_value_step):
     """Test reduce_op with logger and sync_dist."""
     # Logger has its own reduce_op sanity check.
     # It only accepts following string reduce_ops {min, max, mean, sum}
@@ -481,7 +481,7 @@ def test_reduce_op_logging(tmpdir, reduce_op, logged_value_epoch, logged_value_s
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=2,
+        devices=hpus,
         strategy=HPUParallelStrategy(start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
