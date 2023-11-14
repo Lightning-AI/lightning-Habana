@@ -154,3 +154,13 @@ The below shows how ``DeviceStatsMonitor`` can be enabled.
     trainer = Trainer(accelerator=HPUAccelerator(), callbacks=[device_stats])
 
 For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/latest/PyTorch/PyTorch_User_Guide/Python_Packages.html#memory-stats-apis>`__.
+
+
+----
+
+Runtime Environment Variables
+----------------------------------------
+
+Habana runtime environment flags are used to change the behavior as well as enable or disable some features.
+
+For more information, refer to `Runtime Flags <https://docs.habana.ai/en/latest/PyTorch/Runtime_Flags.html#pytorch-runtime-flags>`__.

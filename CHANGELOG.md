@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added support for Deepspeed inference on HPU with tests and documentation ([#110](https://github.com/Lightning-AI/lightning-Habana/pull/110))
+- Added tests, examples, and documentation for dynamic shapes with recipe caching ([#107](https://github.com/Lightning-AI/lightning-Habana/pull/107))
 
 ### Changed
 
