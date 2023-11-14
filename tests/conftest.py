@@ -24,7 +24,7 @@ def datadir():
 
 
 def pytest_addoption(parser):
-    parser.addoption("--hpus", action="store", type=int, default=1, help="Number of hpus 1-2")
+    parser.addoption("--hpus", action="store", type=int, default=1, help="Number of hpus 1-8")
 
 
 @pytest.fixture()
