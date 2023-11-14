@@ -192,7 +192,7 @@ def test_accelerator_with_multiple_devices(hpus):
     trainer = Trainer(accelerator="hpu", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == 2
+    assert trainer.num_devices == hpus
 
     trainer = Trainer(accelerator="hpu")
     assert isinstance(trainer.accelerator, HPUAccelerator)
@@ -460,7 +460,7 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
     [
         # Epoch = Sum(42, 43, 44) * 2, Step = 44 * 2 (for 2 ddp processes)
-        ("sum", 1032.0, 352.0),
+        ("sum", 258.0, 88.0),
         # Epoch = Max(42, 43, 44), Step = Max(44, ... (x2))
         ("max", 44.0, 44.0),
         # Epoch = Min(42, 43, 44), Step = Min(44, ... (x2))
