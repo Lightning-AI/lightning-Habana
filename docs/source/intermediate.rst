@@ -114,7 +114,7 @@ and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs
 Enabling DeviceStatsMonitor with HPUs
 ----------------------------------------
 
-:class:`~pytorch_lightning.callbacks.device_stats_monitor.DeviceStatsMonitor` is a callback that automatically monitors and logs device stats during the training stage.
+:class:`~lightning.pytorch.callbacks.device_stats_monitor.DeviceStatsMonitor` is a callback that automatically monitors and logs device stats during the training stage.
 This callback can be passed for training with HPUs. It returns a map of the following metrics with their values in bytes of type uint64:
 
 +-------------------+---------------------------------------------+
@@ -154,3 +154,13 @@ The below shows how ``DeviceStatsMonitor`` can be enabled.
     trainer = Trainer(accelerator=HPUAccelerator(), callbacks=[device_stats])
 
 For more details, please refer to `Memory Stats APIs <https://docs.habana.ai/en/latest/PyTorch/PyTorch_User_Guide/Python_Packages.html#memory-stats-apis>`__.
+
+
+----
+
+Runtime Environment Variables
+----------------------------------------
+
+Habana runtime environment flags are used to change the behavior as well as enable or disable some features.
+
+For more information, refer to `Runtime Flags <https://docs.habana.ai/en/latest/PyTorch/Runtime_Flags.html#pytorch-runtime-flags>`__.
