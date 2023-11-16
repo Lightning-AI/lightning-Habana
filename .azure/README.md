@@ -59,14 +59,19 @@ sudo chmod 777 /azp
 ## Stating the agents
 
 ```bash
+git clone https://github.com/Lightning-AI/lightning-Habana.git
+cd lightning-Habana
+
 export AZP_TOKEN="xxxxxxxxxxxxxxxxxxxxxxxxxx"
 export AZP_URL="https://dev.azure.com/Lightning-AI"
 export AZP_POOL="intel-hpus"
-export AZP_AGENT_NAME="hpu-1"
 
-git clone https://github.com/Lightning-AI/lightning-Habana.git
-cd lightning-Habana
-nohup bash .azure/start.sh > "${AZP_AGENT_NAME}.log" &
+for i in {0..7..2}
+do
+     nohup bash .azure/start.sh \
+        "AZP_AGENT_NAME=HPU_$i,$((i+1))" \
+     > "agent-$i.log" &
+done
 ```
 
 ## Check running agents
