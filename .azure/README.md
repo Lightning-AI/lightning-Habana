@@ -68,9 +68,7 @@ export AZP_POOL="intel-hpus"
 
 for i in {0..7..2}
 do
-     nohup bash .azure/start.sh \
-        "AZP_AGENT_NAME=HPU_$i,$((i+1))" \
-     > "agent-$i.log" &
+     nohup bash .azure/start.sh "AZP_AGENT_NAME=HPU_$i,$((i+1))" > "agent-$i.log" &
 done
 ```
 
