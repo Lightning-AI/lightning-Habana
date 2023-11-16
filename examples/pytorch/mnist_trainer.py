@@ -50,8 +50,8 @@ def parse_args():
     parser.add_argument(
         "-r", "--run_types", nargs="+", choices=RUN_TYPE, default=RUN_TYPE, help="Select run type for example"
     )
-    parser.add_argument("-n", "--num_tenants", type=int, help="Number of tenants to run on node")
-    parser.add_argument("-c", "--devices_per_tenant", type=int, help="Number of devices per tenant")
+    parser.add_argument("-n", "--num_tenants", type=int, default=2, help="Number of tenants to run on node")
+    parser.add_argument("-c", "--devices_per_tenant", type=int, default=2, help="Number of devices per tenant")
     return parser.parse_args()
 
 
