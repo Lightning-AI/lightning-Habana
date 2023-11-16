@@ -60,6 +60,7 @@ def parse_args():
     )
     parser.add_argument("-n", "--num_tenants", type=int, default=2, help="Number of tenants to run on node")
     parser.add_argument("-c", "--devices_per_tenant", type=int, default=2, help="Number of devices per tenant")
+    parser.add_argument("-d", "--devices", type=int, default=1, help="Number of devices for basic runs")
     return parser.parse_args()
 
 
@@ -135,6 +136,7 @@ def init_model_and_plugins(run_type, options):
         print(f"With run type: {run_type}, running model: {model} with plugin: {plugin}")
 
     devices_per_tenant = options.devices_per_tenant
+    devices = options.devices
     if run_type == "multi_tenancy":
         max_devices = 8
         num_tenants = options.num_tenants
@@ -149,7 +151,7 @@ def init_model_and_plugins(run_type, options):
             print(f"Running with {num_tenants} tenants, using {devices_per_tenant} cards per tenant")
         spawn_tenants(model, data_module, run_type, devices_per_tenant, num_tenants)
     else:
-        run_trainer(model, data_module, plugin, run_type)
+        run_trainer(model, data_module, plugin, run_type, devices)
 
 
 if __name__ == "__main__":
