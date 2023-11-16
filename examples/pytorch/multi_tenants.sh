@@ -15,9 +15,9 @@
 
 #!/bin/bash
 
-HABANA_VISIBLE_MODULES="0,1" MASTER_PORT=1234 python -u  mnist_trainer.py -v --run_type="basic" --devices_per_tenant="2" &
-HABANA_VISIBLE_MODULES="2,3" MASTER_PORT=1244 python -u  mnist_trainer.py -v --run_type="basic" --devices_per_tenant="2" &
-HABANA_VISIBLE_MODULES="4,5" MASTER_PORT=1255 python -u  mnist_trainer.py -v --run_type="basic" --devices_per_tenant="2" &
-HABANA_VISIBLE_MODULES="6,7" MASTER_PORT=1266 python -u  mnist_trainer.py -v --run_type="basic" --devices_per_tenant="2" &
+HABANA_VISIBLE_MODULES="0,1" MASTER_PORT=1234 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+HABANA_VISIBLE_MODULES="2,3" MASTER_PORT=1244 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+HABANA_VISIBLE_MODULES="4,5" MASTER_PORT=1255 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+HABANA_VISIBLE_MODULES="6,7" MASTER_PORT=1266 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
 
 wait
