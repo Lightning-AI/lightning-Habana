@@ -32,12 +32,15 @@ elif module_available("pytorch_lightning"):
 
 from lightning_habana import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin, SingleHPUStrategy
 
-RUN_TYPE = [
+DEFAULT_RUN_TYPE = [
     "basic",
     "autocast",
     "HPUPrecisionPlugin",
     "MixedPrecisionPlugin",
     "recipe_caching",
+]
+
+OPTIONAL_RUN_TYPE = [
     "multi_tenancy",
 ]
 
@@ -48,7 +51,12 @@ def parse_args():
 
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbosity")
     parser.add_argument(
-        "-r", "--run_types", nargs="+", choices=RUN_TYPE, default=RUN_TYPE, help="Select run type for example"
+        "-r",
+        "--run_types",
+        nargs="+",
+        choices=DEFAULT_RUN_TYPE + OPTIONAL_RUN_TYPE,
+        default=DEFAULT_RUN_TYPE,
+        help="Select run type for example",
     )
     parser.add_argument("-n", "--num_tenants", type=int, default=2, help="Number of tenants to run on node")
     parser.add_argument("-c", "--devices_per_tenant", type=int, default=2, help="Number of devices per tenant")
@@ -66,10 +74,9 @@ def run_trainer(model, data_module, plugin, run_type, devices=1):
         devices=_devices,
         strategy=_strategy,
         plugins=plugin,
-        fast_dev_run=3,
+        fast_dev_run=True,
     )
     trainer.fit(model, data_module)
-    trainer.test(model, data_module)
     if run_type == "recipe_caching":
         os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
@@ -86,9 +93,12 @@ def spawn_tenants(model, data_module, run_type, devices, num_tenants):
         # before the launched process can bind the ports.
         # So check for free port on any given port always returns True
         port = 1234 + tenant
-        custom_env = {"HABANA_VISIBLE_MODULES": str(modules), "MASTER_PORT": str(port)}
-        os.environ.update(custom_env)
+        os.environ["HABANA_VISIBLE_MODULES"] = str(modules)
+        os.environ["MASTER_PORT"] = str(port)
+        print(f"Spawning {tenant=} with {modules=}, and {port=}")
         process.start()
+        os.environ.pop("HABANA_VISIBLE_MODULES", None)
+        os.environ.pop("MASTER_PORT", None)
 
     for process in processes:
         process.join()
@@ -132,7 +142,7 @@ def init_model_and_plugins(run_type, options):
             print(f"Running with {num_tenants} tenants, using {devices_per_tenant} cards per tenant")
         spawn_tenants(model, data_module, run_type, devices_per_tenant, num_tenants)
     else:
-        run_trainer(model, data_module, plugin, run_type, devices_per_tenant)
+        run_trainer(model, data_module, plugin, run_type)
 
 
 if __name__ == "__main__":
