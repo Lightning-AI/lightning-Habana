@@ -68,6 +68,7 @@ def run_trainer(model, data_module, plugin, run_type, devices=1):
         plugins=plugin,
         fast_dev_run=3,
     )
+
     trainer.fit(model, data_module)
     trainer.test(model, data_module)
     if run_type == "recipe_caching":
