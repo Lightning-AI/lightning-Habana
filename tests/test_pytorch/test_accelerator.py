@@ -45,15 +45,6 @@ def test_availability():
     assert HPUAccelerator.is_available()
 
 
-def test_device_name():
-    assert "GAUDI" in HPUAccelerator.get_device_name()
-
-
-def test_accelerator_selected():
-    trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())
-    assert isinstance(trainer.accelerator, HPUAccelerator)
-
-
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -73,6 +64,15 @@ def test_all_stages(tmpdir, hpus):
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)
+
+
+def test_device_name():
+    assert "GAUDI" in HPUAccelerator.get_device_name()
+
+
+def test_accelerator_selected():
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 @mock.patch.dict(os.environ, os.environ.copy(), clear=True)
