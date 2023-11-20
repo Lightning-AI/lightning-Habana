@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   check-code:
-    uses: Lightning-AI/utilities/.github/workflows/check-code.yml@main
+    uses: Lightning-AI/utilities/.github/workflows/check-typing.yml@main
     with:
       actions-ref: main
       extra-typing: typing
