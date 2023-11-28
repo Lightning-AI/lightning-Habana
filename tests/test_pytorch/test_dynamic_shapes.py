@@ -97,13 +97,13 @@ def get_metric_compiles(dirpath):
     return compiles
 
 
-def test_dynamic_shapes_metric_file_dump(tmpdir, hpus):
+def test_dynamic_shapes_metric_file_dump(tmpdir, arg_hpus):
     """Tests metric file is generated."""
-    compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
     assert compiles is not {}
 
 
-def test_dynamic_shape_recompilations_recipe_caching(tmpdir, hpus):
+def test_dynamic_shape_recompilations_recipe_caching(tmpdir, arg_hpus):
     """Tests number of recompilations between cached and non-cached runs."""
     base_path = f"{tmpdir}/base"
     compiled_path = f"{tmpdir}/compiled"
@@ -114,12 +114,14 @@ def test_dynamic_shape_recompilations_recipe_caching(tmpdir, hpus):
 
     os.environ["PT_HPU_METRICS_FILE"] = os.path.join(base_path, "metrics.json")
     os.environ["PT_HPU_METRICS_DUMP_TRIGGERS"] = "process_exit,metric_change"
-    default_compiles = run_training(base_path, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    default_compiles = run_training(base_path, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     os.environ["PT_HPU_METRICS_FILE"] = os.path.join(compiled_path, "metrics.json")
     os.environ["PT_HPU_METRICS_DUMP_TRIGGERS"] = "process_exit,metric_change"
     os.environ["PT_HPU_RECIPE_CACHE_CONFIG"] = f"{tmpdir}/recipes,True,1024"
-    cached_compiles = run_training(compiled_path, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    cached_compiles = run_training(
+        compiled_path, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule
+    )
     os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
     for key, value in cached_compiles.items():
@@ -127,12 +129,12 @@ def test_dynamic_shape_recompilations_recipe_caching(tmpdir, hpus):
         assert value <= default_compiles[key]
 
 
-def test_dynamic_shapes_graph_compiler(tmpdir, hpus):
+def test_dynamic_shapes_graph_compiler(tmpdir, arg_hpus):
     """Test number of recompilations with GC support for dynamic shapes."""
-    default_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    default_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     os.environ["PT_HPU_ENABLE_REFINE_DYNAMIC_SHAPES"] = "1"
-    cached_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    cached_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
     del os.environ["PT_HPU_ENABLE_REFINE_DYNAMIC_SHAPES"]
 
     for key, value in cached_compiles.items():
