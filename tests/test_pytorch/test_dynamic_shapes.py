@@ -16,7 +16,6 @@ import csv
 import json
 import os
 
-import pytest
 import torch
 from habana_frameworks.torch.utils.experimental import detect_recompilation_auto_model
 from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
@@ -28,20 +27,6 @@ if module_available("lightning"):
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
-
-
-@pytest.fixture(autouse=True)
-def _manage_environment(tmpdir):
-    # Set environment vars. This dumps the metric files with recompilation info
-    os.environ["PT_HPU_METRICS_FILE"] = os.path.join(tmpdir, "metrics.json")
-    os.environ["PT_HPU_METRICS_DUMP_TRIGGERS"] = "process_exit,metric_change"
-
-    # Yield control to the test
-    yield
-
-    # Unset environment variables after the test
-    os.environ.pop("PT_HPU_METRICS_FILE", None)
-    os.environ.pop("PT_HPU_METRICS_DUMP_TRIGGERS", None)
 
 
 class DynamicOpsBoringModel(BoringModel):
@@ -74,7 +59,7 @@ def run_training(tmpdir, hpus, model, data_module):
     """Init trainer and run fit."""
     seed_everything(42)
     model = model()
-    _strategy = HPUParallelStrategy(start_method="spawn") if hpus > 1 else SingleHPUStrategy()
+    _strategy = HPUParallelStrategy() if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
@@ -112,18 +97,29 @@ def get_metric_compiles(dirpath):
     return compiles
 
 
-def test_dynamic_shapes_metric_file_dump(tmpdir):
+def test_dynamic_shapes_metric_file_dump(tmpdir, hpus):
     """Tests metric file is generated."""
-    compiles = run_training(tmpdir, hpus=2, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
     assert compiles is not {}
 
 
-def test_dynamic_shape_recompilations_recipe_caching(tmpdir):
+def test_dynamic_shape_recompilations_recipe_caching(tmpdir, hpus):
     """Tests number of recompilations between cached and non-cached runs."""
-    default_compiles = run_training(tmpdir, hpus=2, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    base_path = f"{tmpdir}/base"
+    compiled_path = f"{tmpdir}/compiled"
+    if not os.path.exists(base_path):
+        os.mkdir(base_path)
+    if not os.path.exists(compiled_path):
+        os.mkdir(compiled_path)
 
+    os.environ["PT_HPU_METRICS_FILE"] = os.path.join(base_path, "metrics.json")
+    os.environ["PT_HPU_METRICS_DUMP_TRIGGERS"] = "process_exit,metric_change"
+    default_compiles = run_training(base_path, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+
+    os.environ["PT_HPU_METRICS_FILE"] = os.path.join(compiled_path, "metrics.json")
+    os.environ["PT_HPU_METRICS_DUMP_TRIGGERS"] = "process_exit,metric_change"
     os.environ["PT_HPU_RECIPE_CACHE_CONFIG"] = f"{tmpdir}/recipes,True,1024"
-    cached_compiles = run_training(tmpdir, hpus=2, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    cached_compiles = run_training(compiled_path, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
     os.environ.pop("PT_HPU_RECIPE_CACHE_CONFIG", None)
 
     for key, value in cached_compiles.items():
@@ -131,12 +127,12 @@ def test_dynamic_shape_recompilations_recipe_caching(tmpdir):
         assert value <= default_compiles[key]
 
 
-def test_dynamic_shapes_graph_compiler(tmpdir):
+def test_dynamic_shapes_graph_compiler(tmpdir, hpus):
     """Test number of recompilations with GC support for dynamic shapes."""
-    default_compiles = run_training(tmpdir, hpus=2, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    default_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     os.environ["PT_HPU_ENABLE_REFINE_DYNAMIC_SHAPES"] = "1"
-    cached_compiles = run_training(tmpdir, hpus=2, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    cached_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
     del os.environ["PT_HPU_ENABLE_REFINE_DYNAMIC_SHAPES"]
 
     for key, value in cached_compiles.items():
@@ -149,14 +145,12 @@ def test_dynamic_shapes_auto_detect_recompilations(tmpdir):
     seed_everything(42)
     model = DynamicOpsBoringModel()
     net = detect_recompilation_auto_model(model, csv_out=os.path.join(tmpdir, "out.csv"))
-    hpus = 1
     data_module = BoringDataModule
-    _strategy = HPUParallelStrategy(start_method="spawn") if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=hpus,
-        strategy=_strategy,
+        devices=1,
+        strategy=SingleHPUStrategy(),
         max_epochs=1,
         limit_train_batches=5,
         limit_val_batches=0,
