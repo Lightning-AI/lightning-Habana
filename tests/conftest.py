@@ -28,5 +28,5 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture()
-def hpus(request):
+def arg_hpus(request):
     return request.config.getoption("--hpus")

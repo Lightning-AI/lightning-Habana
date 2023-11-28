@@ -38,6 +38,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
 
+from tests.conftest import arg_hpus
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
@@ -45,20 +46,20 @@ def test_availability():
     assert HPUAccelerator.is_available()
 
 
-def test_all_stages(tmpdir, hpus):
+def test_all_stages(tmpdir, arg_hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
-    if hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * hpus
+    if arg_hpus > 1:
+        parallel_hpus = [torch.device("hpu")] * arg_hpus
         _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
-        devices=hpus,
+        devices=arg_hpus,
     )
     trainer.fit(model)
     trainer.validate(model)
@@ -188,11 +189,12 @@ def test_accelerator_with_single_device():
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_accelerator_with_multiple_devices(hpus):
-    trainer = Trainer(accelerator="hpu", devices=hpus)
+@pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
+def test_accelerator_with_multiple_devices(arg_hpus):
+    trainer = Trainer(accelerator="hpu", devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == hpus
+    assert trainer.num_devices == arg_hpus
 
     trainer = Trainer(accelerator="hpu")
     assert isinstance(trainer.accelerator, HPUAccelerator)
@@ -200,11 +202,12 @@ def test_accelerator_with_multiple_devices(hpus):
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_accelerator_auto_with_devices_hpu(hpus):
-    trainer = Trainer(accelerator="auto", devices=hpus)
+@pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
+def test_accelerator_auto_with_devices_hpu(arg_hpus):
+    trainer = Trainer(accelerator="auto", devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == hpus
+    assert trainer.num_devices == arg_hpus
 
 
 def test_strategy_choice_single_strategy():
@@ -216,15 +219,16 @@ def test_strategy_choice_single_strategy():
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_strategy_choice_parallel_strategy(hpus):
+@pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
+def test_strategy_choice_parallel_strategy(arg_hpus):
     trainer = Trainer(
-        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * hpus),
+        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus),
         accelerator=HPUAccelerator(),
-        devices=hpus,
+        devices=arg_hpus,
     )
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
-    trainer = Trainer(accelerator="hpu", devices=hpus)
+    trainer = Trainer(accelerator="hpu", devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
@@ -234,15 +238,15 @@ def test_devices_auto_choice_hpu():
 
 
 @pytest.mark.parametrize("hpus", [1])
-def test_inference_only(tmpdir, hpus):
+def test_inference_only(tmpdir, arg_hpus):
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
-    if hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * hpus
+    if arg_hpus > 1:
+        parallel_hpus = [torch.device("hpu")] * arg_hpus
         _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
+        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=arg_hpus, strategy=_strategy
     )
     trainer.validate(model)
     trainer.test(model)
@@ -437,14 +441,14 @@ def test_hpu_parallel_reduce_op_strategy_default():
         "ReduceOp.PRODUCT",
     ],
 )
-def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
+def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
     """Tests all reduce in HPUParallel strategy."""
     seed_everything(42)
     _model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=hpus,
+        devices=arg_hpus,
         strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
@@ -469,7 +473,7 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
         ("mean", 43.0, 44.0),
     ],
 )
-def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_value_step):
+def test_reduce_op_logging(tmpdir, arg_hpus, reduce_op, logged_value_epoch, logged_value_step):
     """Test reduce_op with logger and sync_dist."""
     # Logger has its own reduce_op sanity check.
     # It only accepts following string reduce_ops {min, max, mean, sum}
@@ -481,7 +485,7 @@ def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_v
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=hpus,
+        devices=arg_hpus,
         strategy=HPUParallelStrategy(start_method="spawn"),
         max_epochs=1,
         fast_dev_run=3,
