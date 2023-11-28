@@ -41,19 +41,19 @@ from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUSt
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
+@pytest.fixture()
+def _skip_module():
+    if "HABANA_VISIBLE_MODULES" in os.environ:
+        mod_ids = os.environ["HABANA_VISIBLE_MODULES"]
+        if mod_ids == "0,1":
+            pytest.skip("Distributed test disabled for modules 0,1")
+
+
 def test_availability():
     assert HPUAccelerator.is_available()
 
 
-def test_device_name():
-    assert "GAUDI" in HPUAccelerator.get_device_name()
-
-
-def test_accelerator_selected():
-    trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())
-    assert isinstance(trainer.accelerator, HPUAccelerator)
-
-
+@pytest.mark.usefixtures("_skip_module")
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -73,6 +73,15 @@ def test_all_stages(tmpdir, hpus):
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)
+
+
+def test_device_name():
+    assert "GAUDI" in HPUAccelerator.get_device_name()
+
+
+def test_accelerator_selected():
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 @mock.patch.dict(os.environ, os.environ.copy(), clear=True)
