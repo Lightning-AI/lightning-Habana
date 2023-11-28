@@ -14,19 +14,34 @@ In general follow instructions in [Bare Metal Fresh OS Installation](https://doc
 
 In some cases you may get stack with hanged libs linked to past kernel (for example `sudo apt purge habanalabs-dkms` errors), in such case do not follow with purge old libs and just continue with new
 
-1. list available libs: `sudo apt list | grep habana | grep 1.12`
-1. install all libs from the output list above:
+1. try hard removal:
    ```bash
-   sudo apt install \
-     habanalabs-container-runtime \
-     habanalabs-dkms \
-     habanalabs-firmware-tools \
-     habanalabs-firmware \
-     habanalabs-graph \
-     habanalabs-qual \
-     habanalabs-rdma-core \
-     habanalabs-thunk \
-     habanatools
+   sudo apt --fix-broken install
+   sudo mv /var/lib/dpkg/info /var/lib/dpkg/info_old
+   sudo mkdir /var/lib/dpkg/info
+   sudo apt-get update && sudo apt-get -f install
+   sudo mv /var/lib/dpkg/info/* /var/lib/dpkg/info_old
+   sudo rm -rf /var/lib/dpkg/info
+   sudo mv /var/lib/dpkg/info_old /var/lib/dpkg/info
+   sudo apt-get update && sudo apt-get -f install
+   ```
+1. purge the hanging package
+   ```bash
+   apt list --installed | grep habana
+   sudo rm /var/lib/dpkg/info/habanalabs-dkms*
+   sudo dpkg --configure -D 777 habanalabs-dkms
+   sudo apt -f install
+   sudo apt purge habanalabs-dkms
+   ```
+1. if the package folder hangs, drop it:
+   ```bash
+   sudo rm -rf  /var/lib/dkms/habanalabs-dkms
+   ```
+1. install all, if some failed try rerun the script
+   ```bash
+   wget -nv https://vault.habana.ai/artifactory/gaudi-installer/latest/habanalabs-installer.sh
+   chmod +x habanalabs-installer.sh
+   ./habanalabs-installer.sh install --type base
    ```
 
 Overall if you touch kernel version, follow with reboot before any eventual other updates.
