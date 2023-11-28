@@ -74,6 +74,7 @@ def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port):
     return status
 
 
+@pytest.mark.skip(reason="Test requires more than 2 cards")
 def test_multi_tenancy_more_cards_than_visible(tmpdir):
     expected = """AssertionError: There is not enough devices
         available for training. Please verify if HABANA_VISIBLE_MODULES
@@ -87,15 +88,13 @@ def test_multi_tenancy_more_cards_than_visible(tmpdir):
     del os.environ["MASTER_PORT"]
 
 
+@pytest.mark.skip(reason="Test requires 2 or 4 cards per tenant")
 @pytest.mark.parametrize(
     ("num_tenants", "cards_per_tenant", "base_port"),
-    [
-        (2, 4, 1234),
-        # (4, 2, 1247)
-    ],
+    [(2, 4, 1234), (4, 2, 1247)],
     ids=[
         "num_tenants_2_cards_per_tenant_4",
-        # "num_tenants_4_cards_per_tenant_2",
+        "num_tenants_4_cards_per_tenant_2",
     ],
 )
 # Though using partial Gaudi is possible, only 2 and 4 card scenarios are recommended and supported:

@@ -41,7 +41,7 @@ DEFAULT_RUN_TYPE = [
 ]
 
 OPTIONAL_RUN_TYPE = [
-    "multi_tenancy",
+    "multi_tenancy",  # Requires more than 2 cards per tenant.
 ]
 
 
