@@ -50,9 +50,19 @@ def get_device_count(pytestconfig):
     return hpus
 
 
+# WA: There is an issue with module id 0 and needs to be resolved.
+# Skipping distributed tests with modules 0,1
+def skip_module():
+    if "HABANA_VISIBLE_MODULES" in os.environ:
+        mod_ids = os.environ["HABANA_VISIBLE_MODULES"]
+        if mod_ids == "0,1":
+            return True
+    return False
+
+
 @pytest.fixture()
 def _check_distributed(get_device_count):
-    if get_device_count <= 1:
+    if get_device_count <= 1 or skip_module():
         pytest.skip("Distributed test does not run on single HPU")
 
 
