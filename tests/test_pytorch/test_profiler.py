@@ -17,6 +17,7 @@ import json
 import os
 
 import pytest
+from lightning_habana.utils.resources import device_count
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -48,12 +49,6 @@ def get_device_count(pytestconfig):
         return 1
     assert hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
     return hpus
-
-
-@pytest.fixture()
-def _check_distributed(get_device_count):
-    if get_device_count <= 1:
-        pytest.skip("Distributed test does not run on single HPU")
 
 
 def test_hpu_simple_profiler_instances(get_device_count):
@@ -126,7 +121,7 @@ def test_hpu_advanced_profiler_trainer_stages(tmpdir):
         assert os.path.getsize(os.path.join(profiler.dirpath, file)) > 0
 
 
-@pytest.mark.usefixtures("_check_distributed")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
     profiler = SimpleProfiler(dirpath=tmpdir, filename="profiler")
@@ -152,7 +147,7 @@ def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
             assert len(pf.read()) != 0
 
 
-@pytest.mark.usefixtures("_check_distributed")
+@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
     model = BoringModel()

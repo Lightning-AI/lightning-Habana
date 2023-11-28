@@ -448,7 +448,16 @@ def test_multi_optimizer_with_hpu_deepspeed(tmpdir):
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
-@pytest.mark.parametrize("zero_config", [0, 1, 2, 3, "infinity"])
+@pytest.mark.parametrize(
+    "zero_config",
+    [
+        0,
+        1,
+        2,
+        pytest.param(3, marks=pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI2", reason="Not supported")),
+        "infinity",
+    ],
+)
 @pytest.mark.parametrize("cpu_offload", [True, False])
 @pytest.mark.parametrize(
     ("activation_checkpoints", "partition_activations", "contiguous_checkpointing", "checkpoint_in_cpu"),
@@ -482,13 +491,10 @@ def test_lightning_model(
         checkpoint_in_cpu,
     )
 
-    if zero_config == 3 and HPUAccelerator.get_device_name() == "GAUDI2":
-        pytest.skip(reason="Not supported ")
-
-    if zero_config == 0 and cpu_offload is True:
+    if zero_config == 0 and cpu_offload is True:  # todo: move out of the test body
         pytest.skip("Zero stage 0 and cpu_offload is an invalid configuration")
 
-    if zero_config == "infinity" and cpu_offload is False:
+    if zero_config == "infinity" and cpu_offload is False:  # todo: move out of the test body
         pytest.skip("Not running zero_infinity without cpu_offload")
 
     model = SampleModel()
@@ -722,11 +728,19 @@ def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_coun
     assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
 
 
-@pytest.mark.parametrize("dtype", [torch.float, torch.float16])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.float,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="FP16 is not supported by Gaudi1"
+            ),
+        ),
+    ],
+)
 def test_lightning_deepspeed_inference_params(get_device_count, dtype):
-    if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
-        pytest.skip(reason="FP16 is not supported by Gaudi1")
-
     model = InferenceModel()
     _parallel_hpus = [torch.device("hpu")] * get_device_count
 
@@ -747,11 +761,19 @@ def test_lightning_deepspeed_inference_params(get_device_count, dtype):
     assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
 
 
-@pytest.mark.parametrize("dtype", [torch.float, torch.float16])
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.float,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="FP16 is not supported by Gaudi1"
+            ),
+        ),
+    ],
+)
 def test_lightning_deepspeed_inference_config(get_device_count, dtype):
-    if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
-        pytest.skip(reason="FP16 is not supported by Gaudi1")
-
     model = InferenceModel()
     _parallel_hpus = [torch.device("hpu")] * get_device_count
 

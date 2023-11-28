@@ -189,8 +189,6 @@ def test_accelerator_with_single_device():
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices(hpus):
-    if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
     trainer = Trainer(accelerator="hpu", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
@@ -203,8 +201,6 @@ def test_accelerator_with_multiple_devices(hpus):
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_auto_with_devices_hpu(hpus):
-    if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
     trainer = Trainer(accelerator="auto", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
@@ -221,8 +217,6 @@ def test_strategy_choice_single_strategy():
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_strategy_choice_parallel_strategy(hpus):
-    if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
     trainer = Trainer(
         strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * hpus),
         accelerator=HPUAccelerator(),
