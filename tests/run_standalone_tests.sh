@@ -16,20 +16,35 @@
 # THIS FILE ASSUMES IT IS RUN INSIDE THE tests DIRECTORY
 set -e
 
+# Default hpus
+hpus=2
+
+# Parse input args
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --hpus)
+            hpus="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 # Get all the tests marked with standalone marker
 TEST_FILE="standalone_test.txt"
 python -um pytest test_pytorch -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
 sed -i '$d' $TEST_FILE
 
-# Run each test individually.
-tests=$(grep -oP '^test_\S+' "$TEST_FILE")
-
 # Declare an array to store test results
 declare -a results
 
-# Run each test individually
+# Get test list and run each test individually
+tests=$(grep -oP '^test_\S+' "$TEST_FILE")
 for test in $tests; do
-  result=$(python -um pytest -sv "$test" --hpus 2 --pythonwarnings ignore --junitxml="$test"-results.xml | tail -n 1)
+  result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml | tail -n 1)
   pattern='([0-9]+) (.*) in ([0-9.]+s)'
   status=""
   if [[ $result =~ $pattern ]]; then
