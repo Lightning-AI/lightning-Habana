@@ -22,7 +22,7 @@ python -um pytest test_pytorch -q --collect-only -m standalone --pythonwarnings 
 sed -i '$d' $TEST_FILE
 
 # Run each test individually.
-tests=$(grep -oP '^test_\S+' "$TEST_FILE" | head -n 2)
+tests=$(grep -oP '^test_\S+' "$TEST_FILE")
 
 # Declare an array to store test results
 declare -a results
