@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Dist tests are run in a standalone manner. ([#118](https://github.com/Lightning-AI/lightning-Habana/pull/118))
+- Multicard tests are run in a standalone manner using a new fixture ([#118](https://github.com/Lightning-AI/lightning-Habana/pull/118))
 -
 
 ### Fixed
