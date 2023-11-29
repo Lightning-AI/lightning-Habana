@@ -45,7 +45,7 @@ def test_availability():
     assert HPUAccelerator.is_available()
 
 
-@pytest.mark.skipif(os.environ.get("STANDALONE", None) is None, reason="skip test")
+@pytest.mark.standalone()
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -400,7 +400,7 @@ def test_hpu_parallel_reduce_op_strategy_default():
     assert strategy.reduce_op == "sum"
 
 
-@pytest.mark.skip(reason="TBD : Fix pytest issues")
+@pytest.mark.standalone()
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -461,7 +461,7 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
         trainer.fit(_model)
 
 
-@pytest.mark.skip(reason="TBD : Fix pytest issues")
+@pytest.mark.standalone()
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),

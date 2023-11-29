@@ -46,23 +46,14 @@ def get_device_count(pytestconfig):
     if not hpus:
         assert HPUAccelerator.auto_device_count() >= 1
         return 1
-    assert hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
+    assert hpus <= HPUAccelerator.auto_device_count(
+    ), "More hpu devices asked than present"
     return hpus
-
-
-# WA: There is an issue with module id 0 and needs to be resolved.
-# Skipping distributed tests with modules 0,1
-def skip_module():
-    if "HABANA_VISIBLE_MODULES" in os.environ:
-        mod_ids = os.environ["HABANA_VISIBLE_MODULES"]
-        if mod_ids == "0,1":
-            return True
-    return False
 
 
 @pytest.fixture()
 def _check_distributed(get_device_count):
-    if get_device_count <= 1 or skip_module():
+    if get_device_count <= 1:
         pytest.skip("Distributed test does not run on single HPU")
 
 
@@ -95,7 +86,8 @@ def test_hpu_simple_profiler_trainer_stages(tmpdir):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {
+        f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
     assert actual == expected
     for file in list(os.listdir(profiler.dirpath)):
         assert os.path.getsize(os.path.join(profiler.dirpath, file)) > 0
@@ -130,12 +122,14 @@ def test_hpu_advanced_profiler_trainer_stages(tmpdir):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {
+        f"{stage}-profiler.txt" for stage in ("fit", "validate", "test", "predict")}
     assert actual == expected
     for file in list(os.listdir(profiler.dirpath)):
         assert os.path.getsize(os.path.join(profiler.dirpath, file)) > 0
 
 
+@pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
@@ -155,13 +149,15 @@ def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in (
+        "fit", "validate", "test", "predict")}
     assert actual == expected
     for profilerfile in os.listdir(trainer.profiler.dirpath):
         with open(os.path.join(trainer.profiler.dirpath, profilerfile), encoding="utf-8") as pf:
             assert len(pf.read()) != 0
 
 
+@pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
@@ -181,7 +177,8 @@ def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     trainer.predict(model)
 
     actual = set(os.listdir(profiler.dirpath))
-    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in ("fit", "validate", "test", "predict")}
+    expected = {f"{stage}-profiler-{trainer.local_rank}.txt" for stage in (
+        "fit", "validate", "test", "predict")}
     assert actual == expected
     for profilerfile in os.listdir(trainer.profiler.dirpath):
         with open(os.path.join(trainer.profiler.dirpath, profilerfile), encoding="utf-8") as pf:
@@ -191,7 +188,8 @@ def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
 def test_hpu_profiler_no_string_instances():
     with pytest.raises(MisconfigurationException) as e_info:
         Trainer(profiler="hpu", accelerator="hpu", devices=1)
-    assert "it can only be one of ['simple', 'advanced', 'pytorch', 'xla']" in str(e_info)
+    assert "it can only be one of ['simple', 'advanced', 'pytorch', 'xla']" in str(
+        e_info)
 
 
 @pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
