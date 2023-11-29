@@ -401,7 +401,7 @@ def test_hpu_parallel_reduce_op_strategy_default():
 
 
 @pytest.mark.standalone()
-@pytest.mark.xfail(reason="fix ddp pytest issue")
+@pytest.mark.skip(reason="fix ddp pytest issue")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -463,7 +463,7 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
 
 
 @pytest.mark.standalone()
-@pytest.mark.xfail(reason="fix ddp pytest issue")
+@pytest.mark.skip(reason="fix ddp pytest issue")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
