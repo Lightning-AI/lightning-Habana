@@ -49,7 +49,7 @@ declare -a results
 # Get test list and run each test individually
 tests=$(grep -oP '^test_\S+' "$TEST_FILE")
 for test in $tests; do
-  result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --timeout=$timeout --junitxml="$test"-results.xml | tail -n 1)
+  result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --timeout $timeout --junitxml="$test"-results.xml | tail -n 1)
   pattern='([0-9]+) (.*) in ([0-9.]+s)'
   status=""
   if [[ $result =~ $pattern ]]; then
