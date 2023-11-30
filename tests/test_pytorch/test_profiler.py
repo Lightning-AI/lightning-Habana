@@ -126,6 +126,7 @@ def test_hpu_advanced_profiler_trainer_stages(tmpdir):
         assert os.path.getsize(os.path.join(profiler.dirpath, file)) > 0
 
 
+@pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
@@ -152,6 +153,7 @@ def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
             assert len(pf.read()) != 0
 
 
+@pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     """Ensure the proper files are saved in distributed."""
