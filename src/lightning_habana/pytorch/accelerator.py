@@ -92,6 +92,7 @@ class HPUAccelerator(Accelerator):
         except (AttributeError, NameError):
             return ""
 
+    @staticmethod
     def is_lazy() -> bool:
         """Checks if lazy is enabled or not."""
         if _HABANA_FRAMEWORK_AVAILABLE and htcore.is_lazy():
