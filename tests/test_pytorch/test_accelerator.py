@@ -13,6 +13,7 @@
 # limitations under the License.
 import copy
 import os
+from contextlib import nullcontext
 from typing import Any, Optional, Union
 from unittest import mock
 
@@ -399,16 +400,16 @@ def test_hpu_parallel_reduce_op_strategy_default():
     assert strategy.reduce_op == "sum"
 
 
-# TBD: make every parameterized tests standalone
 @pytest.mark.standalone()
+@pytest.mark.skip(reason="TBD: make every parameterized tests standalone")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
     [
-        # ("sum", nullcontext()),
-        # ("max", nullcontext()),
-        # ("min", nullcontext()),
-        # ("mean", nullcontext()),
+        ("sum", nullcontext()),
+        ("max", nullcontext()),
+        ("min", nullcontext()),
+        ("mean", nullcontext()),
         (
             "product",
             pytest.raises(
@@ -416,32 +417,32 @@ def test_hpu_parallel_reduce_op_strategy_default():
                 match=f"Unsupported ReduceOp product. Supported ops in HCCL are: {', '.join(supported_reduce_ops)}",
             ),
         ),
-        # (ReduceOp.SUM, nullcontext()),
-        # (ReduceOp.MIN, nullcontext()),
-        # (ReduceOp.MAX, nullcontext()),
-        # (ReduceOp.AVG, nullcontext()),
-        # (
-        #     ReduceOp.PRODUCT,
-        #     pytest.raises(
-        #         TypeError,
-        #         match=(
-        #             "Unsupported ReduceOp RedOpType.PRODUCT. "
-        #             f"Supported ops in HCCL are: {', '.join(supported_reduce_ops)}"
-        #         ),
-        #     ),
-        # ),
+        (ReduceOp.SUM, nullcontext()),
+        (ReduceOp.MIN, nullcontext()),
+        (ReduceOp.MAX, nullcontext()),
+        (ReduceOp.AVG, nullcontext()),
+        (
+            ReduceOp.PRODUCT,
+            pytest.raises(
+                TypeError,
+                match=(
+                    "Unsupported ReduceOp RedOpType.PRODUCT. "
+                    f"Supported ops in HCCL are: {', '.join(supported_reduce_ops)}"
+                ),
+            ),
+        ),
     ],
     ids=[
-        # "sum",
-        # "max",
-        # "min",
-        # "mean",
+        "sum",
+        "max",
+        "min",
+        "mean",
         "product",
-        # "ReduceOp.SUM",
-        # "ReduceOp.MIN",
-        # "ReduceOp.MAX",
-        # "ReduceOp.AVG",
-        # "ReduceOp.PRODUCT",
+        "ReduceOp.SUM",
+        "ReduceOp.MIN",
+        "ReduceOp.MAX",
+        "ReduceOp.AVG",
+        "ReduceOp.PRODUCT",
     ],
 )
 def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
@@ -461,20 +462,20 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
         trainer.fit(_model)
 
 
-# TBD: make every parameterized tests standalone
 @pytest.mark.standalone()
+@pytest.mark.skip(reason="TBD: make every parameterized tests standalone")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
     [
         # Epoch = Sum(42, 43, 44) * 2, Step = 44 * 2 (for 2 ddp processes)
         ("sum", 258.0, 88.0),
-        # # Epoch = Max(42, 43, 44), Step = Max(44, ... (x2))
-        # ("max", 44.0, 44.0),
-        # # Epoch = Min(42, 43, 44), Step = Min(44, ... (x2))
-        # ("min", 42.0, 44.0),
-        # # Epoch = Mean(42(x2), 43(x2), 44(x2)), Step = Mean(44, ... (x2))
-        # ("mean", 43.0, 44.0),
+        # Epoch = Max(42, 43, 44), Step = Max(44, ... (x2))
+        ("max", 44.0, 44.0),
+        # Epoch = Min(42, 43, 44), Step = Min(44, ... (x2))
+        ("min", 42.0, 44.0),
+        # Epoch = Mean(42(x2), 43(x2), 44(x2)), Step = Mean(44, ... (x2))
+        ("mean", 43.0, 44.0),
     ],
 )
 def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_value_step):
