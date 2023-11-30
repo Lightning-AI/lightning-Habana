@@ -34,6 +34,7 @@ from lightning_habana.utils.resources import _parse_hpus, device_count, get_devi
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
+    import habana_frameworks.torch.core as htcore
 
 
 class HPUAccelerator(Accelerator):
@@ -90,6 +91,12 @@ class HPUAccelerator(Accelerator):
             return torch_hpu.get_device_name()
         except (AttributeError, NameError):
             return ""
+
+    def is_lazy() -> bool:
+        if _HABANA_FRAMEWORK_AVAILABLE:
+            if htcore.is_lazy():
+                return True
+        return False
 
     @classmethod
     def register_accelerators(cls, accelerator_registry: Dict) -> None:

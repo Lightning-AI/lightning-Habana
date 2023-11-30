@@ -25,7 +25,7 @@ if module_available("lightning"):
     from lightning.pytorch.demos.mnist_datamodule import MNISTDataModule
     from lightning.pytorch.utilities.compile import from_compiled, to_uncompiled
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning import Trainer
+    from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
@@ -36,9 +36,7 @@ from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUSt
 
 @pytest.fixture()
 def _is_compile_allowed():
-    import habana_frameworks.torch.core as htcore
-
-    if htcore.is_lazy():
+    if HPUAccelerator.is_lazy():
         pytest.skip("Test requires lazy mode to be disabled")
 
 
@@ -147,26 +145,21 @@ def test_compiled_model_with_datamodule_and_log_metric(tmp_path):
     trainer.fit(compiled_model, datamodule=dm)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.usefixtures("_is_compile_allowed")
-@pytest.mark.parametrize("hpus", [1])
-def test_trainer_fit_with_compiled_model(tmp_path, hpus):
+def test_trainer_fit_with_compiled_model(tmp_path):
     """Tests compiled BoringModel on HPU."""
     model = BoringModel()
     compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
 
     _strategy = SingleHPUStrategy()
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
-    if hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
 
     trainer = Trainer(
         default_root_dir=tmp_path,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
         plugins=_plugins,
-        devices=hpus,
+        devices=1,
         fast_dev_run=True,
     )
     trainer.fit(compiled_model)
