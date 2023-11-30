@@ -37,6 +37,7 @@ from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUSt
 @pytest.fixture()
 def _is_compile_allowed():
     import habana_frameworks.torch.core as htcore
+
     if htcore.is_lazy():
         pytest.skip("Test requires lazy mode to be disabled")
 
@@ -125,9 +126,9 @@ class LitClassifier(LightningModule):
     def configure_optimizers(self):
         return torch.optim.Adam(self.parameters(), lr=0.02)
 
+
 @pytest.mark.usefixtures("_is_compile_allowed")
 def test_compiled_model_with_datamodule_and_log_metric(tmp_path):
-
     dm = MNISTDataModule(batch_size=32)
     model = LitClassifier()
     compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
