@@ -33,8 +33,8 @@ from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.hpu as torch_hpu
     import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.hpu as torch_hpu
 
 
 class HPUAccelerator(Accelerator):
@@ -93,9 +93,8 @@ class HPUAccelerator(Accelerator):
             return ""
 
     def is_lazy() -> bool:
-        if _HABANA_FRAMEWORK_AVAILABLE:
-            if htcore.is_lazy():
-                return True
+        if _HABANA_FRAMEWORK_AVAILABLE and htcore.is_lazy():
+            return True
         return False
 
     @classmethod
