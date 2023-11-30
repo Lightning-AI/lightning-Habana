@@ -53,6 +53,7 @@ for test in $tests; do
   result="$test:${status^^}"
   echo $result
   if [[ $status == "failed" ]]; then
+    cat $test-results.xml
     exit 1
   fi
   results+=("$result")
