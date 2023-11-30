@@ -93,6 +93,7 @@ class HPUAccelerator(Accelerator):
             return ""
 
     def is_lazy() -> bool:
+        """Checks if lazy is enabled or not"""
         if _HABANA_FRAMEWORK_AVAILABLE and htcore.is_lazy():
             return True
         return False
