@@ -401,7 +401,7 @@ def test_hpu_parallel_reduce_op_strategy_default():
 
 
 @pytest.mark.standalone()
-@pytest.mark.skip(reason="fix ddp pytest issue")
+@pytest.mark.skip(reason="TBD: make every parameterized tests standalone")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -453,7 +453,7 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=hpus,
-        strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
+        strategy=MockHPUParallelStrategy(reduce_op=reduce_op),
         max_epochs=1,
         fast_dev_run=3,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
@@ -463,7 +463,7 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
 
 
 @pytest.mark.standalone()
-@pytest.mark.skip(reason="fix ddp pytest issue")
+@pytest.mark.skip(reason="TBD: make every parameterized tests standalone")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
@@ -491,7 +491,7 @@ def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_v
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=hpus,
-        strategy=HPUParallelStrategy(start_method="spawn"),
+        strategy=HPUParallelStrategy(),
         max_epochs=1,
         fast_dev_run=3,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
