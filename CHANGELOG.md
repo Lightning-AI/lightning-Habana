@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
--
+- Fixed an issue with fabric.backward on HPU ([#126](https://github.com/Lightning-AI/lightning-Habana/pull/126))
 
 ### Removed
 
