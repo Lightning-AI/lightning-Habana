@@ -11,11 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for Deepspeed inference on HPU with tests and documentation ([#110](https://github.com/Lightning-AI/lightning-Habana/pull/110))
 - Added tests, examples, and documentation for dynamic shapes with recipe caching ([#107](https://github.com/Lightning-AI/lightning-Habana/pull/107))
+- Added preview of torch compile with tests and documentation ([#119](https://github.com/Lightning-AI/lightning-Habana/pull/119))
 
 ### Changed
 
 - Changed HPU docker image based on Synapse AI release 1.13.0 ([#114](https://github.com/Lightning-AI/lightning-Habana/pull/114))
-- Changed Multicard tests to run standalone ([#118](https://github.com/Lightning-AI/lightning-Habana/pull/118))
 -
 
 ### Fixed

@@ -693,3 +693,19 @@ Limitations of HPU Graphs
 * Using HPU Graphs with `torch.compile` is not supported.
 
 Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis>`_
+
+
+----
+
+Using torch compile
+------------------------
+
+PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
+New compile backends to support hpu namely `aot_hpu_training_backend` for training and `aot_hpu_inference_backend` for inference are added.
+
+.. code-block:: python
+
+    compiled_train_model = torch.compile(model_to_train, backend="aot_hpu_training_backend")
+    compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
+
+Please refer to `GAUDI Release Notes <https://docs.habana.ai/en/latest/Release_Notes/GAUDI_Release_Notes.html>`_
