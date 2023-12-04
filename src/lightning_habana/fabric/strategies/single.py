@@ -78,7 +78,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         self._checkpoint_io = io
 
     def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
-        super().backward(tensor=tensor, module=module, *args, **kwargs)
+        super().backward(tensor, module=module, *args, **kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after fwd+bwd
             htcore.mark_step()
