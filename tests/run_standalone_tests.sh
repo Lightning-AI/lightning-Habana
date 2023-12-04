@@ -16,7 +16,7 @@
 # THIS FILE ASSUMES IT IS RUN INSIDE THE tests DIRECTORY
 set -e
 
-# Default hpus
+# Defaults
 hpus=2
 
 # Parse input args
@@ -53,6 +53,7 @@ for test in $tests; do
   result="$test:${status^^}"
   echo $result
   if [[ $status == "failed" ]]; then
+    cat $test-results.xml
     exit 1
   fi
   results+=("$result")

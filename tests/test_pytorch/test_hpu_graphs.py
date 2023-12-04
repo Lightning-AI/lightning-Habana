@@ -68,8 +68,8 @@ class NetHPUGraphs(LightningModule):
             self.automatic_optimization = False
             self.training_step = self.train_with_capture_and_replay
             self.static_input = torch.zeros((batch_size), 1, 28, 28, device="hpu")
-            self.static_target = torch.randint(0, 10, (batch_size,), device="hpu")
-            self.static_y_pred = torch.randint(0, 10, (batch_size,), device="hpu")
+            self.static_target = torch.zeros((batch_size,), device="hpu", dtype=torch.long)
+            self.static_y_pred = torch.zeros((batch_size,), device="hpu", dtype=torch.long)
             self.static_loss = None
             self.acc = None
             self.validation_step = self.validation_step_capture_replay
@@ -159,11 +159,9 @@ class NetHPUGraphs(LightningModule):
                 self.static_input.copy_(x)
                 self.static_target.copy_(y)
                 self.g.replay()
-            acc = self.accuracy(None, y, self.static_y_pred)
+                self.log("test_acc", self.accuracy(None, y, self.static_y_pred))
         else:
-            logits = self.forward(x)
-            acc = self.accuracy(logits, y)
-        self.log("test_acc", acc)
+            self.log("test_acc", self.accuracy(self.forward(x), y))
 
     @staticmethod
     def accuracy(logits, y, pred=None):
@@ -241,7 +239,6 @@ def test_hpu_graphs(tmpdir, graph_mode, mode):
     train_model(tmpdir, 1, model=model, data_module=data_module, profiler=None, mode=mode)
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve capture replay issue with validation")
 @pytest.mark.parametrize(
     "train_modes",
     [
@@ -270,7 +267,6 @@ def test_hpu_graph_accuracy_train(tmpdir, train_modes):
     ), loss_metrics  # Compare val acc
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve capture replay issue")
 @pytest.mark.parametrize(
     "train_modes",
     [
