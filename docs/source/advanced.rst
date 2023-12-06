@@ -697,7 +697,7 @@ Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyT
 
 ----
 
-Using torch.compile
+Using ``torch.compile``
 ------------------------
 
 PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
