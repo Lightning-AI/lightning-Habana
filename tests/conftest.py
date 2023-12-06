@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from lightning_habana import HPUAccelerator
 from tests import _PATH_DATASETS
 
 
@@ -30,3 +31,13 @@ def pytest_addoption(parser):
 @pytest.fixture()
 def hpus(request):
     return request.config.getoption("--hpus")
+
+
+@pytest.fixture()
+def get_device_count(pytestconfig):
+    arg_hpus = int(pytestconfig.getoption("hpus"))
+    if not arg_hpus:
+        assert HPUAccelerator.auto_device_count() >= 1
+        return 1
+    assert arg_hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
+    return arg_hpus
