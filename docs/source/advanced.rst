@@ -697,11 +697,11 @@ Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyT
 
 ----
 
-Using torch compile
+Using torch.compile
 ------------------------
 
 PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
-New compile backends to support hpu namely `aot_hpu_training_backend` for training and `aot_hpu_inference_backend` for inference are added.
+The following compile backends are now available to support HPU: `aot_hpu_training_backend` for training and `aot_hpu_inference_backend` for inference.
 
 .. code-block:: python
 
