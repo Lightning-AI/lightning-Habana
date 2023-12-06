@@ -55,9 +55,6 @@ It uses :class:`~lightning_habana.pytorch.strategies.HPUParallelStrategy` which 
 strategy with the addition of Habana's collective communication library (HCCL) to support scale-up within a node and
 scale-out across multiple nodes.
 
-.. note::
-   accelerator="auto" or accelerator="hpu" is not yet enabled with lightning>2.0.0 and lightning-habana.
-   However passing class object :class:`HPUAccelerator` is supported.
 
 ----
 
