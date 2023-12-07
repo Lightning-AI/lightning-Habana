@@ -41,16 +41,6 @@ if _KINETO_AVAILABLE:
 
 
 @pytest.fixture()
-def get_device_count(pytestconfig):
-    hpus = int(pytestconfig.getoption("hpus"))
-    if not hpus:
-        assert HPUAccelerator.auto_device_count() >= 1
-        return 1
-    assert hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
-    return hpus
-
-
-@pytest.fixture()
 def _check_distributed(get_device_count):
     if get_device_count <= 1:
         pytest.skip("Distributed test does not run on single HPU")
@@ -186,7 +176,6 @@ def test_hpu_profiler_no_string_instances():
     assert "it can only be one of ['simple', 'advanced', 'pytorch', 'xla']" in str(e_info)
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_trace_event_cpu_op(tmpdir):
     # Run model and prep json
     model = BoringModel()
@@ -223,7 +212,6 @@ def test_hpu_trace_event_cpu_op(tmpdir):
             assert event_duration >= 0
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_trace_event_runtime(tmpdir):
     # Run model and prep json
     model = BoringModel()
@@ -259,7 +247,6 @@ def test_hpu_trace_event_runtime(tmpdir):
             assert event_duration >= 0
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_trace_event_kernel(tmpdir):
     # Run model and prep json
     model = BoringModel()

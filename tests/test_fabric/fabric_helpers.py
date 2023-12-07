@@ -16,12 +16,18 @@ from typing import Any, Iterator
 
 import torch
 import torch.nn as nn
-from lightning.fabric import Fabric
-from lightning.fabric.strategies.fsdp import FSDPStrategy
+from lightning_utilities import module_available
 from torch import Tensor
 from torch.nn import Module
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader, Dataset, IterableDataset
+
+if module_available("lightning"):
+    from lightning.fabric import Fabric
+    from lightning.fabric.strategies.fsdp import FSDPStrategy
+elif module_available("pytorch_lightning"):
+    from lightning_fabric import Fabric
+    from lightning_fabric.strategies.fsdp import FSDPStrategy
 
 
 class RandomDataset(Dataset):

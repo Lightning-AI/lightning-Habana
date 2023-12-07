@@ -14,6 +14,9 @@ Using HPUProfiler
 HPUProfiler is a Lightning implementation of PyTorch profiler for HPU. It aids in obtaining profiling summary of PyTorch functions.
 It subclasses PyTorch Lightning's `PyTorch profiler <https://lightning.ai/docs/pytorch/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html>`_.
 
+.. note::
+    It is recommended to import lightning_habana before lightning to initialize the environment of custom habana profiler
+
 Default Profiling
 ^^^^^^^^^^^^^^^^^^
 For auto profiling, create an ``HPUProfiler`` instance and pass it to the trainer.
@@ -697,11 +700,11 @@ Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyT
 
 ----
 
-Using torch compile
+Using ``torch.compile``
 ------------------------
 
 PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
-New compile backends to support hpu namely `aot_hpu_training_backend` for training and `aot_hpu_inference_backend` for inference are added.
+The following compile backends are now available to support HPU: `aot_hpu_training_backend` for training and `aot_hpu_inference_backend` for inference.
 
 .. code-block:: python
 

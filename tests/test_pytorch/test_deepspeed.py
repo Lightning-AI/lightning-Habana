@@ -87,16 +87,6 @@ class ModelParallelBoringModelManualOptim(BoringModel):
 
 
 @pytest.fixture()
-def get_device_count(pytestconfig):
-    hpus = int(pytestconfig.getoption("hpus"))
-    if not hpus:
-        assert HPUAccelerator.auto_device_count() >= 1
-        return 1
-    assert hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
-    return hpus
-
-
-@pytest.fixture()
 def deepspeed_base_config():
     return {
         "train_batch_size": 2,
