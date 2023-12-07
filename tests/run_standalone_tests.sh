@@ -42,8 +42,9 @@ sed -i '$d' $TEST_FILE
 declare -a results
 
 # Get test list and run each test individually
-tests=$(grep -oP '^test_\S+' "$TEST_FILE")
+tests=$(grep -oP '/test_\S+' "$TEST_FILE")
 for test in $tests; do
+  echo $test
   result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml | tail -n 1)
   pattern='([0-9]+) (.*) in ([0-9.]+s)'
   status=""
