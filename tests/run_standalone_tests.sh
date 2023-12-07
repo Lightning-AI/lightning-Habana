@@ -35,7 +35,7 @@ done
 
 # Get all the tests marked with standalone marker
 TEST_FILE="standalone_tests.txt"
-python -um pytest tests/ -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
+python -um pytest tests/test_pytorch tests/test_fabric -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
 cat $TEST_FILE
 sed -i '$d' $TEST_FILE
 
