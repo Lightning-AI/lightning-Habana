@@ -13,8 +13,6 @@
 # limitations under the License.
 
 
-import os
-
 import pytest
 import torch.multiprocessing as mp
 from lightning_utilities import module_available
@@ -32,6 +30,7 @@ from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrat
 
 
 def run_train(tmpdir, _devices, tenant, status):
+    """Run training."""
     seed_everything(42)
     _model = BoringModel()
     _data_module = BoringDataModule()
@@ -50,7 +49,8 @@ def run_train(tmpdir, _devices, tenant, status):
         status[tenant] = str(e)
 
 
-def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port):
+def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port, monkeypatch):
+    """Spawn tenants."""
     processes = []
     manager = mp.Manager()
     status = manager.dict()
@@ -63,8 +63,8 @@ def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port):
         # before the launched process can bind the ports.
         # So check for free port on any given port always returns True
         port = _base_port + tenant
-        custom_env = {"HABANA_VISIBLE_MODULES": str(modules), "MASTER_PORT": str(port)}
-        os.environ.update(custom_env)
+        monkeypatch.setenv("HABANA_VISIBLE_MODULES", str(modules))
+        monkeypatch.setenv("MASTER_PORT", str(port))
         process.start_method = "spawn"
         process.start()
 
@@ -74,35 +74,28 @@ def spawn_tenants(tmpdir, _num_tenants, _cards_per_tenant, _base_port):
     return status
 
 
-def test_multi_tenancy_more_cards_than_visible(tmpdir):
+def test_multi_tenancy_more_cards_than_visible(tmpdir, monkeypatch):
     expected = """AssertionError: There is not enough devices
         available for training. Please verify if HABANA_VISIBLE_MODULES
         is set correctly"""
-    os.environ["HABANA_VISIBLE_MODULES"] = "0,1"
+    monkeypatch.setenv("HABANA_VISIBLE_MODULES", "0,1")
     status = {}
     run_train(tmpdir, _devices=4, tenant=0, status=status)
     error_status = status[0]
     assert expected in error_status
-    del os.environ["HABANA_VISIBLE_MODULES"]
-    del os.environ["MASTER_PORT"]
 
 
 @pytest.mark.parametrize(
     ("num_tenants", "cards_per_tenant", "base_port"),
-    [
-        (2, 4, 1234),
-        # (4, 2, 1247)
-    ],
+    [(2, 4, 1234), (4, 2, 1247)],
     ids=[
         "num_tenants_2_cards_per_tenant_4",
-        # "num_tenants_4_cards_per_tenant_2",
+        "num_tenants_4_cards_per_tenant_2",
     ],
 )
 # Though using partial Gaudi is possible, only 2 and 4 card scenarios are recommended and supported:
 # https://docs.habana.ai/en/latest/PyTorch/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html#number-of-supported-gaudis-for-multi-tenancy-workload
-def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant, base_port):
-    status = spawn_tenants(tmpdir, num_tenants, cards_per_tenant, base_port)
+def test_multi_tenancy_valid_cards_tenants(tmpdir, num_tenants, cards_per_tenant, base_port, monkeypatch):
+    status = spawn_tenants(tmpdir, num_tenants, cards_per_tenant, base_port, monkeypatch)
     for _, error in status.items():
         assert error is None
-    del os.environ["HABANA_VISIBLE_MODULES"]
-    del os.environ["MASTER_PORT"]

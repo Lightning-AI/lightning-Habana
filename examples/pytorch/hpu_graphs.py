@@ -237,7 +237,7 @@ def train_model(model, data_module, hpus=1, mode="fit"):
         devices=hpus,
         strategy=_strategy,
         max_epochs=1,
-        fast_dev_run=100,
+        fast_dev_run=10,
     )
     print(f"starting {mode}")
     if hasattr(trainer, mode):
