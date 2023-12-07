@@ -35,7 +35,8 @@ done
 
 # Get all the tests marked with standalone marker
 TEST_FILE="standalone_test.txt"
-python -um pytest test_pytorch -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
+python -um pytest . -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
+cat $TEST_FILE
 sed -i '$d' $TEST_FILE
 
 # Declare an array to store test results
