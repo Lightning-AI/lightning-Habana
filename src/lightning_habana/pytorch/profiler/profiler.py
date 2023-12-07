@@ -89,6 +89,7 @@ class HPUProfiler(PyTorchProfiler):
         record_module_names: bool = True,
         **profiler_kwargs: Any,
     ) -> None:
+        os.environ["HABANA_PROFILE"] = "1"
         super().__init__(
             dirpath=dirpath,
             filename=filename,
@@ -158,3 +159,7 @@ class HPUProfiler(PyTorchProfiler):
 
     def summary(self) -> str:
         return "Summary not supported for HPU Profiler"
+
+    def teardown(self, stage: Optional[str]) -> None:
+        super().teardown(stage=stage)
+        os.environ.pop("HABANA_PROFILE", None)
