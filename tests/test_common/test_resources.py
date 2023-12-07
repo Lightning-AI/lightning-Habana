@@ -1,8 +1,6 @@
-import pytest
-from lightning_habana.utils.resources import device_count, get_gaudi_version
+from lightning_habana.utils.resources import get_hpu_synapse_version
 
 
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_get_version():
-    ver = get_gaudi_version()
+    ver = get_hpu_synapse_version()
     assert ver.startswith("1.")
