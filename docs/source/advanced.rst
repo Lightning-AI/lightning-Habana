@@ -14,6 +14,9 @@ Using HPUProfiler
 HPUProfiler is a Lightning implementation of PyTorch profiler for HPU. It aids in obtaining profiling summary of PyTorch functions.
 It subclasses PyTorch Lightning's `PyTorch profiler <https://lightning.ai/docs/pytorch/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html>`_.
 
+.. note::
+    It is recommended to import lightning_habana before lightning to initialize the environment of custom habana profiler
+
 Default Profiling
 ^^^^^^^^^^^^^^^^^^
 For auto profiling, create an ``HPUProfiler`` instance and pass it to the trainer.
