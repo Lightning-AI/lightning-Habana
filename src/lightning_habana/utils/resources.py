@@ -20,17 +20,17 @@ from lightning_utilities import module_available
 from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
+_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
+
+if _HABANA_FRAMEWORK_AVAILABLE:
+    import habana_frameworks.torch.hpu as torch_hpu
+
 if module_available("lightning"):
     from lightning.fabric.utilities.exceptions import MisconfigurationException
     from lightning.fabric.utilities.types import _DEVICE
 elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.exceptions import MisconfigurationException
     from lightning_fabric.utilities.types import _DEVICE
-
-_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.hpu as torch_hpu
 
 
 def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:

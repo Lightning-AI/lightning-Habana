@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 from typing import Any, Dict, List, Optional, Union
 
 import torch
 from lightning_utilities import module_available
+
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats
+
+if _HABANA_FRAMEWORK_AVAILABLE:
+    import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.hpu as torch_hpu
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import _DEVICE
@@ -28,13 +34,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
-
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
-from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.hpu as torch_hpu
 
 
 class HPUAccelerator(Accelerator):
@@ -56,9 +55,6 @@ class HPUAccelerator(Accelerator):
         return get_device_stats(device)
 
     def teardown(self) -> None:
-        os.environ.pop("HABANA_PROFILE", None)
-        os.environ.pop("HLS_MODULE_ID", None)
-        os.environ.pop("ID", None)
         pass
 
     @staticmethod
