@@ -64,7 +64,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_trainer(model, data_module, plugin, run_type, devices=1):
+def run_trainer(model, data_module, run_type, plugin=[], devices=1):
     """Run trainer.fit and trainer.test with given parameters."""
     _devices = devices
     _strategy = HPUParallelStrategy(start_method="spawn") if _devices > 1 else SingleHPUStrategy()
@@ -124,9 +124,14 @@ def init_model_and_plugins(run_type, options):
         )
 
     # Add plugins here
+    plugin = []
+    if run_type == "HPUPrecisionPlugin":
+        plugin = [HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")]
+    elif run_type == "MixedPrecisionPlugin":
+        plugin = [MixedPrecisionPlugin(device="hpu", precision="bf16-mixed")]
 
     if options.verbose:
-        print(f"With run type: {run_type}, running model: {model} with plugin: {plugin}")
+        print(f"Running {model=} with {run_type=} and {plugin=}")
 
     devices_per_tenant = options.devices_per_tenant
     devices = options.devices
@@ -144,14 +149,14 @@ def init_model_and_plugins(run_type, options):
             print(f"Running with {num_tenants} tenants, using {devices_per_tenant} cards per tenant")
         spawn_tenants(model, data_module, run_type, devices_per_tenant, num_tenants)
     else:
-        run_trainer(model, data_module, plugin, run_type, devices)
+        run_trainer(model, data_module, run_type, plugin, devices)
 
 
 if __name__ == "__main__":
     # Get options
     options = parse_args()
     if options.verbose:
-
+        print(f"Running MNIST mixed precision training with {options=}")
     # Run model and print accuracy
     for _run_type in options.run_types:
         seed_everything(42)
