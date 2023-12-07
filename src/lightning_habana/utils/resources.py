@@ -20,7 +20,9 @@ from lightning_utilities import module_available
 from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
-if package_available("habana_frameworks"):
+_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
+
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
 
 if module_available("lightning"):
