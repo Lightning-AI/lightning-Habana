@@ -34,8 +34,8 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # Get all the tests marked with standalone marker
-TEST_FILE="standalone_test.txt"
-python -um pytest . -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
+TEST_FILE="standalone_tests.txt"
+python -um pytest tests/ -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
 cat $TEST_FILE
 sed -i '$d' $TEST_FILE
 
