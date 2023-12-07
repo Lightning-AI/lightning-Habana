@@ -14,8 +14,8 @@
 from pathlib import Path
 
 import pytest
-
 from lightning_habana import HPUAccelerator
+
 from tests import _PATH_DATASETS
 
 
