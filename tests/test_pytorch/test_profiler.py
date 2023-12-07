@@ -176,7 +176,6 @@ def test_hpu_profiler_no_string_instances():
     assert "it can only be one of ['simple', 'advanced', 'pytorch', 'xla']" in str(e_info)
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_trace_event_cpu_op(tmpdir):
     # Run model and prep json
     model = BoringModel()
@@ -213,7 +212,6 @@ def test_hpu_trace_event_cpu_op(tmpdir):
             assert event_duration >= 0
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_trace_event_runtime(tmpdir):
     # Run model and prep json
     model = BoringModel()
@@ -249,7 +247,6 @@ def test_hpu_trace_event_runtime(tmpdir):
             assert event_duration >= 0
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_trace_event_kernel(tmpdir):
     # Run model and prep json
     model = BoringModel()
