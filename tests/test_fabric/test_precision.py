@@ -16,9 +16,9 @@
 import pytest
 import torch
 import torch.nn as nn
-from lightning_utilities import module_available
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
+from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric import Fabric, seed_everything
