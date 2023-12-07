@@ -66,5 +66,5 @@ for result in "${results[@]}"; do
 done
 echo "===== STANDALONE TEST STATUS END ====="
 
-mv test_pytorch/*.xml .
+mv tests/**/*.xml .
 rm $TEST_FILE
