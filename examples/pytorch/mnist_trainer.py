@@ -122,7 +122,7 @@ def init_model_and_plugins(run_type, options):
             "https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html#override-options"
         )
 
-    # Add plugins here
+    # Init plugins here
     plugin = []
     if run_type == "HPUPrecisionPlugin":
         plugin = [HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")]
