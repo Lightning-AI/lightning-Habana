@@ -401,7 +401,6 @@ def test_hpu_parallel_reduce_op_strategy_default():
 
 
 @pytest.mark.standalone()
-@pytest.mark.skip(reason="TBD: make every parameterized tests standalone")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -462,19 +461,16 @@ def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
         trainer.fit(_model)
 
 
-@pytest.mark.standalone()
-@pytest.mark.skip(reason="TBD: make every parameterized tests standalone")
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
     [
-        # Epoch = Sum(42, 43, 44) * 2, Step = 44 * 2 (for 2 ddp processes)
-        ("sum", 258.0, 88.0),
-        # Epoch = Max(42, 43, 44), Step = Max(44, ... (x2))
+        # Epoch = Sum(42, 43, 44), Step = Sum(44)
+        ("sum", 129.0, 44.0),
+        # Epoch = Max(42, 43, 44), Step = Max(44)
         ("max", 44.0, 44.0),
-        # Epoch = Min(42, 43, 44), Step = Min(44, ... (x2))
+        # Epoch = Min(42, 43, 44), Step = Min(44)
         ("min", 42.0, 44.0),
-        # Epoch = Mean(42(x2), 43(x2), 44(x2)), Step = Mean(44, ... (x2))
+        # Epoch = Mean(42, 43, 44), Step = Mean(44)
         ("mean", 43.0, 44.0),
     ],
 )
@@ -484,14 +480,18 @@ def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_v
     # It only accepts following string reduce_ops {min, max, mean, sum}
     # Each ddp process logs 3 values: 42, 43, and 44.
     # logger performs reduce depending on the reduce_op
+    if reduce_op == "sum":
+        logged_value_epoch *= hpus
+        logged_value_step *= hpus
+
     seed_everything(42)
     _model = BaseBM(reduce_op=reduce_op)
-
+    _strategy = HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * hpus) if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=hpus,
-        strategy=HPUParallelStrategy(),
+        strategy=_strategy,
         max_epochs=1,
         fast_dev_run=3,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
