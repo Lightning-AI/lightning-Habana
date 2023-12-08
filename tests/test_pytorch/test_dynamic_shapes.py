@@ -142,6 +142,9 @@ def test_dynamic_shapes_graph_compiler(tmpdir, hpus):
 
 def test_dynamic_shapes_auto_detect_recompilations(tmpdir):
     """Test auto_detect_recompilations tool."""
+    # Close dist pg if initialized.
+    if torch.distributed.is_available() and torch.distributed.is_initialized():
+        torch.distributed.destroy_process_group()
     seed_everything(42)
     model = DynamicOpsBoringModel()
     net = detect_recompilation_auto_model(model, csv_out=os.path.join(tmpdir, "out.csv"))

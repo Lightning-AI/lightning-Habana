@@ -392,7 +392,6 @@ class MockHPUParallelStrategy(HPUParallelStrategy):
         return super().reduce(tensor, group, self.reduce_op)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_hpu_parallel_reduce_op_strategy_default():
     """Test default reduce_op."""
     strategy = MockHPUParallelStrategy()
@@ -401,7 +400,7 @@ def test_hpu_parallel_reduce_op_strategy_default():
 
 
 @pytest.mark.standalone()
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
     [
