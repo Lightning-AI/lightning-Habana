@@ -14,16 +14,30 @@
 # limitations under the License.
 
 # THIS FILE ASSUMES IT IS RUN INSIDE THE tests DIRECTORY
+
 set -e
 
 # Defaults
 hpus=2
+files=""
+filter=""
 
 # Parse input args
 while [[ "$#" -gt 0 ]]; do
     case "$1" in
         --hpus)
             hpus="$2"
+            shift 2
+            ;;
+        -f|--files)
+            shift
+            while [[ "$1" != -* && ! -z "$1" ]]; do
+              files+=" $1"
+              shift
+            done
+            ;;
+        -k|--filter)
+            filter="$2"
             shift 2
             ;;
         *)
@@ -33,9 +47,21 @@ while [[ "$#" -gt 0 ]]; do
     esac
 done
 
+if [[ -z "$files" ]]; then
+  test_files="tests/test_pytorch tests/test_fabric"
+else
+  test_files=$files
+fi
+echo "Test files: $test_files"
+
 # Get all the tests marked with standalone marker
 TEST_FILE="standalone_tests.txt"
-python -um pytest tests/test_pytorch tests/test_fabric -q --collect-only -m standalone --pythonwarnings ignore > $TEST_FILE
+test_command="python -um pytest $test_files -q --collect-only -m standalone --pythonwarnings ignore"
+if [[ -n "$filter" ]]; then
+  test_command+=" -k $filter"
+fi
+
+$test_command > $TEST_FILE
 cat $TEST_FILE
 sed -i '$d' $TEST_FILE
 
@@ -51,7 +77,7 @@ for test in $tests; do
   if [[ $result =~ $pattern ]]; then
       status="${BASH_REMATCH[2]}"
   fi
-  result="$test:${status^^}"
+  result="$test:$status"
   echo $result
   if [[ $status == "failed" ]]; then
     cat $test-results.xml
@@ -62,7 +88,7 @@ done
 
 echo "===== STANDALONE TEST STATUS BEGIN ====="
 for result in "${results[@]}"; do
-  echo "$result"
+  echo $result
 done
 echo "===== STANDALONE TEST STATUS END ====="
 
