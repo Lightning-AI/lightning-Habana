@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-
+- Decoupled return strings of firmware, synapse version helper ([#137](https://github.com/Lightning-AI/lightning-Habana/pull/137))
 
 ### Fixed
 
@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed fabric imports for HPU strategies ([#126](https://github.com/Lightning-AI/lightning-Habana/pull/126))
+-
 
 ### Removed
 
