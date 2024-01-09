@@ -86,8 +86,9 @@ class SingleHPUStrategy(SingleDeviceStrategy):
     def setup_module(self, module: Module) -> Module:
         """Performs setup for the model, e.g., by wrapping it by another class."""
 
+        # Fabric doesn't support nn.Module with wrapped attributes currently.
+        # It is a workaround as default wrapper is overriden for HPU backend.
         if hasattr(Module, 'original__get_attr__'):
-            # fabric doesn't support nn.Module with wrapped attributes currently
             from lightning.fabric.wrappers import _FabricModule
             Module.__getattr__ = _FabricModule.original__get_attr__
 
