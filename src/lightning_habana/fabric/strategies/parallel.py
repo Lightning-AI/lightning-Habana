@@ -120,6 +120,16 @@ class HPUParallelStrategy(DDPStrategy):
             # Break lazy accumulation of graph after fwd+bwd
             htcore.mark_step()
 
+    def setup_module(self, module: Module) -> Module:
+        """Performs setup for the model, e.g., by wrapping it by another class."""
+
+        if hasattr(Module, 'original__get_attr__'):
+            # fabric doesn't support nn.Module with wrapped attributes currently
+            from lightning.fabric.wrappers import _FabricModule
+            Module.__getattr__ = _FabricModule.original__get_attr__
+
+        return super().setup_module(module)
+
     def optimizer_step(
         self,
         optimizer: Optimizable,
