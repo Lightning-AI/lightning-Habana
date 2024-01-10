@@ -122,12 +122,12 @@ class HPUParallelStrategy(DDPStrategy):
 
     def setup_module(self, module: Module) -> Module:
         """Performs setup for the model, e.g., by wrapping it by another class."""
-
         # Fabric doesn't support nn.Module with wrapped attributes currently.
-        # It is a workaround as default wrapper is overriden for HPU backend.
-        if hasattr(Module, 'original__get_attr__'):
+        # It is a workaround as default wrapper is overridden for HPU backend.
+        if hasattr(Module, "original__get_attr__"):
             from lightning.fabric.wrappers import _FabricModule
-            Module.__getattr__ = _FabricModule.original__get_attr__ # type: ignore
+
+            Module.__getattr__ = _FabricModule.original__get_attr__  # type: ignore
 
         return super().setup_module(module)
 

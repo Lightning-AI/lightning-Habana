@@ -33,15 +33,15 @@ from os import path
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as F # NOQA
 import torch.optim as optim
-import torchvision.transforms as T
+import torchvision.transforms as T # NOQA
 from lightning.fabric import Fabric, seed_everything
+from lightning_habana.fabric.accelerator import HPUAccelerator
+from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 from torch.optim.lr_scheduler import StepLR
 from torchmetrics.classification import Accuracy
 from torchvision.datasets import MNIST
-from lightning_habana.fabric.accelerator import HPUAccelerator
-from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 
 DATASETS_PATH = path.join(path.dirname(__file__), "..", "..", "..", "Datasets")
 
