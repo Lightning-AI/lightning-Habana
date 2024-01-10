@@ -33,9 +33,9 @@ from os import path
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F # NOQA
+import torch.nn.functional as F  # NOQA
 import torch.optim as optim
-import torchvision.transforms as T # NOQA
+import torchvision.transforms as T  # NOQA
 from lightning.fabric import Fabric, seed_everything
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
@@ -70,7 +70,9 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
-
+"""
+Driver method to run the training loop.
+"""
 def run(hparams):
     # Create the Lightning Fabric object. The parameters like accelerator, strategy, devices etc. will be proided
     # by the command line. See all options: `lightning run model --help`
