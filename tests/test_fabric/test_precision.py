@@ -59,7 +59,6 @@ class MixedPrecisionBoringFabric(BoringFabric):
         assert model.layer.weight.grad.dtype == torch.float32
 
 
-#@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 @pytest.mark.parametrize(
     ("precision", "expected_dtype"),
     [
@@ -78,7 +77,6 @@ def test_hpu(precision, expected_dtype):
 
 
 def test_hpu_fused_optimizer():
-    momentum = 0.1
     def run():
         seed_everything(1234)
         fabric = Fabric(
@@ -88,7 +86,7 @@ def test_hpu_fused_optimizer():
         )
 
         model = nn.Linear(10, 10).to(fabric.device)
-        optimizer = torch.optim.SGD(model.parameters(), lr=1.0, momentum=momentum)
+        optimizer = torch.optim.SGD(model.parameters(), lr=1.0, momentum=0.1)
 
         model, optimizer = fabric.setup(model, optimizer)
 
@@ -116,7 +114,7 @@ def test_hpu_fused_optimizer():
         model = nn.Linear(10, 10).to(fabric.device)
         from habana_frameworks.torch.hpex.optimizers import FusedSGD
 
-        optimizer = FusedSGD(model.parameters(), lr=1.0, momentum=momentum)
+        optimizer = FusedSGD(model.parameters(), lr=1.0, momentum=0.1)
 
         model, optimizer = fabric.setup(model, optimizer)
 
