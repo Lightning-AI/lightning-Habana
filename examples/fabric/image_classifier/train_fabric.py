@@ -70,10 +70,10 @@ class Net(nn.Module):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
-"""
-Driver method to run the training loop.
-"""
+
+# Driver method
 def run(hparams):
+    """Driver method to run the training loop."""
     # Create the Lightning Fabric object. The parameters like accelerator, strategy, devices etc. will be proided
     # by the command line. See all options: `lightning run model --help`
     fabric = Fabric(
