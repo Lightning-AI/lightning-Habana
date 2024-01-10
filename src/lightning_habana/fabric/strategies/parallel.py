@@ -125,7 +125,10 @@ class HPUParallelStrategy(DDPStrategy):
         # Fabric doesn't support nn.Module with wrapped attributes currently.
         # It is a workaround as default wrapper is overridden for HPU backend.
         if hasattr(Module, "original__get_attr__"):
-            from lightning.fabric.wrappers import _FabricModule
+            if module_available("lightning"):
+                from lightning.fabric.wrappers import _FabricModule
+            elif module_available("pytorch_lightning"):
+                from lightning_fabric.wrappers import _FabricModule
 
             Module.__getattr__ = _FabricModule.original__get_attr__  # type: ignore
 
