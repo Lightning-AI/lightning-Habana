@@ -242,12 +242,12 @@ def test_hpu_graphs(tmpdir, graph_mode, mode):
 @pytest.mark.parametrize(
     "train_modes",
     [
-        #[(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_CAPTURE_AND_REPLAY)], #Fix me: - accuracy issue
+        # [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_CAPTURE_AND_REPLAY)], #Fix me: - accuracy issue
         [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_MAKE_GRAPHED_CALLABLES)],
         [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_MODULECACHER)],
     ],
     ids=[
-        #"baseline_vs_capture_and_replay",
+        # "baseline_vs_capture_and_replay",
         "baseline_vs_make_graphed_callables",
         "baseline_vs_modulecacher",
     ],
