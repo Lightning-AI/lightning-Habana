@@ -68,13 +68,15 @@ def _parse_hpu_synapse_versions(line: str) -> Tuple[str, str]:
     ('', '')
 
     """
+    hl = fw = ""
+
     try:
         # Item "None" of "Optional[Match[str]]" has no attribute "group"
         hl = re.search(r"hl-([\d\.]+)", line).group(1)  # type: ignore[union-attr]
         fw = re.search(r"fw-([\d\.]+)", line).group(1)  # type: ignore[union-attr]
     except AttributeError:
         rank_zero_warn("Provided string does not include Habana version; check if HPU is available with `hl-smi`.")
-        return "", ""
+
     return hl, fw
 
 
