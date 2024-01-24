@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Decoupled return strings of firmware, synapse version helper ([#137](https://github.com/Lightning-AI/lightning-Habana/pull/137))
+- Changed HPU docker image based on Synapse AI release 1.14.0 ([#140](https://github.com/Lightning-AI/lightning-Habana/pull/140))
 
 ### Fixed
 
