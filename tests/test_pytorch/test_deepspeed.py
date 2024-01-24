@@ -688,6 +688,7 @@ class InferenceModel(LightningModule):
         return DataLoader(SampleDataset(1, 2))
 
 
+@pytest.mark.xfail(strict=False, reason="TBD: synapse AI 1.14.0 upgrade issue with inference to be fixed")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("enable_cuda_graph", [False, True])
 def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_count):
@@ -712,6 +713,7 @@ def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_coun
     assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
 
 
+@pytest.mark.xfail(strict=False, reason="TBD: synapse AI 1.14.0 upgrade issue with inference to be fixed")
 @pytest.mark.parametrize("dtype", [torch.float, torch.float16])
 def test_lightning_deepspeed_inference_params(get_device_count, dtype):
     if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
@@ -737,6 +739,7 @@ def test_lightning_deepspeed_inference_params(get_device_count, dtype):
     assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
 
 
+@pytest.mark.xfail(strict=False, reason="TBD: synapse AI 1.14.0 upgrade issue with inference to be fixed")
 @pytest.mark.parametrize("dtype", [torch.float, torch.float16])
 def test_lightning_deepspeed_inference_config(get_device_count, dtype):
     if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":

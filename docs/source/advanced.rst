@@ -736,4 +736,4 @@ To run another 4-Gaudi workload in parallel, set the modules as follows before r
 
 In addition to setting `HABANA_VISIBLE_MODULES`, also set a unique `MASTER_PORT` as environment variable for each tenant instance.
 
-Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/latest/PyTorch/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
+Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/v1.14.0/PyTorch/Reference/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
