@@ -231,7 +231,7 @@ def test_hpu_graphs(tmpdir, graph_mode, mode):
 @pytest.mark.parametrize(
     "train_modes",
     [
-        [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_CAPTURE_AND_REPLAY)],  # Fix me: - accuracy issue
+        [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_CAPTURE_AND_REPLAY)],
         [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_MAKE_GRAPHED_CALLABLES)],
         [(HPUGraphMode.TRAIN_NONE), (HPUGraphMode.TRAIN_MODULECACHER)],
     ],
@@ -281,7 +281,7 @@ def test_hpu_graph_accuracy_inference(tmpdir, train_modes):
         )
     assert torch.allclose(
         loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.05, atol=0.05
-    ), loss_metrics  # Compare test acc
+    ), loss_metrics  # Compare val acc
 
 
 def test_automatic_optimization_graph_capture(tmpdir):
