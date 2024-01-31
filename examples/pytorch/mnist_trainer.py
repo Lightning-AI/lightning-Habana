@@ -128,6 +128,7 @@ def get_model(run_type):
     """Pick model."""
     # Default
     model = LitClassifier()
+    # WA for https://github.com/Lightning-AI/pytorch-lightning/issues/4450
     data_module = MNISTDataModule(batch_size=32, num_workers=1)
 
     if run_type == "autocast":
