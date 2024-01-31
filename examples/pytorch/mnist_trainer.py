@@ -15,7 +15,7 @@
 import argparse
 import os
 import warnings
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import torch.multiprocessing as mp
 from lightning_utilities import module_available
@@ -70,18 +70,17 @@ def set_env_vars(env_dict):
     active = bool(env_dict)  # Set to True if env_dict is not None or empty
     original_values = {key: os.environ.get(key, None) for key in env_dict} if active else {}
 
-    if active:
-        try:
+    with suppress(Exception):
+        if active:
             os.environ.update(env_dict)
-            yield
-        finally:
-            for key, original_value in original_values.items():
-                if original_value is not None:
-                    os.environ[key] = original_value
-                else:
-                    del os.environ[key]
-    else:
         yield
+
+    # Restore env
+    for key, original_value in original_values.items():
+        if original_value is not None:
+            os.environ[key] = original_value
+        else:
+            del os.environ[key]
 
 
 def run_trainer(model, data_module, plugin, devices=1, strategy=None):
