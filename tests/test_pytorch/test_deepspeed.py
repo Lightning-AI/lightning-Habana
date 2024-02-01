@@ -27,17 +27,16 @@ if module_available("lightning"):
     from lightning.pytorch.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.loggers import CSVLogger
-    from lightning.pytorch.plugins import DeepSpeedPrecisionPlugin
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.loggers import CSVLogger
-    from pytorch_lightning.plugins import DeepSpeedPrecisionPlugin
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
+from lightning_habana.pytorch.plugins import HPUDeepSpeedPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.deepspeed import _HPU_DEEPSPEED_AVAILABLE
 
@@ -192,7 +191,7 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
 
 
 def test_hpu_deepspeed_precision_choice(tmpdir):
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         fast_dev_run=True,
         default_root_dir=tmpdir,
@@ -202,7 +201,7 @@ def test_hpu_deepspeed_precision_choice(tmpdir):
     )
 
     assert isinstance(trainer.strategy, HPUDeepSpeedStrategy)
-    assert isinstance(trainer.strategy.precision_plugin, DeepSpeedPrecisionPlugin)
+    assert isinstance(trainer.strategy.precision_plugin, HPUDeepSpeedPrecisionPlugin)
     assert trainer.strategy.precision_plugin.precision == "bf16-mixed"
 
 
@@ -226,7 +225,7 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
         def backward(self, loss: Tensor, *args, **kwargs) -> None:
             return loss.backward()
 
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     model = TestModel()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
@@ -337,7 +336,7 @@ def test_deepspeed_config(tmpdir):
 
     model = BoringModel()
     lr_monitor = LearningRateMonitor()
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(),
@@ -419,7 +418,7 @@ def test_multi_optimizer_with_hpu_deepspeed(tmpdir):
             optimizer2 = torch.optim.AdamW(self.parameters())
             return [optimizer1, optimizer2]
 
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     model = TestModel()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
@@ -482,7 +481,7 @@ def test_lightning_model(
         pytest.skip("Not running zero_infinity without cpu_offload")
 
     model = SampleModel()
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     _accumulate_grad_batches = config["train_micro_batch_size_per_gpu"]
     _batch_size = 2
     _parallel_hpus = [torch.device("hpu")] * get_device_count
@@ -516,7 +515,7 @@ def test_lightning_deepspeed_stages(get_device_count, zero_stage, offload):
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         strategy=HPUDeepSpeedStrategy(zero_optimization=True, stage=zero_stage, offload_optimizer=offload),
-        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         fast_dev_run=2,
         enable_progress_bar=False,
         use_distributed_sampler=False,
@@ -536,7 +535,7 @@ def test_hpu_deepspeed_with_invalid_optimizer():
     import logging
 
     model = DummyModel()
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO),
@@ -570,7 +569,7 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
 
     model = DummyModel()
 
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO, config=deepspeed_zero_config),
@@ -586,7 +585,7 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
 def test_deepspeed_resume_training(tmpdir, deepspeed_base_config, get_device_count):
     """Test to ensure with Stage 3 and single GPU that we can resume training."""
     initial_model = SampleModel()
-    _plugins = [DeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     _zero_stage = 3
     config = config_generator(
         deepspeed_base_config,
@@ -688,7 +687,6 @@ class InferenceModel(LightningModule):
         return DataLoader(SampleDataset(1, 2))
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: synapse AI 1.14.0 upgrade issue with inference to be fixed")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("enable_cuda_graph", [False, True])
 def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_count):
@@ -705,15 +703,16 @@ def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_coun
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         strategy=HPUDeepSpeedStrategy(parallel_devices=_parallel_hpus, **kwargs),
-        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         use_distributed_sampler=False,
     )
     preds = trainer.predict(model)
     expected = torch.tensor([32768.0, 32768.0])
-    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+    assert torch.allclose(
+        preds[0].detach().to(torch.float), expected
+    ), f"incorrect result value {preds}, expected {expected}"
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: synapse AI 1.14.0 upgrade issue with inference to be fixed")
 @pytest.mark.parametrize("dtype", [torch.float, torch.float16])
 def test_lightning_deepspeed_inference_params(get_device_count, dtype):
     if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
@@ -731,15 +730,16 @@ def test_lightning_deepspeed_inference_params(get_device_count, dtype):
             dtype=dtype,
             replace_with_kernel_inject=False,
         ),
-        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         use_distributed_sampler=False,
     )
     preds = trainer.predict(model)
     expected = torch.tensor([32768.0, 32768.0])
-    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+    assert torch.allclose(
+        preds[0].detach().to(torch.float), expected
+    ), f"incorrect result value {preds}, expected {expected}"
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: synapse AI 1.14.0 upgrade issue with inference to be fixed")
 @pytest.mark.parametrize("dtype", [torch.float, torch.float16])
 def test_lightning_deepspeed_inference_config(get_device_count, dtype):
     if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
@@ -762,9 +762,11 @@ def test_lightning_deepspeed_inference_config(get_device_count, dtype):
             parallel_devices=_parallel_hpus,
             config=_config,
         ),
-        plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")],
+        plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         use_distributed_sampler=False,
     )
     preds = trainer.predict(model)
     expected = torch.tensor([32768.0, 32768.0])
-    assert torch.allclose(preds[0], expected), f"incorrect result value {preds}, expected {expected}"
+    assert torch.allclose(
+        preds[0].detach().to(torch.float), expected
+    ), f"incorrect result value {preds}, expected {expected}"
