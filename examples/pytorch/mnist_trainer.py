@@ -85,10 +85,12 @@ def set_env_vars(env_dict):
 
 def run_trainer(model, data_module, plugin, devices=1, strategy=None):
     """Run trainer.fit with given parameters."""
+    if strategy is None:
+        strategy = HPUParallelStrategy() if devices > 1 else SingleHPUStrategy()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=devices,
-        strategy=strategy if strategy is not None else HPUParallelStrategy() if devices > 1 else SingleHPUStrategy(),
+        strategy=strategy,
         plugins=plugin,
         fast_dev_run=True,
     )
