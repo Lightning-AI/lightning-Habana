@@ -15,13 +15,10 @@
 
 from typing import Any, Callable, Literal, Optional, Union
 
-import torch
+from lightning_utilities import module_available
 from torch import Tensor
 from torch.optim import LBFGS, Optimizer
 from typing_extensions import override
-
-import torch
-from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.plugins.precision.deepspeed import _PRECISION_INPUT
@@ -31,7 +28,7 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
+    pass
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
