@@ -63,7 +63,6 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
     ) -> None:
         super().__init__(precision=precision)
 
-    @override
     def backward(  # type: ignore[override]
         self,
         tensor: Tensor,
@@ -90,7 +89,6 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         deepspeed_engine: "deepspeed.DeepSpeedEngine" = model.trainer.model
         deepspeed_engine.backward(tensor, *args, **kwargs)
 
-    @override
     def optimizer_step(  # type: ignore[override]
         self,
         optimizer: Steppable,
@@ -112,7 +110,6 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         deepspeed_engine: "deepspeed.DeepSpeedEngine" = model.trainer.model
         return deepspeed_engine.step(**kwargs)
 
-    @override
     def clip_gradients(
         self,
         optimizer: Optimizer,
