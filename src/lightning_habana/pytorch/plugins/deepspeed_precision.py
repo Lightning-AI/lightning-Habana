@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.optim import LBFGS, Optimizer
-from typing_extensions import override
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import Steppable
