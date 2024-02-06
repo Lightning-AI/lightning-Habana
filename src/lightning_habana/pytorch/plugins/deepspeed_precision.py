@@ -13,30 +13,33 @@
 # limitations under the License.
 
 
-from typing import Any, Callable, Literal, Optional, Union, Generator
 from contextlib import contextmanager
-import torch
-from typing_extensions import get_args
+from typing import TYPE_CHECKING, Any, Callable, Generator, Literal, Optional, Union
 
+import torch
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.optim import LBFGS, Optimizer
-from typing_extensions import override
+from typing_extensions import get_args, override
 
 if module_available("lightning"):
-    from lightning.fabric.plugins.precision.deepspeed import _PRECISION_INPUT
+    import lightning.pytorch as pl
     from lightning.fabric.utilities.types import Steppable
+    from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
     from lightning.pytorch.utilities import GradClipAlgorithmType
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache
-    from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
 elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
+
+if TYPE_CHECKING:
+    import deepspeed
+
 warning_cache = WarningCache()
 
 
@@ -89,8 +92,8 @@ class HPUDeepSpeedPrecisionPlugin(PrecisionPlugin):
             tensor: the loss tensor
             model: the model to be optimized
             optimizer: ignored for DeepSpeed
-            \*args: additional positional arguments for the :meth:`deepspeed.DeepSpeedEngine.backward` call
-            \**kwargs: additional keyword arguments for the :meth:`deepspeed.DeepSpeedEngine.backward` call
+            *args: additional positional arguments for the :meth:`deepspeed.DeepSpeedEngine.backward` call
+            **kwargs: additional keyword arguments for the :meth:`deepspeed.DeepSpeedEngine.backward` call
 
         """
         if is_overridden("backward", model):
