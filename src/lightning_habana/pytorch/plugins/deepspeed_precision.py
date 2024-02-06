@@ -62,7 +62,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
     ) -> None:
         super().__init__(precision=precision)
 
-    def backward(  # type: ignore[override]
+    def backward(
         self,
         tensor: Tensor,
         model: "LightningModule",
@@ -88,7 +88,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         deepspeed_engine: "deepspeed.DeepSpeedEngine" = model.trainer.model
         deepspeed_engine.backward(tensor, *args, **kwargs)
 
-    def optimizer_step(  # type: ignore[override]
+    def optimizer_step(
         self,
         optimizer: Steppable,
         model: "LightningModule",
