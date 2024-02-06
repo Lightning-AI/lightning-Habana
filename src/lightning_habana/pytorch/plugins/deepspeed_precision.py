@@ -13,7 +13,10 @@
 # limitations under the License.
 
 
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, Union, Generator
+from contextlib import contextmanager
+import torch
+from typing_extensions import get_args
 
 from lightning_utilities import module_available
 from torch import Tensor
@@ -27,18 +30,17 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache
+    from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
 elif module_available("pytorch_lightning"):
-    pass
+    from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
-
-from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 warning_cache = WarningCache()
 
 
-class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
+class HPUDeepSpeedPrecisionPlugin(PrecisionPlugin):
     """Plugin that enables bfloat support on HPUs.
 
     Args:
@@ -52,7 +54,25 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         precision: _PRECISION_INPUT,
         device: str = "hpu",
     ) -> None:
-        super().__init__(device=device, precision=precision)
+        # if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
+        #     raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
+        supported_precision = get_args(_PRECISION_INPUT)
+        if precision not in supported_precision:
+            raise ValueError(
+                f"`Trainer(accelerator='hpu', precision={precision!r})` is not supported."
+                f" `precision` must be one of: {supported_precision}."
+            )
+        self.precision = precision
+        self.device = device
+
+    def autocast_context_manager(self) -> torch.autocast:
+        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+
+    @contextmanager
+    def forward_context(self) -> Generator[None, None, None]:
+        """Enable autocast context."""
+        with self.autocast_context_manager():
+            yield
 
     @override
     def backward(  # type: ignore[override]
