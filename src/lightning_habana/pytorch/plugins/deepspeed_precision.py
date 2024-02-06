@@ -13,27 +13,31 @@
 # limitations under the License.
 
 
-from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Callable, Generator, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union
 
-import torch
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.optim import LBFGS, Optimizer
-from typing_extensions import get_args, override
+from typing_extensions import override
 
 if module_available("lightning"):
-    import lightning.pytorch as pl
     from lightning.fabric.utilities.types import Steppable
-    from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
+    from lightning.pytorch import LightningModule
     from lightning.pytorch.utilities import GradClipAlgorithmType
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
+    from lightning_fabric.utilities.types import Steppable
+    from pytorch_lightning import LightningModule
+    from pytorch_lightning.utilities import GradClipAlgorithmType
+    from pytorch_lightning.utilities.exceptions import MisconfigurationException
+    from pytorch_lightning.utilities.model_helpers import is_overridden
+    from pytorch_lightning.utilities.rank_zero import WarningCache
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
+
+from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
@@ -43,7 +47,7 @@ if TYPE_CHECKING:
 warning_cache = WarningCache()
 
 
-class HPUDeepSpeedPrecisionPlugin(PrecisionPlugin):
+class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
     """Plugin that enables bfloat support on HPUs.
 
     Args:
@@ -57,31 +61,13 @@ class HPUDeepSpeedPrecisionPlugin(PrecisionPlugin):
         precision: _PRECISION_INPUT,
         device: str = "hpu",
     ) -> None:
-        # if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
-        #     raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
-        supported_precision = get_args(_PRECISION_INPUT)
-        if precision not in supported_precision:
-            raise ValueError(
-                f"`Trainer(accelerator='hpu', precision={precision!r})` is not supported."
-                f" `precision` must be one of: {supported_precision}."
-            )
-        self.precision = precision
-        self.device = device
-
-    def autocast_context_manager(self) -> torch.autocast:
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
-
-    @contextmanager
-    def forward_context(self) -> Generator[None, None, None]:
-        """Enable autocast context."""
-        with self.autocast_context_manager():
-            yield
+        super().__init__(precision=precision)
 
     @override
     def backward(  # type: ignore[override]
         self,
         tensor: Tensor,
-        model: "pl.LightningModule",
+        model: "LightningModule",
         optimizer: Optional[Steppable],
         *args: Any,
         **kwargs: Any,
@@ -108,7 +94,7 @@ class HPUDeepSpeedPrecisionPlugin(PrecisionPlugin):
     def optimizer_step(  # type: ignore[override]
         self,
         optimizer: Steppable,
-        model: "pl.LightningModule",
+        model: "LightningModule",
         closure: Callable[[], Any],
         **kwargs: Any,
     ) -> Any:
