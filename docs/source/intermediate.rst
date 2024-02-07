@@ -111,6 +111,46 @@ and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs
 
 ----
 
+FP8 training
+----------------------------------------
+
+Lightning supports FP8 training using HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
+FP8 training is only available on Gaudi2 and above.
+
+The plugin accepts following args for FP8 training:
+
+1. `replace_layers` : Set it `True` to let the plugin replace `torch.nn.Modules` with `trandformer_engine` equivalent modules. Users can directly import and use modules from `transformer_engine` as well.
+
+2. `recipe` : FP8 recipe to used in training.
+
+.. code-block:: python
+
+    from lightning import Trainer
+    from lightning_habana.pytorch.accelerator import HPUAccelerator
+    from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
+    from habana_frameworks.torch.hpex.experimental.transformer_engine import recipe
+
+    model = BoringModel()
+
+    # init the precision plugin for fp8 training.
+    plugin = HPUPrecisionPlugin(precision="fp8-train", replace_layers=True, recipe=recipe.DelayedScaling())
+
+    # Replace torch.nn.Modules with transformer engine equivalent modules
+    plugin.replace_modules(model)
+
+    # Initialize a trainer with HPUPrecisionPlugin
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        plugins=plugin
+    )
+
+    # Train the model ⚡
+    trainer.fit(model)
+
+For more details, `recipes`, and list of supported `transformer_engine` modules, refer to `FP8 Training with Intel Gaudi Transformer Engine <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html>`__.
+
+----
+
 Enabling DeviceStatsMonitor with HPUs
 ----------------------------------------
 

@@ -13,26 +13,35 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import Generator, Literal
+from typing import Any, Generator, Literal, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
 
 if module_available("lightning"):
-    from lightning.pytorch.plugins.precision.precision_plugin import PrecisionPlugin
+    from lightning.fabric.utilities.rank_zero import rank_zero_info, rank_zero_warn
+    from lightning.pytorch.plugins.precision import Precision
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning.plugins.precision.precision_plugin import PrecisionPlugin
+    from pytorch_lightning.plugins.precision import Precision
+    from pytorch_lightning.utilities.rank_zero import rank_zero_info, rank_zero_warn
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_13_0
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
+if _HPU_SYNAPSE_GREATER_EQUAL_1_13_0:
+    # Required for training in fp8 using habana transformer engine
+    import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
+    from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
-class HPUPrecisionPlugin(PrecisionPlugin):
-    """Plugin that enables bfloat support on HPUs.
+    _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8-train"]
+
+
+class HPUPrecisionPlugin(Precision):
+    """Plugin that enables mixed precision support on HPUs.
 
     Args:
         precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
@@ -44,6 +53,8 @@ class HPUPrecisionPlugin(PrecisionPlugin):
         self,
         precision: _PRECISION_INPUT,
         device: str = "hpu",
+        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
+        replace_layers: Optional[bool] = None,
     ) -> None:
         if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
             raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
@@ -56,7 +67,43 @@ class HPUPrecisionPlugin(PrecisionPlugin):
         self.precision = precision
         self.device = device
 
+        if any([recipe, replace_layers]) and precision != "fp8-train":
+            rank_zero_warn("Precision is not 'fp8-train'. " f"Params {recipe=} and {replace_layers=} will not be set.")
+
+        self.recipe = None
+        self.replace_layers = False
+        self.fp8_train_available = False
+
+        if self.precision == "fp8-train":
+            if not _HPU_SYNAPSE_GREATER_EQUAL_1_13_0:
+                raise OSError("fp8 training requires `Synapse AI release >= 1.13.0`.")
+            fp8_available, reason_no_fp8 = tengine.fp8.is_fp8_available()
+            if not fp8_available:
+                raise NotImplementedError(f"FP8 not supported: {reason_no_fp8}.")
+            self.recipe = recipe
+            self.fp8_train_available = fp8_available
+            self.replace_layers = replace_layers
+            rank_zero_info(f"fp8 training available: {self.fp8_train_available}.")
+
+    def convert_modules(self, module: torch.nn.Module) -> torch.nn.Module:
+        """Replace layers of a module with Transformer engine equivalent layers."""
+        if self.replace_layers in (True, None) and self.fp8_train_available:
+            # In case model already contains a transformer engine modules,
+            # assume user responsibility for conversion of required layers.
+            if any(
+                "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
+            ):
+                rank_zero_info(
+                    f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
+                )
+            else:
+                _replace_layers(module)
+        return module
+
     def autocast_context_manager(self) -> torch.autocast:
+        """Return Autocast context manager."""
+        if self.precision == "fp8-train":
+            return tengine.fp8_autocast(enabled=True, fp8_recipe=self.recipe)
         return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
 
     @contextmanager
@@ -64,3 +111,24 @@ class HPUPrecisionPlugin(PrecisionPlugin):
         """Enable autocast context."""
         with self.autocast_context_manager():
             yield
+
+
+def _replace_layers(module: torch.nn.Module) -> None:
+    """Replace layers with Transformer engine equivalent layers.
+
+    Args: torch.nn.Module.
+    Return: transformer engine equivalent of torch.nn.Module.
+    List of supported modules: https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html
+
+    Eg. torch.nn.Linear -> transformer_engine.Linear
+
+    """
+    torch.manual_seed(42)
+    for name, child in module.named_children():
+        if isinstance(child, torch.nn.Linear):
+            has_bias = child.bias is not None
+            replacement = tengine.Linear(child.in_features, child.out_features, bias=has_bias)
+            rank_zero_info(f"Replacing layer {name} with transformer engine equivalent")
+            module.__setattr__(name, replacement)
+        else:
+            _replace_layers(child)
