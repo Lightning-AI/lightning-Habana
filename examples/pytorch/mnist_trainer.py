@@ -153,7 +153,7 @@ def get_plugins(run_type):
     if run_type == "MixedPrecisionPlugin":
         return MixedPrecision(device="hpu", precision="bf16-mixed")
     if run_type == "fp8_training":
-        return HPUPrecisionPlugin(device="hpu", precision="fp8-train")
+        return HPUPrecisionPlugin(device="hpu", precision="fp8")
     return None
 
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
     # Run model and print accuracy
     for _run_type in options.run_types:
         if HPUAccelerator.get_device_name() == "GAUDI" and _run_type == "fp8_training":
-            print("FP8 training not supported on GAUDI. Skipping.")
+            print("fp8 training not supported on GAUDI. Skipping.")
             continue
 
         seed_everything(42)

@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from lightning_utilities import module_available
 
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
-from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats
+from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats, is_fp8_available
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
@@ -87,6 +87,11 @@ class HPUAccelerator(Accelerator):
             return torch_hpu.get_device_name()
         except (AttributeError, NameError):
             return ""
+
+    @staticmethod
+    def is_fp8_available() -> Tuple[bool, str]:
+        """Returns a bool indicating if fp8 is available, with reason if not available."""
+        return is_fp8_available()
 
     @staticmethod
     def is_lazy() -> bool:

@@ -28,16 +28,17 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_13_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
+from lightning_habana.utils.resources import is_fp8_available
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
-if _HPU_SYNAPSE_GREATER_EQUAL_1_13_0:
+if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0:
     # Required for training in fp8 using habana transformer engine
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
-    _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8-train"]
+    _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8"]
 
 
 class HPUPrecisionPlugin(Precision):
@@ -67,19 +68,17 @@ class HPUPrecisionPlugin(Precision):
         self.precision = precision
         self.device = device
 
-        if any([recipe, replace_layers]) and precision != "fp8-train":
-            rank_zero_warn("Precision is not 'fp8-train'. " f"Params {recipe=} and {replace_layers=} will not be set.")
+        if any([recipe, replace_layers]) and precision != "fp8":
+            rank_zero_warn(f"Precision is not 'fp8'. Params {recipe=} and {replace_layers=} will not be set.")
 
         self.recipe = None
         self.replace_layers = False
         self.fp8_train_available = False
 
-        if self.precision == "fp8-train":
-            if not _HPU_SYNAPSE_GREATER_EQUAL_1_13_0:
-                raise OSError("fp8 training requires `Synapse AI release >= 1.13.0`.")
-            fp8_available, reason_no_fp8 = tengine.fp8.is_fp8_available()
+        if self.precision == "fp8":
+            fp8_available, reason_no_fp8 = is_fp8_available()
             if not fp8_available:
-                raise NotImplementedError(f"FP8 not supported: {reason_no_fp8}.")
+                raise NotImplementedError(f"fp8 not supported: {reason_no_fp8}.")
             self.recipe = recipe
             self.fp8_train_available = fp8_available
             self.replace_layers = replace_layers
@@ -102,9 +101,7 @@ class HPUPrecisionPlugin(Precision):
 
     def autocast_context_manager(self) -> torch.autocast:
         """Return Autocast context manager."""
-        if self.precision == "fp8-train":
-            return tengine.fp8_autocast(enabled=True, fp8_recipe=self.recipe)
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+        return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:
@@ -123,7 +120,6 @@ def _replace_layers(module: torch.nn.Module) -> None:
     Eg. torch.nn.Linear -> transformer_engine.Linear
 
     """
-    torch.manual_seed(42)
     for name, child in module.named_children():
         if isinstance(child, torch.nn.Linear):
             has_bias = child.bias is not None
@@ -132,3 +128,16 @@ def _replace_layers(module: torch.nn.Module) -> None:
             module.__setattr__(name, replacement)
         else:
             _replace_layers(child)
+
+
+@contextmanager
+def _nested_precision_cm(fp8_enabled, recipe):
+    """CM to nest fp8 precision with torch.autocast.
+
+    This enables the ops that do not support fp8 to run with torch autocast.
+
+    """
+    with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True), tengine.fp8_autocast(
+        enabled=fp8_enabled, fp8_recipe=recipe
+    ):
+        yield
