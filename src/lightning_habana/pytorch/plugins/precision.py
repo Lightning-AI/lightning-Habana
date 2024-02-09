@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager
+from contextlib import contextmanager, _GeneratorContextManager
 from typing import Any, Generator, Literal, Mapping, Optional, Union
 
 import torch
@@ -31,14 +31,12 @@ else:
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE, is_fp8_available
 
-_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
+_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8"]
 
 if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
-
-    _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8"]
 
 
 class HPUPrecisionPlugin(Precision):
@@ -52,10 +50,10 @@ class HPUPrecisionPlugin(Precision):
 
     def __init__(
         self,
-        precision: _PRECISION_INPUT,
+        precision: str,
         device: str = "hpu",
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
-        replace_layers: Optional[bool] = None,
+        replace_layers: bool = False,
     ) -> None:
         if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
             raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
@@ -72,7 +70,6 @@ class HPUPrecisionPlugin(Precision):
             rank_zero_warn(f"Precision is not 'fp8'. Params {recipe=} and {replace_layers=} will not be set.")
 
         self.recipe = None
-        self.replace_layers = False
         self.fp8_train_available = False
 
         if self.precision == "fp8":
@@ -99,7 +96,7 @@ class HPUPrecisionPlugin(Precision):
                 _replace_layers(module)
         return module
 
-    def autocast_context_manager(self) -> torch.autocast:
+    def autocast_context_manager(self) -> _GeneratorContextManager[Any]:
         """Return Autocast context manager."""
         if self.fp8_train_available:
             return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
@@ -133,7 +130,10 @@ def _replace_layers(module: torch.nn.Module) -> None:
 
 
 @contextmanager
-def _nested_precision_cm(fp8_enabled, recipe):
+def _nested_precision_cm(
+    fp8_enabled: bool,
+    recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]]
+    )-> Generator[Any, Any, Any]:
     """CM to nest fp8 precision with torch.autocast.
 
     This enables the ops that do not support fp8 to run with torch autocast.
