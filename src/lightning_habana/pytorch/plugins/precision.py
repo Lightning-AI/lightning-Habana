@@ -50,7 +50,7 @@ class HPUPrecisionPlugin(Precision):
 
     def __init__(
         self,
-        precision: str,
+        precision: _PRECISION_INPUT,
         device: str = "hpu",
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         replace_layers: bool = False,
@@ -96,7 +96,7 @@ class HPUPrecisionPlugin(Precision):
                 _replace_layers(module)
         return module
 
-    def autocast_context_manager(self) -> _GeneratorContextManager[Any]:
+    def autocast_context_manager(self) -> Union[_GeneratorContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
         if self.fp8_train_available:
             return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
