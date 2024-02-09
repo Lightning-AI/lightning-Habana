@@ -426,7 +426,7 @@ def test_autocast_operators_override(tmpdir):
                 assert z.dtype == torch.bfloat16
             return self.layer(x)
 
-    run_training(tmpdir, BMAutocastOverride, None)
+    run_training(tmpdir, BMAutocastOverride(), None)
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
