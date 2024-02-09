@@ -145,7 +145,7 @@ def test_hpu_precision_fp8_synapse_version(monkeypatch):
 def test_hpu_precision_fp8_on_gaudi():
     """Test fp8 with unsupported Habana device."""
     with pytest.raises(
-        NotImplementedError, match="FP8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
+        NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
     ):
         HPUPrecisionPlugin(device="hpu", precision="fp8")
 

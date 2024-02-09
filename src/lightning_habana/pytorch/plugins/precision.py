@@ -64,6 +64,7 @@ class HPUPrecisionPlugin(Precision):
                 f" `precision` must be one of: {supported_precision}."
             )
         self.precision = precision
+        self.replace_layers = False
         self.device = device
 
         if any([recipe, replace_layers]) and precision != "fp8":
