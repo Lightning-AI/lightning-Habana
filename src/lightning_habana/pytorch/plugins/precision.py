@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import contextmanager, _GeneratorContextManager
+from contextlib import _GeneratorContextManager, contextmanager
 from typing import Any, Generator, Literal, Mapping, Optional, Union
 
 import torch
@@ -131,9 +131,8 @@ def _replace_layers(module: torch.nn.Module) -> None:
 
 @contextmanager
 def _nested_precision_cm(
-    fp8_enabled: bool,
-    recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]]
-    )-> Generator[Any, Any, Any]:
+    fp8_enabled: bool, recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]]
+) -> Generator[Any, Any, Any]:
     """CM to nest fp8 precision with torch.autocast.
 
     This enables the ops that do not support fp8 to run with torch autocast.
