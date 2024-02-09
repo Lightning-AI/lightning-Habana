@@ -79,13 +79,13 @@ These also allow for fine tuning with `enabled` for enabling and disabling mixed
     class AutocastModelCM(nn.Module):
         # Autocast can be used as a context manager to the required code block.
         def forward(self, input):
-            with torch.autocast("device_type="hpu", dtype=torch.bfloat16):
+            with torch.autocast(device_type="hpu", dtype=torch.bfloat16):
             ...
             return
 
     class AutocastModelDecorator(nn.Module):
         # Autocast can be used as a decorator to the required code block.
-        @torch.autocast("device_type="hpu", dtype=torch.bfloat16)
+        @torch.autocast(device_type="hpu", dtype=torch.bfloat16)
         def forward(self, input):
             ...
             return
@@ -133,7 +133,7 @@ The plugin accepts following args for fp8 training:
     model = BoringModel()
 
     # init the precision plugin for fp8 training.
-    plugin = HPUPrecisionPlugin(precision="fp8-train", replace_layers=True, recipe=recipe.DelayedScaling())
+    plugin = HPUPrecisionPlugin(precision="fp8", replace_layers=True, recipe=recipe.DelayedScaling())
 
     # Replace torch.nn.Modules with transformer engine equivalent modules
     plugin.replace_modules(model)

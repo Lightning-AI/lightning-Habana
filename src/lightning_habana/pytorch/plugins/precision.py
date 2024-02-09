@@ -29,11 +29,11 @@ else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
-from lightning_habana.utils.resources import is_fp8_available
+from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE, is_fp8_available
 
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
 
-if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0:
+if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
@@ -101,7 +101,9 @@ class HPUPrecisionPlugin(Precision):
 
     def autocast_context_manager(self) -> torch.autocast:
         """Return Autocast context manager."""
-        return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
+        if self.fp8_train_available:
+            return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
+        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:

@@ -126,12 +126,15 @@ def device_count() -> int:
         return 8
 
 
+@lru_cache
 def is_fp8_available() -> Tuple[bool, str]:
     """Returns a bool indicating if fp8 is available."""
     from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 
     if not _HPU_SYNAPSE_GREATER_EQUAL_1_14_0:
         raise OSError("fp8 training requires `Synapse AI release >= 1.14.0`.")
+    if not _HABANA_FRAMEWORK_AVAILABLE:
+        raise OSError("Habana Frameworks required for training on Habana devices.")
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 
     return tengine.fp8.is_fp8_available()
