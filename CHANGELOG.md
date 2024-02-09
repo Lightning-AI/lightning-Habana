@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--
+- Added DeepSpeed precision plugin for HPU ([#147](https://github.com/Lightning-AI/lightning-Habana/pull/147))
 
 ### Changed
 
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
--
+- `aot_hpu_training_backend` will be deprecated. Use `hpu_backend` instead for torch compile with hpu ([#148](https://github.com/Lightning-AI/lightning-Habana/pull/148))
 
 
 ## [1.3.0] - 2023-12-06

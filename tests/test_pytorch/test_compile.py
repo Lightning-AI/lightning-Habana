@@ -43,7 +43,7 @@ def _is_compile_allowed():
 @pytest.mark.usefixtures("_is_compile_allowed")
 def test_compiler_context(tmp_path):
     model = BoringModel()
-    compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
+    compiled_model = torch.compile(model, backend="hpu_backend")
     assert model._compiler_ctx is compiled_model._compiler_ctx  # shared reference
 
 
@@ -51,7 +51,7 @@ def test_compiler_context(tmp_path):
 @pytest.mark.usefixtures("_is_compile_allowed")
 def test_lightning_compile_uncompile():
     model = BoringModel()
-    compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
+    compiled_model = torch.compile(model, backend="hpu_backend")
 
     def has_dynamo(fn):
         return any(el for el in dir(fn) if el.startswith("_torchdynamo"))
@@ -88,7 +88,7 @@ def test_compiled_model_to_log_metric(tmp_path):
             return loss
 
     model = MyModel()
-    compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
+    compiled_model = torch.compile(model, backend="hpu_backend")
 
     _strategy = SingleHPUStrategy()
 
@@ -129,7 +129,7 @@ class LitClassifier(LightningModule):
 def test_compiled_model_with_datamodule_and_log_metric(tmp_path):
     dm = MNISTDataModule(batch_size=32)
     model = LitClassifier()
-    compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
+    compiled_model = torch.compile(model, backend="hpu_backend")
     _strategy = SingleHPUStrategy()
 
     trainer = Trainer(
@@ -149,7 +149,7 @@ def test_compiled_model_with_datamodule_and_log_metric(tmp_path):
 def test_trainer_fit_with_compiled_model(tmp_path):
     """Tests compiled BoringModel on HPU."""
     model = BoringModel()
-    compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
+    compiled_model = torch.compile(model, backend="hpu_backend")
 
     _strategy = SingleHPUStrategy()
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
@@ -180,7 +180,7 @@ class Net(nn.Module):
 def test_trainer_with_nn_module(tmp_path):
     device = torch.device("hpu")
     model = Net().to(device)
-    torch.compile(model, backend="aot_hpu_training_backend")
+    torch.compile(model, backend="hpu_backend")
 
 
 @pytest.mark.parametrize("hpus", [1])
@@ -189,7 +189,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model_to_train = BoringModel()
     model_to_eval = BoringModel()
-    compiled_train_model = torch.compile(model_to_train, backend="aot_hpu_training_backend")
+    compiled_train_model = torch.compile(model_to_train, backend="hpu_backend")
     compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
 
     _strategy = SingleHPUStrategy()
@@ -215,7 +215,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
 def test_parallel_strategy_with_compile(tmp_path, hpus):
     """Tests compiled BoringModel on HPU."""
     model = BoringModel()
-    compiled_model = torch.compile(model, backend="aot_hpu_training_backend")
+    compiled_model = torch.compile(model, backend="hpu_backend")
 
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     parallel_hpus = [torch.device("hpu")] * hpus
