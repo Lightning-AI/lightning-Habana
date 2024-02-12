@@ -84,7 +84,7 @@ class HPUPrecisionPlugin(Precision):
 
     def convert_modules(self, module: torch.nn.Module) -> torch.nn.Module:
         """Replace layers of a module with Transformer engine equivalent layers."""
-        if self.replace_layers in (True, None) and self.fp8_train_available:
+        if self.replace_layers is True and self.fp8_train_available:
             # In case model already contains a transformer engine modules,
             # assume user responsibility for conversion of required layers.
             if any(
