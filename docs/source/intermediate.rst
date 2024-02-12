@@ -149,6 +149,7 @@ The plugin accepts following args for fp8 training:
 
 For more details, `recipes`, and list of supported `transformer_engine` modules, refer to `FP8 Training with Intel Gaudi Transformer Engine <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html>`__.
 
+
 ----
 
 Enabling DeviceStatsMonitor with HPUs
