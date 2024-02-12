@@ -214,6 +214,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
 @pytest.mark.parametrize("hpus", [2])
 def test_parallel_strategy_with_compile(tmp_path, hpus):
     """Tests compiled BoringModel on HPU."""
+    print(f"{HPUAccelerator.auto_device_count()=}")
     model = BoringModel()
     compiled_model = torch.compile(model, backend="hpu_backend")
 
