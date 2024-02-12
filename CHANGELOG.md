@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed fabric imports for HPU strategies ([#126](https://github.com/Lightning-AI/lightning-Habana/pull/126))
 - Enabling tests and examples of fabric with HPU ([#139](https://github.com/Lightning-AI/lightning-Habana/pull/139))
+- Fixes an API break due to non-strict loading in Trainer ([#150](https://github.com/Lightning-AI/lightning-Habana/pull/150))
 
 ### Removed
 
