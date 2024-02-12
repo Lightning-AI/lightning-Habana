@@ -117,123 +117,6 @@ class BMPluginActive(BaseBM):
         return super().forward(x)
 
 
-@pytest.mark.parametrize(
-    ("plugin", "params"),
-    [
-        (MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "False"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-    ],
-)
-def test_precision_plugin_fit(tmpdir, plugin, params):
-    """Tests precision plugins with trainer.fit."""
-
-    class TestCallback(Callback):
-        def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
-            assert trainer.precision == params.get("precision")
-            raise SystemExit
-
-    seed_everything(42)
-    _model = BoringModel()
-    _plugin = plugin(**params)
-    if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-        _plugin.convert_modules(_model)
-
-    with pytest.raises(SystemExit):
-        run_training(tmpdir, _model, _plugin, TestCallback())
-
-
-@pytest.mark.parametrize(
-    ("model", "plugin", "params"),
-    [
-        (BMAutocastCM, None, None),
-        (BMAutocastDecorator, None, None),
-        (BMPluginActive, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (BMPluginActive, HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
-        pytest.param(
-            BMPluginActive,
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-    ],
-    ids=[
-        "TorchAutocast_CM",
-        "TorchAutocast_Decorator",
-        "MixedPrecision",
-        "HPUPrecisionPlugin_bf16",
-        "HPUPrecisionPlugin_fp8",
-    ],
-)
-def test_mixed_precision_autocast_to_precision_active(tmpdir, model, plugin, params):
-    """Tests autocast is active with torch.autocast context manager."""
-    seed_everything(42)
-    _model = model()
-    _plugin = plugin(**params) if plugin and params else None
-    if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-        _plugin.convert_modules(_model)
-    run_training(tmpdir, _model, _plugin)
-
-
-def test_mixed_precision_compare_accuracy(tmpdir):
-    """Test and compare accuracy for mixed precision training methods."""
-    model_plugin_list = [
-        (BMAutocastCM, None, None),
-        (BMAutocastDecorator, None, None),
-        (BaseBM, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (BaseBM, HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
-    ]
-    is_gaudi = HPUAccelerator().get_device_name() == "GAUDI"
-    if not is_gaudi:
-        model_plugin_list.append(
-            (
-                BaseBM,
-                HPUPrecisionPlugin,
-                {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
-            )
-        )
-
-    loss_list = []
-    for item in model_plugin_list:
-        seed_everything(42)
-        model, plugin, params = item
-        _plugin = plugin(**params) if plugin and params else None
-        BoringDataModule()
-        if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-            model = _plugin.convert_modules(model())
-        else:
-            model = model()
-        loss_list.append(run_training(tmpdir, model, _plugin))
-
-    # Assert loss is same for all instances except fp8
-    assert all(x == loss_list[0] for x in loss_list[:-1]), list(zip(model_plugin_list, loss_list))
-    if not is_gaudi:
-        # Assert loss is close between baseline and fp8
-        assert torch.allclose(torch.tensor(loss_list[0]), torch.tensor(loss_list[-1]), rtol=0.1, atol=0.1)
-
-
 def test_autocast_enable_disable(tmpdir):
     """Tests autocast control with enabled arg."""
 
@@ -454,3 +337,120 @@ def test_hpu_precision_supported_precision(precision, expectation):
     """Tests supported precisions with HPU Precision Plugin."""
     with expectation:
         HPUPrecisionPlugin(device="hpu", precision=precision)
+
+
+@pytest.mark.parametrize(
+    ("plugin", "params"),
+    [
+        (MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
+        (HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
+        pytest.param(
+            HPUPrecisionPlugin,
+            {"device": "hpu", "precision": "fp8"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
+        pytest.param(
+            HPUPrecisionPlugin,
+            {"device": "hpu", "precision": "fp8", "replace_layers": "False"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
+        pytest.param(
+            HPUPrecisionPlugin,
+            {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
+    ],
+)
+def test_precision_plugin_fit(tmpdir, plugin, params):
+    """Tests precision plugins with trainer.fit."""
+
+    class TestCallback(Callback):
+        def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
+            assert trainer.precision == params.get("precision")
+            raise SystemExit
+
+    seed_everything(42)
+    _model = BoringModel()
+    _plugin = plugin(**params)
+    if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
+        _plugin.convert_modules(_model)
+
+    with pytest.raises(SystemExit):
+        run_training(tmpdir, _model, _plugin, TestCallback())
+
+
+@pytest.mark.parametrize(
+    ("model", "plugin", "params"),
+    [
+        (BMAutocastCM, None, None),
+        (BMAutocastDecorator, None, None),
+        (BMPluginActive, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
+        (BMPluginActive, HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
+        pytest.param(
+            BMPluginActive,
+            HPUPrecisionPlugin,
+            {"device": "hpu", "precision": "fp8"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
+    ],
+    ids=[
+        "TorchAutocast_CM",
+        "TorchAutocast_Decorator",
+        "MixedPrecision",
+        "HPUPrecisionPlugin_bf16",
+        "HPUPrecisionPlugin_fp8",
+    ],
+)
+def test_mixed_precision_autocast_to_precision_active(tmpdir, model, plugin, params):
+    """Tests autocast is active with torch.autocast context manager."""
+    seed_everything(42)
+    _model = model()
+    _plugin = plugin(**params) if plugin and params else None
+    if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
+        _plugin.convert_modules(_model)
+    run_training(tmpdir, _model, _plugin)
+
+
+def test_mixed_precision_compare_accuracy(tmpdir):
+    """Test and compare accuracy for mixed precision training methods."""
+    model_plugin_list = [
+        (BMAutocastCM, None, None),
+        (BMAutocastDecorator, None, None),
+        (BaseBM, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
+        (BaseBM, HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
+    ]
+    is_gaudi = HPUAccelerator().get_device_name() == "GAUDI"
+    if not is_gaudi:
+        model_plugin_list.append(
+            (
+                BaseBM,
+                HPUPrecisionPlugin,
+                {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
+            )
+        )
+
+    loss_list = []
+    for item in model_plugin_list:
+        seed_everything(42)
+        model, plugin, params = item
+        _plugin = plugin(**params) if plugin and params else None
+        BoringDataModule()
+        if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
+            model = _plugin.convert_modules(model())
+        else:
+            model = model()
+        loss_list.append(run_training(tmpdir, model, _plugin))
+
+    # Assert loss is same for all instances except fp8
+    assert all(x == loss_list[0] for x in loss_list[:-1]), list(zip(model_plugin_list, loss_list))
+    if not is_gaudi:
+        # Assert loss is close between baseline and fp8
+        assert torch.allclose(torch.tensor(loss_list[0]), torch.tensor(loss_list[-1]), rtol=0.1, atol=0.1)
