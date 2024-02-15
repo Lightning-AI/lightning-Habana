@@ -111,17 +111,17 @@ and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs
 
 ----
 
-fp8 training
+fp8 Training
 ----------------------------------------
 
 Lightning supports fp8 training using HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
 fp8 training is only available on Gaudi2 and above. Output from fp8 supported modules is in `torch.bfloat16`.
 
-The plugin accepts following args for fp8 training:
+The plugin accepts following args for the fp8 training:
 
-1. `replace_layers` : Set it `True` to let the plugin replace `torch.nn.Modules` with `trandformer_engine` equivalent modules. User can directly import and use modules from `transformer_engine` as well.
+1. `replace_layers` : Set `True` to let the plugin replace `torch.nn.Modules` with `trandformer_engine` equivalent modules. You can directly import and use modules from `transformer_engine` as well.
 
-2. `recipe` : fp8 recipe to used in training.
+2. `recipe` : fp8 recipe used in training.
 
 .. code-block:: python
 
