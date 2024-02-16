@@ -180,7 +180,7 @@ def test_autocast_operators_override(tmpdir):
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_synapse_version(monkeypatch):
-    """Test fp8 with unsupported Synapse AI version."""
+    """Test fp8 with unsupported Synapse AI version < 1.14.0."""
     import lightning_habana.utils.imports
 
     monkeypatch.setattr(lightning_habana.utils.imports, "_HPU_SYNAPSE_GREATER_EQUAL_1_14_0", False)
