@@ -38,6 +38,7 @@ DEFAULT_RUN_TYPE = [
     "HPUPrecisionPlugin",
     "MixedPrecisionPlugin",
     "recipe_caching",
+    "fp8_training",
 ]
 
 OPTIONAL_RUN_TYPE = [
@@ -148,9 +149,11 @@ def get_model(run_type):
 def get_plugins(run_type):
     """Select plugin."""
     if run_type == "HPUPrecisionPlugin":
-        return [HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")]
+        return HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
     if run_type == "MixedPrecisionPlugin":
-        return [MixedPrecision(device="hpu", precision="bf16-mixed")]
+        return MixedPrecision(device="hpu", precision="bf16-mixed")
+    if run_type == "fp8_training":
+        return HPUPrecisionPlugin(device="hpu", precision="fp8")
     return None
 
 
@@ -187,9 +190,16 @@ if __name__ == "__main__":
         print(f"Running MNIST mixed precision training with {options=}")
     # Run model and print accuracy
     for _run_type in options.run_types:
+        if HPUAccelerator.get_device_name() == "GAUDI" and _run_type == "fp8_training":
+            print("fp8 training not supported on GAUDI. Skipping.")
+            continue
+
         seed_everything(42)
         model, data_module = get_model(_run_type)
         plugin = get_plugins(_run_type)
+        if _run_type == "fp8_training":
+            plugin.convert_modules(model)
+
         if options.verbose:
             print(f"Running {_run_type=} with {model=}, and {plugin=}")
         run_training(_run_type, options, model, data_module, plugin)
