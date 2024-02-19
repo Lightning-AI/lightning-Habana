@@ -179,6 +179,16 @@ def test_autocast_operators_override(tmpdir):
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_synapse_version(monkeypatch):
+    """Test fp8 with unsupported Synapse AI version < 1.14.0."""
+    import lightning_habana.utils.imports
+
+    monkeypatch.setattr(lightning_habana.utils.imports, "_HPU_SYNAPSE_GREATER_EQUAL_1_14_0", False)
+    with pytest.raises(OSError, match="fp8 training requires `Synapse AI release >= 1.14.0`."):
+        HPUPrecisionPlugin(device="hpu", precision="fp8")
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize("replace_layers", [True, False])
 def test_hpu_precision_replace_layerse(replace_layers):
     """Tests plugin init with replcae_layers."""
@@ -217,16 +227,6 @@ def test_hpu_precision_synapse_version(monkeypatch):
     monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
     with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
         HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
-
-
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_precision_fp8_synapse_version(monkeypatch):
-    """Test fp8 with unsupported Synapse AI version."""
-    import lightning_habana.utils.imports
-
-    monkeypatch.setattr(lightning_habana.utils.imports, "_HPU_SYNAPSE_GREATER_EQUAL_1_14_0", False)
-    with pytest.raises(OSError, match="fp8 training requires `Synapse AI release >= 1.14.0`."):
-        HPUPrecisionPlugin(device="hpu", precision="fp8")
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
@@ -299,7 +299,7 @@ def test_precision_plugin_init(plugin, params):
     if isinstance(_plugin, HPUPrecisionPlugin):
         if _plugin.precision == "fp8":
             assert _plugin.fp8_train_available
-            assert _plugin.replace_layers == params.get("replace_layers", None)
+            assert _plugin.replace_layers == params.get("replace_layers", False)
             assert _plugin.recipe == params.get("recipe", None)
         else:
             assert not _plugin.fp8_train_available
