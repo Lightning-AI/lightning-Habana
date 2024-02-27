@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from contextlib import _GeneratorContextManager, contextmanager
-from typing import Any, Generator, Literal, Mapping, Optional, Union
+from contextlib import contextmanager
+from typing import Any, ContextManager, Generator, Literal, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available
@@ -97,7 +97,7 @@ class HPUPrecisionPlugin(Precision):
                 _replace_layers(module)
         return module
 
-    def autocast_context_manager(self) -> Union[_GeneratorContextManager[Any], torch.autocast]:
+    def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
         if self.fp8_train_available:
             return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
