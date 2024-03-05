@@ -280,3 +280,9 @@ def test_hpu_trace_event_kernel(tmpdir):
             raise Exception("Could not find event kernel in trace")
         for event_duration in event_duration_arr:
             assert event_duration >= 0
+
+
+def test_hpu_profiler_env(monkeypatch):
+    monkeypatch.setenv("HABANA_PROFILE", "1")
+    with pytest.raises(AssertionError, match="`HABANA_PROFILE` should not be set when using `HPUProfiler`"):
+        HPUProfiler()
