@@ -129,7 +129,7 @@ Limitations
 Using Intel Gaudi Profiler
 ------------------------------
 
-The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler.
+The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler. To use Intel Gaudi Profiler, set `HABANA_PROFILE`, and run the lightning script as usual. This will dump a hltv trace file in the working directly. This can be viewed by loading it at https://perfetto.habana.ai/.
 
 Please refer to `Getting Started with Intel Gaudi Profiler <https://docs.habana.ai/en/latest/Profiling/Intel_Gaudi_Profiling/Getting_Started_with_Profiler.html>`_ for more information.
 
