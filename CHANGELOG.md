@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for Intel Gaudi Profiler. Deprecate `HABANA_PROFILE` environment variable from HPUProfiler. ([#158](https://github.com/Lightning-AI/lightning-Habana/pull/158))
 -
 
 ### Changed

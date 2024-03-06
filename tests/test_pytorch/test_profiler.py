@@ -247,7 +247,6 @@ def test_hpu_trace_event_runtime(tmpdir):
             assert event_duration >= 0
 
 
-@pytest.mark.xfail(strict=False, reason="TBF: Could not find event kernel in trace")
 def test_hpu_trace_event_kernel(tmpdir):
     # Run model and prep json
     model = BoringModel()

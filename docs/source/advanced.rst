@@ -126,6 +126,20 @@ Limitations
 
 ----
 
+Using Intel Gaudi Profiler
+------------------------------
+
+The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler.
+
+Please refer to `Getting Started with Intel Gaudi Profiler <https://docs.habana.ai/en/latest/Profiling/Intel_Gaudi_Profiling/Getting_Started_with_Profiler.html>`_ for more information.
+
+.. note::
+
+    ``HPUProfiler`` and Intel Gaudi Profiler should not be used together. Therefore, `HABANA_PROFILE` should not be set in environment when using ``HPUProfiler``.
+
+
+----
+
 Using DeepSpeed
 ------------------------
 
