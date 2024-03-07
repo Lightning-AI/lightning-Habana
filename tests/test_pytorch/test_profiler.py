@@ -181,7 +181,15 @@ def test_hpu_profiler_trainer(fn, step_name, boring_model_cls, tmpdir):
     pytorch_profiler = HPUProfiler(dirpath=tmpdir, filename="profile", schedule=None)
     model = boring_model_cls()
     model.predict_dataloader = model.train_dataloader
-    trainer = Trainer(default_root_dir=tmpdir, max_epochs=1, limit_test_batches=2, profiler=pytorch_profiler)
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        max_epochs=1,
+        limit_test_batches=2,
+        profiler=pytorch_profiler,
+    )
     getattr(trainer, fn)(model)
 
     assert sum(e.name.endswith(f"{step_name}_step") for e in pytorch_profiler.function_events)
@@ -224,7 +232,14 @@ def test_hpu_profiler_multiple_loggers(tmpdir):
     model = BoringModel()
     loggers = [TensorBoardLogger(save_dir=tmpdir), CSVLogger(tmpdir)]
     trainer = Trainer(
-        default_root_dir=tmpdir, profiler=HPUProfiler(), logger=loggers, limit_train_batches=5, max_epochs=1
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        profiler=HPUProfiler(),
+        logger=loggers,
+        limit_train_batches=5,
+        max_epochs=1,
     )
     assert len(trainer.loggers) == 2
     trainer.fit(model)
@@ -269,7 +284,15 @@ def test_hpu_profiler_teardown(tmpdir):
 
     profiler = HPUProfiler(dirpath=tmpdir, filename="profiler")
     model = BoringModel()
-    trainer = Trainer(default_root_dir=tmpdir, fast_dev_run=1, profiler=profiler, callbacks=[TestCallback()])
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        fast_dev_run=1,
+        profiler=profiler,
+        callbacks=[TestCallback()],
+    )
     trainer.fit(model)
 
     assert profiler._output_file is None
@@ -281,6 +304,9 @@ def test_hpu_profile_callbacks(tmpdir):
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
         fast_dev_run=1,
         profiler=profiler,
         callbacks=[EarlyStopping("val_loss"), EarlyStopping("train_loss")],
