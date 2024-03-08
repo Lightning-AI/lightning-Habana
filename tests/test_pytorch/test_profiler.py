@@ -79,7 +79,13 @@ def test_hpu_profiler_instances(profiler_str, profiler_class, expectation):
         assert isinstance(trainer.profiler, profiler_class)
 
 
-@pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler),])
+@pytest.mark.parametrize(
+    ("profiler"),
+    [
+        (SimpleProfiler),
+        (AdvancedProfiler),
+    ],
+)
 def test_hpu_profiler_trainer_stages(tmpdir, profiler):
     model = BoringModel()
     trainer = Trainer(
