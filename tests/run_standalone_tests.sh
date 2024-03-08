@@ -97,4 +97,3 @@ echo "===== STANDALONE TEST STATUS END ====="
 
 mv tests/**/*.xml .
 rm $TEST_FILE
-
