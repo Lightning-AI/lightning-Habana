@@ -34,7 +34,7 @@ elif module_available("pytorch_lightning"):
 
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
 
 if _KINETO_AVAILABLE:
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
@@ -51,7 +51,7 @@ def test_hpu_simple_profiler_instances(get_device_count):
         profiler="simple",
         accelerator=HPUAccelerator(),
         devices=get_device_count,
-        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUParallelStrategy(),
+        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUDDPStrategy(),
     )
     assert isinstance(trainer.profiler, SimpleProfiler)
 
@@ -86,7 +86,7 @@ def test_hpu_advanced_profiler_instances(get_device_count):
         profiler="advanced",
         accelerator=HPUAccelerator(),
         devices=get_device_count,
-        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUParallelStrategy(),
+        strategy=SingleHPUStrategy() if get_device_count == 1 else HPUDDPStrategy(),
     )
     assert isinstance(trainer.profiler, AdvancedProfiler)
 
@@ -124,7 +124,7 @@ def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
-        strategy="hpu_parallel",
+        strategy="hpu_ddp",
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler,
@@ -151,7 +151,7 @@ def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     profiler = AdvancedProfiler(dirpath=tmpdir, filename="profiler")
     trainer = Trainer(
         default_root_dir=tmpdir,
-        strategy="hpu_parallel",
+        strategy="hpu_ddp",
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler,

@@ -28,7 +28,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
-from lightning_habana.pytorch import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 
 
 def parse_args():
@@ -231,7 +231,7 @@ def train_model(model, data_module, hpus=1, mode="fit"):
     """Runs trainer.<fit / validate>."""
     _strategy = SingleHPUStrategy()
     if hpus > 1:
-        _strategy = HPUParallelStrategy()
+        _strategy = HPUDDPStrategy()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=hpus,

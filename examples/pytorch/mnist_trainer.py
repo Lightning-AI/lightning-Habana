@@ -30,7 +30,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
     from pytorch_lightning.plugins.precision import MixedPrecision
 
-from lightning_habana import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUDDPStrategy, HPUPrecisionPlugin, SingleHPUStrategy
 
 DEFAULT_RUN_TYPE = [
     "basic",
@@ -87,7 +87,7 @@ def set_env_vars(env_dict):
 def run_trainer(model, data_module, plugin, devices=1, strategy=None):
     """Run trainer.fit with given parameters."""
     if strategy is None:
-        strategy = HPUParallelStrategy() if devices > 1 else SingleHPUStrategy()
+        strategy = HPUDDPStrategy() if devices > 1 else SingleHPUStrategy()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=devices,
@@ -104,7 +104,7 @@ def spawn_tenants(model, data_module, devices, num_tenants):
     for _ in range(num_tenants):
         processes.append(
             mp.Process(
-                target=run_trainer, args=(model, data_module, None, devices, HPUParallelStrategy(start_method="spawn"))
+                target=run_trainer, args=(model, data_module, None, devices, HPUDDPStrategy(start_method="spawn"))
             )
         )
 

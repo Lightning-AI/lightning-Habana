@@ -36,7 +36,7 @@ elif module_available("pytorch_lightning"):
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUParallelStrategy, SingleHPUStrategy
 
 from tests.helpers import ClassifDataModule, ClassificationModel
 
@@ -53,7 +53,7 @@ def test_all_stages(tmpdir, hpus):
     _strategy = SingleHPUStrategy()
     if hpus > 1:
         parallel_hpus = [torch.device("hpu")] * hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
+        _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
@@ -221,15 +221,15 @@ def test_strategy_choice_single_strategy():
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_strategy_choice_parallel_strategy(hpus):
+def test_strategy_choice_ddp_strategy(hpus):
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
     trainer = Trainer(
-        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * hpus),
+        strategy=HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * hpus),
         accelerator=HPUAccelerator(),
         devices=hpus,
     )
-    assert isinstance(trainer.strategy, HPUParallelStrategy)
+    assert isinstance(trainer.strategy, HPUDDPStrategy)
 
     trainer = Trainer(accelerator="hpu", devices=hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
@@ -247,7 +247,7 @@ def test_inference_only(tmpdir, hpus):
     _strategy = SingleHPUStrategy()
     if hpus > 1:
         parallel_hpus = [torch.device("hpu")] * hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
+        _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
     )
@@ -265,12 +265,12 @@ def test_hpu_unsupported_device_type():
         Trainer(accelerator=HPUAccelerator(), devices=[1])
 
 
-def test_strategy_params_with_hpu_parallel_strategy():
+def test_strategy_params_with_hpu_ddp_strategy():
     bucket_cap_mb = 100
     gradient_as_bucket_view = True
     static_graph = True
     find_unused_parameters = True
-    strategy = HPUParallelStrategy(
+    strategy = HPUDDPStrategy(
         bucket_cap_mb=bucket_cap_mb,
         gradient_as_bucket_view=gradient_as_bucket_view,
         static_graph=static_graph,
@@ -376,7 +376,7 @@ class MetricsCallback(Callback):
         self.metrics.append(metric)
 
 
-class MockHPUParallelStrategy(HPUParallelStrategy):
+class MockHPUDDPStrategy(HPUDDPStrategy):
     def __init__(
         self,
         reduce_op="sum",
@@ -392,9 +392,9 @@ class MockHPUParallelStrategy(HPUParallelStrategy):
         return super().reduce(tensor, group, self.reduce_op)
 
 
-def test_hpu_parallel_reduce_op_strategy_default():
+def test_hpu_ddp_reduce_op_strategy_default():
     """Test default reduce_op."""
-    strategy = MockHPUParallelStrategy()
+    strategy = MockHPUDDPStrategy()
     # Assert that the strategy's reduce_op attribute is set to the default "sum"
     assert strategy.reduce_op == "sum"
 
@@ -444,14 +444,14 @@ def test_hpu_parallel_reduce_op_strategy_default():
     ],
 )
 def test_reduce_op_strategy(tmpdir, hpus, reduce_op, expectation):
-    """Tests all reduce in HPUParallel strategy."""
+    """Tests all reduce in HPUDDP strategy."""
     seed_everything(42)
     _model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=hpus,
-        strategy=MockHPUParallelStrategy(reduce_op=reduce_op),
+        strategy=MockHPUDDPStrategy(reduce_op=reduce_op),
         max_epochs=1,
         fast_dev_run=3,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
@@ -485,7 +485,7 @@ def test_reduce_op_logging(tmpdir, hpus, reduce_op, logged_value_epoch, logged_v
 
     seed_everything(42)
     _model = BaseBM(reduce_op=reduce_op)
-    _strategy = HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * hpus) if hpus > 1 else SingleHPUStrategy()
+    _strategy = HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * hpus) if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
