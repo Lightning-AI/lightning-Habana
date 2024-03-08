@@ -124,7 +124,7 @@ def test_simple_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
-        strategy="hpu_ddp",
+        strategy=HPUDDPStrategy(),
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler,
@@ -151,7 +151,7 @@ def test_advanced_profiler_trainer_stages_distributed(tmpdir, get_device_count):
     profiler = AdvancedProfiler(dirpath=tmpdir, filename="profiler")
     trainer = Trainer(
         default_root_dir=tmpdir,
-        strategy="hpu_ddp",
+        strategy=HPUDDPStrategy(),
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler,
