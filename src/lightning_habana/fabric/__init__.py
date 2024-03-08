@@ -15,8 +15,8 @@
 
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.fabric.strategies.ddp import HPUDDPStrategy
 from lightning_habana.fabric.plugins.precision import HPUPrecision
+from lightning_habana.fabric.strategies.ddp import HPUDDPStrategy
 from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 
