@@ -16,6 +16,8 @@
 # THIS FILE ASSUMES IT IS RUN INSIDE THE tests DIRECTORY
 
 set -e
+RED='\033[0;31m'
+NC='\033[0m'
 
 # Defaults
 hpus=2
@@ -77,10 +79,11 @@ for test in $tests; do
   if [[ $result =~ $pattern ]]; then
       status="${BASH_REMATCH[2]}"
   fi
+  status=$(echo $status | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")
   result="$test:$status"
   echo $result
-  if [[ $status == "failed" ]]; then
-    cat $test-results.xml
+  if [ "$status" == "failed" ]; then
+    echo -e "${RED}$(cat $test-results.xml)${NC}"
     exit 1
   fi
   results+=("$result")
@@ -94,3 +97,4 @@ echo "===== STANDALONE TEST STATUS END ====="
 
 mv tests/**/*.xml .
 rm $TEST_FILE
+
