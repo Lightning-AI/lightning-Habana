@@ -91,7 +91,7 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:  # type: ignore[has-type]
+        if self._checkpoint_io is None:
             self._checkpoint_io = HPUCheckpointIO()
         elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
             self._checkpoint_io.checkpoint_io = HPUCheckpointIO()

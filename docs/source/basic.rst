@@ -56,9 +56,9 @@ strategy with the addition of Habana's collective communication library (HCCL) t
 scale-out across multiple nodes.
 
 .. note::
-    :class:`~lightning_habana.pytorch.strategies.HPUParallelStrategy` is replaced by :class:`~lightning_habana.pytorch.strategies.HPUDDPStrategy`
+    `HPUParallelStrategy` is replaced by `HPUDDPStrategy`
     starting `lightning-habana>=1.5.0`
-    :class:`~lightning_habana.pytorch.strategies.HPUParallelStrategy` will be made as a base class for all hpu based parallel strategies like ddp, fsdp etc.
+    `HPUParallelStrategy` will be made as a base class for all hpu based parallel strategies like ddp, fsdp etc.
 
 
 ----
