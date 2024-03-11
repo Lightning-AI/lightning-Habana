@@ -27,6 +27,7 @@ if module_available("lightning"):
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
+    from lightning.pytorch.utilities.rank_zero import rank_zero_warn
     from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -37,6 +38,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
+    from pytorch_lightning.utilities.rank_zero import rank_zero_warn
     from pytorch_lightning.utilities.types import STEP_OUTPUT
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
@@ -74,6 +76,10 @@ class HPUParallelStrategy(DDPStrategy):
         process_group_backend: Optional[str] = "hccl",
         **kwargs: Any,
     ) -> None:
+        rank_zero_warn(
+            "HPUParallelStrategy will be deprecated from lightning-habana >=1.6.0, please"
+            " make use of HPUDDPStrategy."
+        )
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
