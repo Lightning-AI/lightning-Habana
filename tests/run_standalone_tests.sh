@@ -73,20 +73,20 @@ declare -a results
 # Get test list and run each test individually
 tests=$(grep -oP '^tests/test_\S+' "$TEST_FILE")
 for test in $tests; do
-  result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml | tail -n 1)
+  result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml)
+  retval=$?
+  last_line=$(tail -n 1 <<< "$result")
+  
   pattern='([0-9]+) (.*) in ([0-9.]+s)'
   status=""
-  if [[ $result =~ $pattern ]]; then
+  if [[ $last_line =~ $pattern ]]; then
       status="${BASH_REMATCH[2]}"
-  fi
-  status=$(echo $status | sed -r "s/\x1B\[([0-9]{1,3}(;[0-9]{1,2};?)?)?[mGK]//g")
-  result="$test:$status"
-  echo $result
-  if [ "$status" == "failed" ]; then
+  elif [ "$retval" != 0 ]; then
     echo -e "${RED}$(cat $test-results.xml)${NC}"
     exit 1
   fi
-  results+=("$result")
+
+  results+=("${test}:${status}")
 done
 
 echo "===== STANDALONE TEST STATUS BEGIN ====="
