@@ -18,12 +18,14 @@ from lightning_habana.pytorch.plugins.deepspeed_precision import HPUDeepSpeedPre
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.profiler.profiler import HPUProfiler
+from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.pytorch.strategies.deepspeed import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 
 __all__ = [
     "HPUAccelerator",
+    "HPUDDPStrategy",
     "HPUDeepSpeedStrategy",
     "HPUParallelStrategy",
     "SingleHPUStrategy",

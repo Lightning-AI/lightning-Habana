@@ -51,9 +51,14 @@ The ``devices=1`` parameter with HPUs enables the Habana accelerator for single 
 It uses :class:`~lightning_habana.pytorch.strategies.SingleHPUStrategy`.
 
 The ``devices>1`` parameter with HPUs enables the Habana accelerator for distributed training.
-It uses :class:`~lightning_habana.pytorch.strategies.HPUParallelStrategy` which is based on DDP
+It uses :class:`~lightning_habana.pytorch.strategies.HPUDDPStrategy` which is based on DDP
 strategy with the addition of Habana's collective communication library (HCCL) to support scale-up within a node and
 scale-out across multiple nodes.
+
+.. note::
+    `HPUParallelStrategy` is replaced by `HPUDDPStrategy`
+    starting `lightning-habana>=1.5.0`
+    `HPUParallelStrategy` will be made as a base class for all hpu based parallel strategies like ddp, fsdp etc.
 
 
 ----
@@ -66,11 +71,11 @@ To train a Lightning model using multiple HPU nodes, set the ``num_nodes`` param
 .. code-block:: python
 
     from lightning_habana.pytorch.accelerator import HPUAccelerator
-    from lightning_habana.pytorch.strategies import HPUParallelStrategy
+    from lightning_habana.pytorch.strategies import HPUDDPStrategy
 
     hpus = 8
     parallel_hpus = [torch.device("hpu")] * hpus
-    trainer = Trainer(accelerator=HPUAccelerator(), devices=hpus, strategy=HPUParallelStrategy(parallel_devices=parallel_hpus), num_nodes=2)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=hpus, strategy=HPUDDPStrategy(parallel_devices=parallel_hpus), num_nodes=2)
 
 In addition to this, the following environment variables need to be set to establish communication across nodes.
 
