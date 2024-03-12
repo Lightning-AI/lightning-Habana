@@ -21,7 +21,7 @@ from contextlib import nullcontext
 import pytest
 import torch
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -117,7 +117,7 @@ def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count)
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
-        strategy=HPUParallelStrategy(),
+        strategy=HPUDDPStrategy(),
         accelerator=HPUAccelerator(),
         devices=get_device_count,
         profiler=profiler(dirpath=tmpdir, filename="profiler"),

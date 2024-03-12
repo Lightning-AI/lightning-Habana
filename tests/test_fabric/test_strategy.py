@@ -14,7 +14,7 @@
 
 import torch
 from lightning_habana.fabric.accelerator import HPUAccelerator
-from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
+from lightning_habana.fabric.strategies.ddp import HPUDDPStrategy
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 
 
@@ -22,7 +22,7 @@ def test_single_device_default_device():
     assert SingleHPUStrategy().root_device == torch.device("hpu")
 
 
-def test_hpu_parallel_strategy_defaults():
-    strategy = HPUParallelStrategy()
+def test_hpu_ddp_strategy_defaults():
+    strategy = HPUDDPStrategy()
     assert strategy.process_group_backend == "hccl"
     assert len(strategy.parallel_devices) == HPUAccelerator.auto_device_count()
