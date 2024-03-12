@@ -282,7 +282,7 @@ nitpick_ignore = [
     # TODO: generated list of all existing ATM, need to be fixed
     ("py:class", "HPUAccelerator"),
     ("py:class", "lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin"),
-    ("py:class", "lightning_habana.pytorch.strategies.HPUParallelStrategy"),
+    ("py:class", "lightning_habana.pytorch.strategies.HPUDDPStrategy"),
     ("py:class", "lightning_habana.pytorch.strategies.SingleHPUStrategy"),
 ]
 

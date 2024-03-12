@@ -18,7 +18,7 @@ import os
 
 import torch
 from habana_frameworks.torch.utils.experimental import detect_recompilation_auto_model
-from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -59,7 +59,7 @@ def run_training(tmpdir, hpus, model, data_module):
     """Init trainer and run fit."""
     seed_everything(42)
     model = model()
-    _strategy = HPUParallelStrategy() if hpus > 1 else SingleHPUStrategy()
+    _strategy = HPUDDPStrategy() if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),

@@ -26,7 +26,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 
 
 def run_train(tmpdir, _devices, tenant, status):
@@ -34,7 +34,7 @@ def run_train(tmpdir, _devices, tenant, status):
     seed_everything(42)
     _model = BoringModel()
     _data_module = BoringDataModule()
-    _strategy = HPUParallelStrategy(start_method="spawn") if _devices > 1 else SingleHPUStrategy()
+    _strategy = HPUDDPStrategy(start_method="spawn") if _devices > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
