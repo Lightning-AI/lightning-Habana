@@ -76,7 +76,7 @@ for test in $tests; do
   result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml)
   retval=$?
   last_line=$(tail -n 1 <<< "$result")
-  
+
   pattern='([0-9]+) (.*) in ([0-9.]+s)'
   status=""
   if [[ $last_line =~ $pattern ]]; then
