@@ -106,7 +106,11 @@ class HPUPrecisionPlugin(Precision):
             )
 
     def convert_modules(
-        self, module: torch.nn.Module, inference: bool = False, quant: bool = True, fp8_data_path: str = None
+        self,
+        module: torch.nn.Module,
+        inference: bool = False,
+        quant: bool = True,
+        fp8_data_path: Union[str, None] = None,
     ) -> torch.nn.Module:
         """Enable support for fp8."""
         if inference is True and self.fp8_inference_available:
@@ -114,7 +118,7 @@ class HPUPrecisionPlugin(Precision):
             # Env needs to be set before importing Habana Quantization Toolkit
             if os.environ.get("QUANT_CONFIG", None) is None:
                 # Use default jsons in case one is not provided via env variable
-                fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS", None)
+                fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
                 json_to_patch = MAXABS_QUANT if quant else MAXABS_MEASURE
                 if fp8_data_path is not None:
                     modify_fp8_json(json_to_patch, "dump_stats_path", os.path.join(fp8_data_path, "hqt"))
