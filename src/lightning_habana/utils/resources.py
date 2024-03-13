@@ -142,7 +142,7 @@ def is_fp8_available() -> Tuple[bool, str]:
     return tengine.fp8.is_fp8_available()
 
 
-def modify_fp8_json(file_path, key_to_edit, new_value):
+def modify_fp8_json(file_path: str, key_to_edit: str, new_value: str) -> None:
     """Edit a specific entry in a JSON file.
 
     Parameters:
