@@ -5,7 +5,7 @@ from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
 from pkg_resources import parse_requirements
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 _PATH_ROOT = os.path.dirname(__file__)
 _PATH_SOURCE = os.path.join(_PATH_ROOT, "src")
@@ -60,11 +60,20 @@ setup(
     url=about.__homepage__,
     download_url="https://github.com/Lightning-AI/lightning-habana",
     license=about.__license__,
-    packages=find_packages(where="src"),
+    packages=find_namespace_packages(where="src"),
     package_dir={"": "src"},
     long_description=readme,
     long_description_content_type="text/markdown",
     include_package_data=True,
+    data_files=[
+        (
+            "jsons",
+            [
+                "src/lightning_habana/pytorch/plugins/fp8_jsons/maxabs_measure.json",
+                "src/lightning_habana/pytorch/plugins/fp8_jsons/maxabs_quant.json",
+            ],
+        )
+    ],
     zip_safe=False,
     keywords=["deep learning", "pytorch", "AI"],
     python_requires=">=3.8",
