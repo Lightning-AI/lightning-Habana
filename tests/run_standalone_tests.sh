@@ -58,12 +58,13 @@ echo "Test files: $test_files"
 
 # Get all the tests marked with standalone marker
 TEST_FILE="standalone_tests.txt"
-test_command="python -um pytest $test_files -q --collect-only -m standalone --pythonwarnings ignore"
+test_command="python -um pytest ${test_files} -q --collect-only --pythonwarnings ignore -m \"standalone or standalone_only\""
+
 if [[ -n "$filter" ]]; then
   test_command+=" -k $filter"
 fi
-
-$test_command > $TEST_FILE
+echo "$test_command"
+eval "$test_command" > $TEST_FILE
 cat $TEST_FILE
 sed -i '$d' $TEST_FILE
 

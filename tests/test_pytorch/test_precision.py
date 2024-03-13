@@ -200,6 +200,25 @@ def test_hpu_precision_replace_layerse(replace_layers):
     )
 
 
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize(
+    ("inference", "quant", "expectation"),
+    [
+        (True, True, pytest.raises(AttributeError, match=r"'NoneType' object has no attribute 'inputs'")),
+        (True, False, nullcontext()),
+        (False, True, nullcontext()),
+        (False, False, nullcontext()),
+    ],
+)
+def test_hpu_precision_convert_modules(inference, quant, expectation):
+    """Test HPUPrecisionPlugin.convert_modules."""
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    with expectation:
+        plugin.convert_modules(module=model, inference=inference, quant=quant)
+
+
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_output(tmpdir):
     """Test HPUPrecisionPlugin with module containing both bf16 and fp8 operations."""

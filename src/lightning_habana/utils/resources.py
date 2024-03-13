@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import re
 import subprocess
 from functools import lru_cache
@@ -21,6 +22,7 @@ from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
+_HABANA_QUANTIZATION_TOOLKIT_AVAILABLE = package_available("quantization_toolkit")
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
@@ -138,3 +140,27 @@ def is_fp8_available() -> Tuple[bool, str]:
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 
     return tengine.fp8.is_fp8_available()
+
+
+def modify_fp8_json(file_path, key_to_edit, new_value):
+    """Edit a specific entry in a JSON file.
+
+    Parameters:
+        file_path (str): The path to the JSON file.
+        key_to_edit (str): The key of the entry to edit.
+        new_value: The new value to assign to the entry.
+
+    Returns:
+        None
+
+    """
+    # Load the JSON file
+    with open(file_path, encoding="utf-8") as file:
+        data = json.load(file)
+
+    # Edit the specified entry
+    data[key_to_edit] = new_value
+
+    # Update the JSON
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(data, file)
