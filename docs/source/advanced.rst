@@ -781,4 +781,4 @@ Metric APIs
 -------------
 
 The Metric APIs provide various performance-related metrics, such as the number of graph compilations, the total time of graph compilations, and more.
-Please refer to `Metric APIs <https://docs.habana.ai/en/latest/PyTorch/Reference/Python_Packages.html#metric-apis>`_ for information on how to use them.
+Please refer to `Metric APIs <https://docs.habana.ai/en/latest/PyTorch/Reference/Python_Packages.html#metric-apis>`_ for information.
