@@ -82,6 +82,7 @@ for test in $tests; do
   if [[ $last_line =~ $pattern ]]; then
       status="${BASH_REMATCH[2]}"
   elif [ "$retval" != 0 ]; then
+    echo -e "${RED}Got status ${retval} from pytest${NC}"
     echo -e "${RED}$(cat $test-results.xml)${NC}"
     exit 1
   fi
