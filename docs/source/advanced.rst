@@ -773,3 +773,12 @@ To run another 4-Gaudi workload in parallel, set the modules as follows before r
 In addition to setting `HABANA_VISIBLE_MODULES`, also set a unique `MASTER_PORT` as environment variable for each tenant instance.
 
 Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/v1.14.0/PyTorch/Reference/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
+
+
+----
+
+Metric APIs
+-------------
+
+The Metric APIs provide various performance-related metrics, such as the number of graph compilations, the total time of graph compilations, and more.
+Please refer to `Metric APIs <https://docs.habana.ai/en/latest/PyTorch/Reference/Python_Packages.html#metric-apis>`_ for information on how to use them.
