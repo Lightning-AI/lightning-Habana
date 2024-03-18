@@ -112,14 +112,14 @@ and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs
 ----
 
 fp8 Training
-----------------------------------------
+-------------
 
 Lightning supports fp8 training using HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
 fp8 training is only available on Gaudi2 and above. Output from fp8 supported modules is in `torch.bfloat16`.
 
 The plugin accepts following args for the fp8 training:
 
-1. `replace_layers` : Set `True` to let the plugin replace `torch.nn.Modules` with `trandformer_engine` equivalent modules. You can directly import and use modules from `transformer_engine` as well.
+1. `replace_layers` : Set `True` to let the plugin replace `torch.nn.Modules` with `transformer_engine` equivalent modules. You can directly import and use modules from `transformer_engine` as well.
 
 2. `recipe` : fp8 recipe used in training.
 
@@ -153,7 +153,7 @@ For more details, `recipes`, and list of supported `transformer_engine` modules,
 ----
 
 fp8 Inference
-----------------------------------------
+--------------
 
 Lightning supports fp8 inference using HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`. fp8 inference is only available on Gaudi2 and above.
 
@@ -224,7 +224,7 @@ Run inference with `HPUPrecisionPlugin.replace_modules(model, inference=True, qu
 
 **JSONs for quant and measure modes**
 
-HQT uses configuration jsons for selecting between quant and measurement modes. This can be toggled via `quant` param in `HPUPrecisionPlugin.replaace_modules()`.
+HQT uses configuration jsons for selecting between quant and measurement modes. This can be toggled via `quant` param in `HPUPrecisionPlugin.replace_modules()`.
 User may also set `QUANT_CONFIG` environment variable pointing to the json to use during training.
 
 Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information.
