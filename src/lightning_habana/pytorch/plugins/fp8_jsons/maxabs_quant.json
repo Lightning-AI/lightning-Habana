@@ -12,7 +12,5 @@
         "names": [
             "lm_head"
         ]
-    },
-    "dump_stats_path": "/tmp/hqt_output/measure",
-    "dump_stats_xlsx_path": "/tmp/hqt_output/measure/fp8stats.xlsx"
+    }
 }
