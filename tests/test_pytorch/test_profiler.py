@@ -47,12 +47,6 @@ if _KINETO_AVAILABLE:
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
 
-@pytest.fixture()
-def _check_distributed(get_device_count):
-    if get_device_count <= 1:
-        pytest.skip("Distributed test does not run on single HPU")
-
-
 @pytest.mark.parametrize(
     ("profiler_str", "profiler_class", "expectation"),
     [
@@ -109,8 +103,7 @@ def test_hpu_profiler_trainer_stages(tmpdir, profiler):
         assert os.path.getsize(os.path.join(trainer.profiler.dirpath, file)) > 0
 
 
-@pytest.mark.standalone()
-@pytest.mark.usefixtures("_check_distributed")
+@pytest.mark.standalone_only()
 @pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler)])
 def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count):
     """Ensure the proper files are saved in distributed."""
