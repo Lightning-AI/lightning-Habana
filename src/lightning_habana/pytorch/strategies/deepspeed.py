@@ -71,7 +71,7 @@ from torch.nn import Module
 from torch.optim import Optimizer
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
+from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -101,7 +101,7 @@ def remove_module_hooks(model: torch.nn.Module) -> None:
         module._load_state_dict_pre_hooks = OrderedDict()
 
 
-class HPUDeepSpeedStrategy(HPUParallelStrategy):
+class HPUDeepSpeedStrategy(HPUDDPStrategy):
     """Strategy to support deepspeed with HPU devices."""
 
     strategy_name = "hpu_deepspeed"

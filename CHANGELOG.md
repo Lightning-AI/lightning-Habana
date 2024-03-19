@@ -9,7 +9,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added support for Intel Gaudi Profiler. Deprecate `HABANA_PROFILE` environment variable from HPUProfiler. ([#158](https://github.com/Lightning-AI/lightning-Habana/pull/158))
+-
+
+### Changed
+
+- Changed HPUParallelStrategy to HPUDDPStrategy ([#160](https://github.com/Lightning-AI/lightning-Habana/pull/160))
+-
+
+### Fixed
+
+-
+
+### Removed
+
+-
+
+### Deprecated
+
+-
+
+
+## [1.4.0] - 2024-02-16
+
+### Added
+
 - Added DeepSpeed precision plugin for HPU ([#147](https://github.com/Lightning-AI/lightning-Habana/pull/147))
+- Added support for fp8 training. ([#149](https://github.com/Lightning-AI/lightning-Habana/pull/149))
 
 ### Changed
 

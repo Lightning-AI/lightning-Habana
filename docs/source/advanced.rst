@@ -114,6 +114,13 @@ Using Chrome
     1. Open Chrome and paste this URL: `chrome://tracing/`.
     2. Once tracing opens, click on `Load` at the top-right and load one of the generated traces.
 
+.. figure:: _images/HPUProfiler.png
+    :alt: HPUProfiler trace on tensorboard
+    :width: 600
+
+    HPUProfiler trace for torch.nn.Linear on tensorboard
+
+
 Limitations
 ^^^^^^^^^^^^
 
@@ -123,6 +130,30 @@ Limitations
 - ``HPUProfiler.summary()`` is not supported.
 
 - Passing the Profiler name as a string "hpu" to the trainer is not supported.
+
+----
+
+Using Intel Gaudi Profiler
+--------------------------
+
+The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler. To use Intel Gaudi Profiler, set `HABANA_PROFILE`, and run the lightning script as usual. This will dump a hltv trace file in the working directly. This can be viewed by loading it at https://perfetto.habana.ai/.
+
+Intel Gaudi Profiler profiles the whole process as compared to HPUProfiler that profiles events only when the trainer is active, and therefore is useful for getting additional information in host trace.
+It however does not provide traces for Lightning Python code. Use HPUProfiler to obtain those traces. The device traces on habana devices are identical for both profilers.
+
+
+Please refer to `Getting Started with Intel Gaudi Profiler <https://docs.habana.ai/en/latest/Profiling/Intel_Gaudi_Profiling/Getting_Started_with_Profiler.html>`_ for more information.
+
+.. note::
+
+    ``HPUProfiler`` and Intel Gaudi Profiler should not be used together. Therefore, `HABANA_PROFILE` should not be set in environment when using ``HPUProfiler``.
+
+
+.. figure:: _images/IGP.png
+    :alt: Intel Gaudi Profiler trace on perfetto
+    :width: 600
+
+    Intel Gaudi Profiler trace for torch.nn.Linear on perfetto
 
 ----
 

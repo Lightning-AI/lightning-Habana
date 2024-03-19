@@ -30,7 +30,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
     from pytorch_lightning.plugins.precision import MixedPrecision
 
-from lightning_habana import HPUAccelerator, HPUParallelStrategy, HPUPrecisionPlugin, SingleHPUStrategy
+from lightning_habana import HPUAccelerator, HPUDDPStrategy, HPUPrecisionPlugin, SingleHPUStrategy
 
 DEFAULT_RUN_TYPE = [
     "basic",
@@ -38,6 +38,7 @@ DEFAULT_RUN_TYPE = [
     "HPUPrecisionPlugin",
     "MixedPrecisionPlugin",
     "recipe_caching",
+    "fp8_training",
 ]
 
 OPTIONAL_RUN_TYPE = [
@@ -86,7 +87,7 @@ def set_env_vars(env_dict):
 def run_trainer(model, data_module, plugin, devices=1, strategy=None):
     """Run trainer.fit with given parameters."""
     if strategy is None:
-        strategy = HPUParallelStrategy() if devices > 1 else SingleHPUStrategy()
+        strategy = HPUDDPStrategy() if devices > 1 else SingleHPUStrategy()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=devices,
@@ -103,7 +104,7 @@ def spawn_tenants(model, data_module, devices, num_tenants):
     for _ in range(num_tenants):
         processes.append(
             mp.Process(
-                target=run_trainer, args=(model, data_module, None, devices, HPUParallelStrategy(start_method="spawn"))
+                target=run_trainer, args=(model, data_module, None, devices, HPUDDPStrategy(start_method="spawn"))
             )
         )
 
@@ -148,9 +149,11 @@ def get_model(run_type):
 def get_plugins(run_type):
     """Select plugin."""
     if run_type == "HPUPrecisionPlugin":
-        return [HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")]
+        return HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
     if run_type == "MixedPrecisionPlugin":
-        return [MixedPrecision(device="hpu", precision="bf16-mixed")]
+        return MixedPrecision(device="hpu", precision="bf16-mixed")
+    if run_type == "fp8_training":
+        return HPUPrecisionPlugin(device="hpu", precision="fp8")
     return None
 
 
@@ -187,9 +190,16 @@ if __name__ == "__main__":
         print(f"Running MNIST mixed precision training with {options=}")
     # Run model and print accuracy
     for _run_type in options.run_types:
+        if HPUAccelerator.get_device_name() == "GAUDI" and _run_type == "fp8_training":
+            print("fp8 training not supported on GAUDI. Skipping.")
+            continue
+
         seed_everything(42)
         model, data_module = get_model(_run_type)
         plugin = get_plugins(_run_type)
+        if _run_type == "fp8_training":
+            plugin.convert_modules(model)
+
         if options.verbose:
             print(f"Running {_run_type=} with {model=}, and {plugin=}")
         run_training(_run_type, options, model, data_module, plugin)

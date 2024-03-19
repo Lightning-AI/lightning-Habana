@@ -28,7 +28,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
-from lightning_habana.pytorch import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 
 
 class HPUGraphMode(Enum):
@@ -168,7 +168,7 @@ def train_model(root_dir, hpus, model, data_module, profiler=None, mode="fit"):
     seed_everything(42)
     _strategy = SingleHPUStrategy()
     if hpus > 1:
-        _strategy = HPUParallelStrategy()
+        _strategy = HPUDDPStrategy()
     trainer = Trainer(
         default_root_dir=root_dir,
         accelerator=HPUAccelerator(),
