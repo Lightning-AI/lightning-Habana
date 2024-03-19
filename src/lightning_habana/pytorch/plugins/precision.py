@@ -110,7 +110,7 @@ class HPUPrecisionPlugin(Precision):
         module: torch.nn.Module,
         inference: bool = False,
         quant: bool = True,
-        fp8_data_path: Union[str, None] = None,
+        fp8_data_path: Optional[str] = None,
     ) -> torch.nn.Module:
         """Enable support for fp8."""
         if inference is True and self.fp8_inference_available:
@@ -119,6 +119,7 @@ class HPUPrecisionPlugin(Precision):
             if os.environ.get("QUANT_CONFIG", None) is None:
                 # Use default jsons in case one is not provided via env variable
                 fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
+                assert fp8_data_path is not None
                 # Create a copy in fp8_dump_path to avoid modifying package jsons.
                 json_copy = os.path.join(fp8_data_path, "temp_fp8.json")
                 if fp8_data_path is not None:
