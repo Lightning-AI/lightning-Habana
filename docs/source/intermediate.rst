@@ -136,7 +136,7 @@ The plugin accepts following args for the fp8 training:
     plugin = HPUPrecisionPlugin(precision="fp8", replace_layers=True, recipe=recipe.DelayedScaling())
 
     # Replace torch.nn.Modules with transformer engine equivalent modules
-    plugin.replace_modules(model)
+    plugin.convert_modules(model)
 
     # Initialize a trainer with HPUPrecisionPlugin
     trainer = Trainer(
@@ -147,7 +147,18 @@ The plugin accepts following args for the fp8 training:
     # Train the model ⚡
     trainer.fit(model)
 
-For more details, `recipes`, and list of supported `transformer_engine` modules, refer to `FP8 Training with Intel Gaudi Transformer Engine <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html>`__.
+
+.. note::
+
+    To use `transformer_engine` directly for training:
+
+    1. Import `transformer_engine` and replace your modules with `transformer_engine` modules in the model.
+    2. Wrap the forward pass of the training with `fp8_autocast`.
+
+    Users may still use `HPUPrecisionPlugin` to train in `bf16-mixed` precision for modules not supported by `transformer_engine`.
+
+For more details on `transformer_engine` and `recipes`, refer to `FP8 Training with Intel Gaudi Transformer Engine <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html>`__.
+
 
 ----
 
