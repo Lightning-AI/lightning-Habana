@@ -51,9 +51,11 @@ if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
 
         # Default quantization jsons
         MAXABS_MEASURE = str(
-            importlib.resources.path("lightning_habana.pytorch.plugins.fp8_jsons", "maxabs_measure.json")
+            importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
         )
-        MAXABS_QUANT = str(importlib.resources.path("lightning_habana.pytorch.plugins.fp8_jsons", "maxabs_quant.json"))
+        MAXABS_QUANT = str(
+            importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_quant.json")
+        )
 
 
 class HPUPrecisionPlugin(Precision):

@@ -10,6 +10,7 @@ from setuptools import find_namespace_packages, setup
 _PATH_ROOT = os.path.dirname(__file__)
 _PATH_SOURCE = os.path.join(_PATH_ROOT, "src")
 _PATH_REQUIRES = os.path.join(_PATH_ROOT, "requirements")
+_PATH_QUANT_CONFIG = "src/lightning_habana/pytorch/plugins/quant_config/"
 
 
 def _load_py_module(fname, pkg="lightning_habana"):
@@ -69,8 +70,8 @@ setup(
         (
             "jsons",
             [
-                "src/lightning_habana/pytorch/plugins/fp8_jsons/maxabs_measure.json",
-                "src/lightning_habana/pytorch/plugins/fp8_jsons/maxabs_quant.json",
+                os.path.join(_PATH_QUANT_CONFIG, "fp8", "maxabs_measure.json"),
+                os.path.join(_PATH_QUANT_CONFIG, "fp8", "maxabs_quant.json"),
             ],
         )
     ],

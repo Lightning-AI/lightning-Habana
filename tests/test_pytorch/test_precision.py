@@ -241,10 +241,10 @@ def test_hpu_precision_fp8_patch(patch_path, tmpdir):
             assert xlsx_path == os.path.join(patched_path, "hqt", "fp8stats.xlsx")
 
     package_measure_json = str(
-        importlib.resources.path("lightning_habana.pytorch.plugins.fp8_jsons", "maxabs_measure.json")
+        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
     )
     package_quant_json = str(
-        importlib.resources.path("lightning_habana.pytorch.plugins.fp8_jsons", "maxabs_quant.json")
+        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_quant.json")
     )
     fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
 
