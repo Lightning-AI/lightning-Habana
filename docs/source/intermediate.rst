@@ -150,7 +150,7 @@ The plugin accepts following args for the fp8 training:
 
 .. note::
 
-    To use `transformer_engine` directlyfor training:
+    To use `transformer_engine` directly for training:
 
     1. Import `transformer_engine` and replace your modules with `transformer_engine` modules in the model.
     2. Wrap the forward pass of the training with `fp8_autocast`.
