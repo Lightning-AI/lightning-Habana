@@ -224,14 +224,13 @@ def test_hpu_precision_convert_modules(inference, quant, expectation):
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-@pytest.mark.parametrize("json_dump_path", [None, "tmpdir"])
-def test_hpu_precision_fp8_dump_path(json_dump_path, tmpdir):
+@pytest.mark.parametrize("patch_path", ["tmpdir", None])
+def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     """Tests fp8 jsons are patched correctly."""
     model = BaseBM()
     plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
-    json_dump_path = None if json_dump_path is None else tmpdir
-    patch_path = os.environ.get("HABANA_LOGS") if json_dump_path is None else json_dump_path
-    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=json_dump_path)
+    patch_path = patch_path if patch_path is None else tmpdir
+    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
 
     def _check_json_entry(jsonfile, patched_path):
         with open(jsonfile, encoding="utf-8") as jfile:
@@ -241,15 +240,21 @@ def test_hpu_precision_fp8_dump_path(json_dump_path, tmpdir):
             assert stats_path == os.path.join(patched_path, "hqt")
             assert xlsx_path == os.path.join(patched_path, "hqt", "fp8stats.xlsx")
 
-    # Check json is patched correctly
-    _check_json_entry(os.path.join(patch_path, "temp_fp8.json"), patch_path)
-    # Assert package jsons are not modified
     package_measure_json = str(
         importlib.resources.path("lightning_habana.pytorch.plugins.fp8_jsons", "maxabs_measure.json")
     )
-    with pytest.raises(KeyError, match="dump_stats_path"):
-        _check_json_entry(package_measure_json, patch_path)
+    package_quant_json = str(
+        importlib.resources.path("lightning_habana.pytorch.plugins.fp8_jsons", "maxabs_quant.json")
+    )
+    fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
 
+    # Check json is patched correctly
+    _check_json_entry(package_measure_json, fp8_data_dump_path)
+    # Other json is not affected
+    with pytest.raises(KeyError, match="dump_stats_path"):
+        _check_json_entry(package_quant_json, fp8_data_dump_path)
+
+    # Run training with patched json
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=1,

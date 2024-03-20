@@ -195,7 +195,7 @@ Get measurement data by running inference on a portion on data with `HPUPrecisio
     plugin = HPUPrecisionPlugin(precision="fp8")
 
     # Replace module for fp8 inference measurements
-    plugin.replace_modules(model, inference=True, quant=False)
+    plugin.convert_modules(model, inference=True, quant=False)
 
     # Initialize a trainer with HPUPrecisionPlugin
     trainer = Trainer(
@@ -216,7 +216,7 @@ Run inference with `HPUPrecisionPlugin.replace_modules(model, inference=True, qu
 .. code-block:: python
 
     # Replace module for fp8 inference measurements
-    plugin.replace_modules(model, inference=True, quant=True)
+    plugin.convert_modules(model, inference=True, quant=True)
 
     # Run inference ⚡
     trainer.predict(model)

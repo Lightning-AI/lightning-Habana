@@ -142,21 +142,17 @@ def is_fp8_available() -> Tuple[bool, str]:
     return tengine.fp8.is_fp8_available()
 
 
-def modify_fp8_json(file_path: str, copy: str, patch: dict) -> None:
+def modify_fp8_json(file_path: str, patch: dict) -> None:
     """Edit a specific entry in a JSON file.
 
     Parameters:
         file_path (str): The path to the JSON file.
-        copy (str): Copy to avoid modifying src json.
         patch (dict): Entries to patch in json
 
     Returns:
         None
 
     """
-    if copy == file_path:
-        rank_zero_warn(f"Modifying json {file_path} in place. Provide `copy` arg to avoid modifying the package json.")
-
     # Load the JSON file
     with open(file_path, encoding="utf-8") as file:
         data = json.load(file)
@@ -165,6 +161,6 @@ def modify_fp8_json(file_path: str, copy: str, patch: dict) -> None:
     for key, value in patch.items():
         data[key] = value
 
-    # Create new json
-    with open(copy, "w", encoding="utf-8") as file:
+    # Update json
+    with open(file_path, "w", encoding="utf-8") as file:
         json.dump(data, file)

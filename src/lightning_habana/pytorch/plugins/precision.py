@@ -121,17 +121,17 @@ class HPUPrecisionPlugin(Precision):
                 fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
                 assert fp8_data_path is not None
                 # Create a copy in fp8_dump_path to avoid modifying package jsons.
-                json_copy = os.path.join(fp8_data_path, "temp_fp8.json")
+                fp8_json = MAXABS_QUANT if quant else MAXABS_MEASURE
+                print(f"{fp8_data_path=}, {fp8_json=}")
                 if fp8_data_path is not None:
                     modify_fp8_json(
-                        file_path=MAXABS_QUANT if quant else MAXABS_MEASURE,
-                        copy=json_copy,
+                        file_path=fp8_json,
                         patch={
                             "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
                             "dump_stats_xlsx_path": os.path.join(fp8_data_path, "hqt", "fp8stats.xlsx"),
                         },
                     )
-                os.environ["QUANT_CONFIG"] = json_copy
+                os.environ["QUANT_CONFIG"] = fp8_json
 
             from quantization_toolkit import habana_quantization_toolkit  # noqa
 
