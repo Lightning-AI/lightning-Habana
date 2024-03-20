@@ -65,15 +65,6 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     include_package_data=True,
-    data_files=[
-        (
-            "jsons",
-            [
-                "src/lightning_habana/pytorch/plugins/fp8_jsons/maxabs_measure.json",
-                "src/lightning_habana/pytorch/plugins/fp8_jsons/maxabs_quant.json",
-            ],
-        )
-    ],
     zip_safe=False,
     keywords=["deep learning", "pytorch", "AI"],
     python_requires=">=3.8",
