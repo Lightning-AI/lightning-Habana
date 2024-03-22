@@ -208,8 +208,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
     trainer.predict(compiled_eval_model)
 
 
-@pytest.mark.standalone()
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.standalone_only()
 @pytest.mark.usefixtures("_is_compile_allowed")
 def test_ddp_strategy_with_compile(tmp_path, hpus):
     """Tests compiled BoringModel on HPU."""

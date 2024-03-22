@@ -41,10 +41,6 @@ from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUParallelStrat
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
-def test_availability():
-    assert HPUAccelerator.is_available()
-
-
 @pytest.mark.standalone()
 def test_all_stages(tmpdir, hpus):
     """Tests all the model stages using BoringModel on HPU."""
@@ -65,6 +61,10 @@ def test_all_stages(tmpdir, hpus):
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)
+
+
+def test_availability():
+    assert HPUAccelerator.is_available()
 
 
 def test_device_name():
@@ -399,8 +399,7 @@ def test_hpu_ddp_reduce_op_strategy_default():
     assert strategy.reduce_op == "sum"
 
 
-@pytest.mark.standalone()
-@pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
+@pytest.mark.standalone_only()
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
     [

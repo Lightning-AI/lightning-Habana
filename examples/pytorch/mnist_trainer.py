@@ -190,7 +190,7 @@ if __name__ == "__main__":
         print(f"Running MNIST mixed precision training with {options=}")
     # Run model and print accuracy
     for _run_type in options.run_types:
-        if HPUAccelerator.get_device_name() == "GAUDI" and _run_type == "fp8_training":
+        if _run_type == "fp8_training" and HPUAccelerator.get_device_name() == "GAUDI":
             print("fp8 training not supported on GAUDI. Skipping.")
             continue
 
