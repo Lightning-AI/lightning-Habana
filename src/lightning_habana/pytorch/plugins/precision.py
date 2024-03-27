@@ -47,7 +47,6 @@ if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     if _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE:
         # Required for inference in fp8 using habana quantization toolkit
         import habana_frameworks.torch.core as htcore
-        from habana_frameworks.torch.core.quantization import _check_params_as_const, _mark_params_as_const
 
         # Default quantization jsons
         MAXABS_MEASURE = str(
@@ -124,7 +123,6 @@ class HPUPrecisionPlugin(Precision):
                 assert fp8_data_path is not None
                 # Create a copy in fp8_dump_path to avoid modifying package jsons.
                 fp8_json = MAXABS_QUANT if quant else MAXABS_MEASURE
-                print(f"{fp8_data_path=}, {fp8_json=}")
                 if fp8_data_path is not None:
                     modify_fp8_json(
                         file_path=fp8_json,
@@ -137,13 +135,12 @@ class HPUPrecisionPlugin(Precision):
 
             from quantization_toolkit import habana_quantization_toolkit  # noqa
 
-            htcore.hpu_initialize()
+            htcore.hpu_set_env(module)
             try:
                 module = module.to("hpu")
                 habana_quantization_toolkit.prep_model(module)
-                _mark_params_as_const(module)
-                _check_params_as_const(module)
-            except (FileNotFoundError, AttributeError) as e:
+                htcore.hpu_initialize(module)
+            except FileNotFoundError as e:
                 print(
                     "Please run the fp8 measurement using a portion of data and try again. "
                     "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
@@ -151,7 +148,7 @@ class HPUPrecisionPlugin(Precision):
                 )
                 raise e
 
-        if self.replace_layers is True and self.fp8_train_available and inference is False:
+        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
             # Convert module for fp8 training.
             # In case model already contains a transformer engine modules,
             # assume user responsibility for conversion of required layers.

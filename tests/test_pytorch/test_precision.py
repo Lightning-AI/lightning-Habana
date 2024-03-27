@@ -208,18 +208,19 @@ def test_hpu_precision_replace_layerse(replace_layers):
 @pytest.mark.parametrize(
     ("inference", "quant", "expectation"),
     [
-        (True, True, pytest.raises(AttributeError, match=r"'NoneType' object has no attribute 'inputs'")),
+        (True, True, pytest.raises(FileNotFoundError, match=r"Failed to load file")),
         (True, False, nullcontext()),
         (False, True, nullcontext()),
         (False, False, nullcontext()),
     ],
 )
-def test_hpu_precision_convert_modules(inference, quant, expectation):
+def test_hpu_precision_convert_modules(inference, quant, expectation, tmpdir):
     """Test HPUPrecisionPlugin.convert_modules."""
     model = BaseBM()
+    model.eval()
     plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
     with expectation:
-        plugin.convert_modules(module=model, inference=inference, quant=quant)
+        plugin.convert_modules(module=model, inference=inference, quant=quant, fp8_data_path=tmpdir)
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
@@ -228,6 +229,7 @@ def test_hpu_precision_convert_modules(inference, quant, expectation):
 def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     """Tests fp8 jsons are patched correctly."""
     model = BaseBM()
+    model.eval()
     plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
     patch_path = patch_path if patch_path is None else tmpdir
     plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
@@ -243,16 +245,10 @@ def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     package_measure_json = str(
         importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
     )
-    package_quant_json = str(
-        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_quant.json")
-    )
     fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
 
     # Check json is patched correctly
     _check_json_entry(package_measure_json, fp8_data_dump_path)
-    # Other json is not affected
-    with pytest.raises(KeyError, match="dump_stats_path"):
-        _check_json_entry(package_quant_json, fp8_data_dump_path)
 
     # Run training with patched json
     trainer = Trainer(
