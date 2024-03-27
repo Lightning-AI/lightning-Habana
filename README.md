@@ -59,7 +59,7 @@ trainer = Trainer(accelerator=HPUAccelerator(), devices="auto")
 
 The `devices=1` parameter with HPUs enables the Habana accelerator for single card training using `SingleHPUStrategy`.
 
-The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses `HPUParallelStrategy` which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
+The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses `HPUDDPStrategy` which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
 
 # Support Matrix
 

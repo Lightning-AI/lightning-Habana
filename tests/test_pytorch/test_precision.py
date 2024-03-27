@@ -13,6 +13,9 @@
 # limitations under the License.
 
 
+import importlib
+import json
+import os
 from contextlib import nullcontext
 
 import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
@@ -198,6 +201,64 @@ def test_hpu_precision_replace_layerse(replace_layers):
     assert replace_layers == any(
         "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in model.modules()
     )
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize(
+    ("inference", "quant", "expectation"),
+    [
+        (True, True, pytest.raises(FileNotFoundError, match=r"Failed to load file")),
+        (True, False, nullcontext()),
+        (False, True, nullcontext()),
+        (False, False, nullcontext()),
+    ],
+)
+def test_hpu_precision_convert_modules(inference, quant, expectation, tmpdir):
+    """Test HPUPrecisionPlugin.convert_modules."""
+    model = BaseBM()
+    model.eval()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    with expectation:
+        plugin.convert_modules(module=model, inference=inference, quant=quant, fp8_data_path=tmpdir)
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("patch_path", ["tmpdir", None])
+def test_hpu_precision_fp8_patch(patch_path, tmpdir):
+    """Tests fp8 jsons are patched correctly."""
+    model = BaseBM()
+    model.eval()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    patch_path = patch_path if patch_path is None else tmpdir
+    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
+
+    def _check_json_entry(jsonfile, patched_path):
+        with open(jsonfile, encoding="utf-8") as jfile:
+            data = json.load(jfile)
+            stats_path = data["dump_stats_path"]
+            xlsx_path = data["dump_stats_xlsx_path"]
+            assert stats_path == os.path.join(patched_path, "hqt")
+            assert xlsx_path == os.path.join(patched_path, "hqt", "fp8stats.xlsx")
+
+    package_measure_json = str(
+        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
+    )
+    fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
+
+    # Check json is patched correctly
+    _check_json_entry(package_measure_json, fp8_data_dump_path)
+
+    # Run training with patched json
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=plugin,
+        fast_dev_run=True,
+    )
+    trainer.test(model)
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")

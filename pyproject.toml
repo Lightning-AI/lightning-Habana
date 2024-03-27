@@ -33,6 +33,7 @@ addopts = [
 ]
 markers = [
     "standalone: mark a test as standalone",
+    "standalone_only: mark a test as standalone_only",
 ]
 filterwarnings = [
     "error::FutureWarning",

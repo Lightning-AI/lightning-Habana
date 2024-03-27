@@ -124,6 +124,20 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         htcore.mark_step()
         return super().predict_step(*args, **kwargs)
 
+    def on_test_end(self) -> None:
+        if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
+            from quantization_toolkit import habana_quantization_toolkit  # noqa
+
+            habana_quantization_toolkit.finish_measurements(self.model)
+        return super().on_test_end()
+
+    def on_predict_end(self) -> None:
+        if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
+            from quantization_toolkit import habana_quantization_toolkit  # noqa
+
+            habana_quantization_toolkit.finish_measurements(self.model)
+        return super().on_predict_end()
+
     @classmethod
     def register_strategies(cls, strategy_registry: Dict) -> None:
         strategy_registry.register(
