@@ -190,7 +190,7 @@ Inference in fp8 is a two step process.
 
 **Measurement**
 
-Get measurement data by running inference on a portion on data with `HPUPrecisionPlugin.replace_modules(model, inference=True, quant=False)`.
+Get measurement data by running inference on a portion on data with `HPUPrecisionPlugin.convert_modules(model, inference=True, quant=False)`.
 
 
 .. code-block:: python
@@ -221,7 +221,7 @@ Get measurement data by running inference on a portion on data with `HPUPrecisio
 
 **Quantization**
 
-Run inference with `HPUPrecisionPlugin.replace_modules(model, inference=True, quant=True)`.
+Run inference with `HPUPrecisionPlugin.convert_modules(model, inference=True, quant=True)`.
 
 
 .. code-block:: python
@@ -235,7 +235,7 @@ Run inference with `HPUPrecisionPlugin.replace_modules(model, inference=True, qu
 
 **JSONs for quant and measure modes**
 
-HQT uses configuration jsons for selecting between quant and measurement modes. This can be toggled via `quant` param in `HPUPrecisionPlugin.replace_modules()`.
+HQT uses configuration jsons for selecting between quant and measurement modes. This can be toggled via `quant` param in `HPUPrecisionPlugin.convert_modules()`.
 User may also set `QUANT_CONFIG` environment variable pointing to the json to use during training.
 
 Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information.
