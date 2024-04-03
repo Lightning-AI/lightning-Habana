@@ -347,7 +347,12 @@ def test_hpu_profiler_lightning_habana_incorrect_import_order(tmpdir):
     # Code with incorrect import order (lightning before lightning_habana)
     code = """
 def _incorrect_imports():
-    import lightning
+    from lightning_utilities import module_available
+
+    if module_available("lightning"):
+        import lightning
+    elif module_available("pytorch_lightning"):
+        import pytorch_lightning
     from lightning_habana import HPUProfiler
 
     HPUProfiler()
