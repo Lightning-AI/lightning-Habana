@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Changed HPUParallelStrategy to HPUDDPStrategy ([#160](https://github.com/Lightning-AI/lightning-Habana/pull/160))
 - Changed HPU docker image based on Synapse AI release 1.15.0 ([#166](https://github.com/Lightning-AI/lightning-Habana/pull/166))
+- Updated to Intel Gaudi software Release 1.15.1 ([#171](https://github.com/Lightning-AI/lightning-Habana/pull/171))
 
 ### Fixed
 
