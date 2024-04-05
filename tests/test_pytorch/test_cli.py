@@ -12,14 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Docs
-
 import os
 from unittest import mock
 
 import pytest
-from lightning.pytorch.cli import LightningCLI
-from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.pytorch.cli import LightningCLI
+    from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
+elif module_available("pytorch_lightning"):
+    from pytorch_lightning.cli import LightningCLI
+    from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
 
 
 @pytest.mark.parametrize(
