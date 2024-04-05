@@ -84,6 +84,12 @@ class BaseBM(BoringModel):
         self.log("val_loss", loss.get("x"), prog_bar=True, sync_dist=True)
         return loss
 
+    def test_step(self, batch, batch_idx):
+        """Test step."""
+        loss = super().test_step(batch, batch_idx)
+        self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
+        return loss
+
 
 class BMAutocastCM(BaseBM):
     """Model for torch.autocast context manager."""
@@ -217,7 +223,6 @@ def test_hpu_precision_replace_layerse(replace_layers):
 def test_hpu_precision_convert_modules(inference, quant, expectation, tmpdir):
     """Test HPUPrecisionPlugin.convert_modules."""
     model = BaseBM()
-    model.eval()
     plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
     with expectation:
         plugin.convert_modules(module=model, inference=inference, quant=quant, fp8_data_path=tmpdir)
@@ -229,18 +234,9 @@ def test_hpu_precision_convert_modules(inference, quant, expectation, tmpdir):
 def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     """Tests fp8 jsons are patched correctly."""
     model = BaseBM()
-    model.eval()
     plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
     patch_path = patch_path if patch_path is None else tmpdir
     plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
-
-    def _check_json_entry(jsonfile, patched_path):
-        with open(jsonfile, encoding="utf-8") as jfile:
-            data = json.load(jfile)
-            stats_path = data["dump_stats_path"]
-            xlsx_path = data["dump_stats_xlsx_path"]
-            assert stats_path == os.path.join(patched_path, "hqt")
-            assert xlsx_path == os.path.join(patched_path, "hqt", "fp8stats.xlsx")
 
     package_measure_json = str(
         importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
@@ -248,17 +244,86 @@ def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
 
     # Check json is patched correctly
-    _check_json_entry(package_measure_json, fp8_data_dump_path)
+    with open(package_measure_json, encoding="utf-8") as jfile:
+        data = json.load(jfile)
+        stats_path = data["dump_stats_path"]
+        xlsx_path = data["dump_stats_xlsx_path"]
+        assert stats_path == os.path.join(fp8_data_dump_path, "hqt")
+        assert xlsx_path == os.path.join(fp8_data_dump_path, "hqt", "fp8stats.xlsx")
 
-    # Run training with patched json
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_measurement(tmpdir):
+    """Tests inference measruement dumps with fp8_inference."""
+
+    def get_fp8_measurement_files(path):
+        """Returns a list of hqt files."""
+        assert path is not None
+        assert os.path.isdir(path)
+        filenames = []
+        file_path = []
+        for file in os.listdir(path):
+            if "hqt" in file:
+                file_path.append(os.path.join(path, file))
+                filenames.append(file)
+        return file_path, filenames
+
+    # cleanup measurement files before test, if any
+    file_path, _ = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
+    if file_path:
+        for file in file_path:
+            os.remove(file)
+
+    seed_everything(42)
+
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    plugin.convert_modules(module=model, inference=True, quant=False)
+
     trainer = Trainer(
+        default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=1,
         strategy=SingleHPUStrategy(),
         plugins=plugin,
         fast_dev_run=True,
     )
+
     trainer.test(model)
+
+    # check measurement files are dumped
+    _, filenames = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
+    expected_data_files = {"hqt_hooks_maxabs.json", "hqt_hooks_maxabs_mod_list.json", "hqt_hooks_maxabs.npz"}
+    assert set(filenames) == expected_data_files
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_quantization(tmpdir):
+    """Tests fp8_inference."""
+    test_loss = []
+    for precision in ["bf16", "fp8"]:
+        seed_everything(42)
+        model = BaseBM()
+        plugin = HPUPrecisionPlugin(device="hpu", precision=precision)
+        if precision == "fp8":
+            plugin.convert_modules(module=model, inference=True, quant=True)
+
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=HPUAccelerator(),
+            devices=1,
+            strategy=SingleHPUStrategy(),
+            plugins=plugin,
+            fast_dev_run=True,
+        )
+
+        trainer.test(model)
+        test_loss.append(trainer.callback_metrics["test_loss"])
+
+    # Compare bf16 and fp8 inference loss
+    assert torch.isclose(test_loss[0], test_loss[1], rtol=0.01, atol=0.01)
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
@@ -281,15 +346,6 @@ def test_hpu_precision_fp8_output(tmpdir):
     run_training(tmpdir, model, plugin)
 
 
-def test_hpu_precision_synapse_version(monkeypatch):
-    """Test precision plugin init with unsupported Synapse AI version."""
-    import lightning_habana.pytorch.plugins.precision
-
-    monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
-    with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
-        HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
-
-
 @pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
 def test_hpu_precision_fp8_on_gaudi():
     """Test fp8 with unsupported Habana device."""
@@ -297,6 +353,15 @@ def test_hpu_precision_fp8_on_gaudi():
         NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
     ):
         HPUPrecisionPlugin(device="hpu", precision="fp8")
+
+
+def test_hpu_precision_synapse_version(monkeypatch):
+    """Test precision plugin init with unsupported Synapse AI version."""
+    import lightning_habana.pytorch.plugins.precision
+
+    monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
+    with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
+        HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
 
 
 @pytest.mark.parametrize(

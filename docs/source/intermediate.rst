@@ -243,6 +243,7 @@ Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/P
 **Limitations**
 
 1. Measurement mode and Quantization mode cannot be run in single process. Please run in measurement mode first, followed by quantization mode. Measurement data may be re-used for inference in quantiztion mode for the given model.
+2. Only single card inference is currently supported. Support for multiple cards will be enabled in a future release.
 
 For more details, refer to `Inference Using FP8 <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html>`__.
 
