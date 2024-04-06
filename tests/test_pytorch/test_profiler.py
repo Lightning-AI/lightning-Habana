@@ -19,10 +19,10 @@ import platform
 from contextlib import nullcontext
 
 import pytest
-from lightning_habana.utils.resources import device_count
 import torch
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
+from lightning_habana.utils.resources import device_count
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -140,11 +140,7 @@ def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count)
 
 @pytest.mark.parametrize(
     "event_name",
-    [
-        "cpu_op",
-        "Runtime",
-        "Kernel"
-    ],
+    ["cpu_op", "Runtime", "Kernel"],
 )
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.xfail(strict=False, reason="TBF: Could not find event kernel in trace")
