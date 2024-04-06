@@ -14,6 +14,9 @@ Using HPUProfiler
 HPUProfiler is a Lightning implementation of PyTorch profiler for HPU. It aids in obtaining profiling summary of PyTorch functions.
 It subclasses PyTorch Lightning's `PyTorch profiler <https://lightning.ai/docs/pytorch/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html>`_.
 
+.. note::
+    It is recommended to import lightning_habana before lightning to initialize the environment of custom habana profiler
+
 Default Profiling
 ^^^^^^^^^^^^^^^^^^
 For auto profiling, create an ``HPUProfiler`` instance and pass it to the trainer.
@@ -111,6 +114,13 @@ Using Chrome
     1. Open Chrome and paste this URL: `chrome://tracing/`.
     2. Once tracing opens, click on `Load` at the top-right and load one of the generated traces.
 
+.. figure:: _images/HPUProfiler.png
+    :alt: HPUProfiler trace on tensorboard
+    :width: 600
+
+    HPUProfiler trace for torch.nn.Linear on tensorboard
+
+
 Limitations
 ^^^^^^^^^^^^
 
@@ -120,6 +130,30 @@ Limitations
 - ``HPUProfiler.summary()`` is not supported.
 
 - Passing the Profiler name as a string "hpu" to the trainer is not supported.
+
+----
+
+Using Intel Gaudi Profiler
+--------------------------
+
+The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler. To use Intel Gaudi Profiler, set `HABANA_PROFILE`, and run the lightning script as usual. This will dump a hltv trace file in the working directly. This can be viewed by loading it at https://perfetto.habana.ai/.
+
+Intel Gaudi Profiler profiles the whole process as compared to HPUProfiler that profiles events only when the trainer is active, and therefore is useful for getting additional information in host trace.
+It however does not provide traces for Lightning Python code. Use HPUProfiler to obtain those traces. The device traces on habana devices are identical for both profilers.
+
+
+Please refer to `Getting Started with Intel Gaudi Profiler <https://docs.habana.ai/en/latest/Profiling/Intel_Gaudi_Profiling/Getting_Started_with_Profiler.html>`_ for more information.
+
+.. note::
+
+    ``HPUProfiler`` and Intel Gaudi Profiler should not be used together. Therefore, `HABANA_PROFILE` should not be set in environment when using ``HPUProfiler``.
+
+
+.. figure:: _images/IGP.png
+    :alt: Intel Gaudi Profiler trace on perfetto
+    :width: 600
+
+    Intel Gaudi Profiler trace for torch.nn.Linear on perfetto
 
 ----
 
@@ -693,3 +727,58 @@ Limitations of HPU Graphs
 * Using HPU Graphs with `torch.compile` is not supported.
 
 Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis>`_
+
+
+----
+
+Using ``torch.compile``
+------------------------
+
+PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
+The following compile backends are now available to support HPU: `hpu_backend` for training and `aot_hpu_training_backend` for inference.
+
+.. code-block:: python
+
+    compiled_train_model = torch.compile(model_to_train, backend="hpu_backend")
+    compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
+
+Please refer to `GAUDI Release Notes <https://docs.habana.ai/en/latest/Release_Notes/GAUDI_Release_Notes.html>`_
+
+.. note::
+
+    For models using torch.compile, `aot_hpu_training_backend` is now deprecated and will be removed in a future release.
+    Replace `aot_hpu_training_backend` with `hpu_backend`.
+
+
+----
+
+Support for Multiple tenants
+------------------------------
+
+Running a workload with partial Gaudi processors can be enabled with a simple environment variable setting `HABANA_VISIBLE_MODULES`.
+In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.
+
+To run a 4-Gaudi workload, set this in environment before running the workload:
+
+.. code-block:: bash
+
+    export HABANA_VISIBLE_MODULES="0,1,2,3"
+
+To run another 4-Gaudi workload in parallel, set the modules as follows before running the second workload:
+
+.. code-block:: bash
+
+    export HABANA_VISIBLE_MODULES="4,5,6,7"
+
+In addition to setting `HABANA_VISIBLE_MODULES`, also set a unique `MASTER_PORT` as environment variable for each tenant instance.
+
+Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/latest/PyTorch/Reference/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
+
+
+----
+
+Metric APIs
+--------------
+
+The Metric APIs provide various performance-related metrics, such as the number of graph compilations, the total time of graph compilations, and more.
+Please refer to `Metric APIs <https://docs.habana.ai/en/latest/PyTorch/Reference/Python_Packages.html#metric-apis>`_ for more information.

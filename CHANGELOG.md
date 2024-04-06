@@ -5,20 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2023-MM-DD
+## [Unreleased version] - YYYY-MM-DD
+
+### Added
+
+- Added support for Intel Gaudi Profiler. Deprecate `HABANA_PROFILE` environment variable from HPUProfiler. ([#158](https://github.com/Lightning-AI/lightning-Habana/pull/158))
+-
+
+### Changed
+
+- Changed HPUParallelStrategy to HPUDDPStrategy ([#160](https://github.com/Lightning-AI/lightning-Habana/pull/160))
+- Changed HPU docker image based on Synapse AI release 1.15.0 ([#166](https://github.com/Lightning-AI/lightning-Habana/pull/166))
+- Updated to Intel Gaudi software Release 1.15.1 ([#171](https://github.com/Lightning-AI/lightning-Habana/pull/171))
+
+### Fixed
+
+-
+
+### Removed
+
+-
+
+### Deprecated
+
+-
+
+
+## [1.4.0] - 2024-02-16
+
+### Added
+
+- Added DeepSpeed precision plugin for HPU ([#147](https://github.com/Lightning-AI/lightning-Habana/pull/147))
+- Added support for fp8 training. ([#149](https://github.com/Lightning-AI/lightning-Habana/pull/149))
+
+### Changed
+
+- Decoupled return strings of firmware, synapse version helper ([#137](https://github.com/Lightning-AI/lightning-Habana/pull/137))
+- Changed HPU docker image based on Synapse AI release 1.14.0 ([#140](https://github.com/Lightning-AI/lightning-Habana/pull/140))
+
+### Fixed
+
+- Fixed fabric imports for HPU strategies ([#126](https://github.com/Lightning-AI/lightning-Habana/pull/126))
+- Enabling tests and examples of fabric with HPU ([#139](https://github.com/Lightning-AI/lightning-Habana/pull/139))
+- Fixes an API break due to non-strict loading in Trainer ([#150](https://github.com/Lightning-AI/lightning-Habana/pull/150))
+
+### Removed
+
+-
+
+### Deprecated
+
+- `aot_hpu_training_backend` will be deprecated. Use `hpu_backend` instead for torch compile with hpu ([#148](https://github.com/Lightning-AI/lightning-Habana/pull/148))
+
+
+## [1.3.0] - 2023-12-06
 
 ### Added
 
 - Added support for Deepspeed inference on HPU with tests and documentation ([#110](https://github.com/Lightning-AI/lightning-Habana/pull/110))
 - Added tests, examples, and documentation for dynamic shapes with recipe caching ([#107](https://github.com/Lightning-AI/lightning-Habana/pull/107))
+- Added preview of torch compile with tests and documentation ([#119](https://github.com/Lightning-AI/lightning-Habana/pull/119))
 
 ### Changed
 
+- Changed HPU docker image based on Synapse AI release 1.13.0 ([#114](https://github.com/Lightning-AI/lightning-Habana/pull/114))
 -
 
 ### Fixed
 
--
+- Fixed fabric imports for HPU strategies ([#126](https://github.com/Lightning-AI/lightning-Habana/pull/126))
 
 ### Removed
 

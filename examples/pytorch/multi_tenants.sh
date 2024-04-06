@@ -1,4 +1,4 @@
-# Copyright (c) 2023 Habana Labs, Ltd. an Intel Company
+# Copyright The Lightning AI team.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from lightning_habana.fabric.strategies.ddp import HPUDDPStrategy
-from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
-from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 
-__all__ = ["HPUDDPStrategy", "HPUParallelStrategy", "SingleHPUStrategy"]
+set -ex
+
+HABANA_VISIBLE_MODULES="0,1" MASTER_PORT=1234 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+HABANA_VISIBLE_MODULES="2,3" MASTER_PORT=1244 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+HABANA_VISIBLE_MODULES="4,5" MASTER_PORT=1255 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+HABANA_VISIBLE_MODULES="6,7" MASTER_PORT=1266 python -u  mnist_trainer.py -v --run_type="basic" --devices="2" &
+
+wait

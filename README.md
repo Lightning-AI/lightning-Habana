@@ -59,16 +59,16 @@ trainer = Trainer(accelerator=HPUAccelerator(), devices="auto")
 
 The `devices=1` parameter with HPUs enables the Habana accelerator for single card training using `SingleHPUStrategy`.
 
-The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses `HPUParallelStrategy` which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
+The `devices>1` parameter with HPUs enables the Habana accelerator for distributed training. It uses `HPUDDPStrategy` which is based on DDP strategy with the integration of Habana’s collective communication library (HCCL) to support scale-up within a node and scale-out across multiple nodes.
 
 # Support Matrix
 
-| **SynapseAI**         | **1.12.1**                                         |
-| --------------------- | -------------------------------------------------- |
-| PyTorch               | 2.0.1                                              |
-| (PyTorch) Lightning\* | 2.1.x                                              |
-| **Lightning Habana**  | **1.2.0**                                          |
-| DeepSpeed\*\*         | Forked from v0.9.4 of the official DeepSpeed repo. |
+| **SynapseAI**         | **1.15.1**                                          |
+| --------------------- | --------------------------------------------------- |
+| PyTorch               | 2.2.0                                               |
+| (PyTorch) Lightning\* | 2.2.x                                               |
+| **Lightning Habana**  | **1.5.0-dev0**                                      |
+| DeepSpeed\*\*         | Forked from v0.12.4 of the official DeepSpeed repo. |
 
 \* covers both packages [`lightning`](https://pypi.org/project/lightning/) and [`pytorch-lightning`](https://pypi.org/project/pytorch-lightning/)
 

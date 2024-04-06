@@ -12,11 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import torch
 from lightning_utilities import module_available
+
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats, is_fp8_available
+
+if _HABANA_FRAMEWORK_AVAILABLE:
+    import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.hpu as torch_hpu
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import _DEVICE
@@ -28,12 +34,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
-
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
-from lightning_habana.utils.resources import _parse_hpus, device_count, get_device_stats
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.hpu as torch_hpu
 
 
 class HPUAccelerator(Accelerator):
@@ -55,9 +55,6 @@ class HPUAccelerator(Accelerator):
         return get_device_stats(device)
 
     def teardown(self) -> None:
-        os.environ.pop("HABANA_PROFILE", None)
-        os.environ.pop("HLS_MODULE_ID", None)
-        os.environ.pop("ID", None)
         pass
 
     @staticmethod
@@ -90,6 +87,18 @@ class HPUAccelerator(Accelerator):
             return torch_hpu.get_device_name()
         except (AttributeError, NameError):
             return ""
+
+    @staticmethod
+    def is_fp8_available() -> Tuple[bool, str]:
+        """Returns a bool indicating if fp8 is available, with reason if not available."""
+        return is_fp8_available()
+
+    @staticmethod
+    def is_lazy() -> bool:
+        """Checks if lazy is enabled or not."""
+        if _HABANA_FRAMEWORK_AVAILABLE and htcore.is_lazy():
+            return True
+        return False
 
     @classmethod
     def register_accelerators(cls, accelerator_registry: Dict) -> None:

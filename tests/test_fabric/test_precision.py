@@ -16,9 +16,14 @@
 import pytest
 import torch
 import torch.nn as nn
-from lightning.fabric import Fabric, seed_everything
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
+from lightning_utilities import module_available
+
+if module_available("lightning"):
+    from lightning.fabric import Fabric, seed_everything
+elif module_available("pytorch_lightning"):
+    from lightning_fabric import Fabric, seed_everything
 
 from tests.test_fabric.fabric_helpers import BoringFabric
 
@@ -54,7 +59,6 @@ class MixedPrecisionBoringFabric(BoringFabric):
         assert model.layer.weight.grad.dtype == torch.float32
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 @pytest.mark.parametrize(
     ("precision", "expected_dtype"),
     [
@@ -72,7 +76,6 @@ def test_hpu(precision, expected_dtype):
     fabric.run()
 
 
-@pytest.mark.xfail(strict=False, reason="TBD: Resolve issues with lightning 2.1")
 def test_hpu_fused_optimizer():
     def run():
         seed_everything(1234)
@@ -83,7 +86,7 @@ def test_hpu_fused_optimizer():
         )
 
         model = nn.Linear(10, 10).to(fabric.device)
-        optimizer = torch.optim.SGD(model.parameters(), lr=1.0)
+        optimizer = torch.optim.SGD(model.parameters(), lr=1.0, momentum=0.1)
 
         model, optimizer = fabric.setup(model, optimizer)
 
@@ -111,7 +114,7 @@ def test_hpu_fused_optimizer():
         model = nn.Linear(10, 10).to(fabric.device)
         from habana_frameworks.torch.hpex.optimizers import FusedSGD
 
-        optimizer = FusedSGD(model.parameters(), lr=1.0)
+        optimizer = FusedSGD(model.parameters(), lr=1.0, momentum=0.1)
 
         model, optimizer = fabric.setup(model, optimizer)
 

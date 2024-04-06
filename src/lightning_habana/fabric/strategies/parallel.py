@@ -115,10 +115,25 @@ class HPUParallelStrategy(DDPStrategy):
     #     return obj[0]
 
     def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
-        super().backward(tensor=Tensor, module=module, args=args, kwargs=kwargs)
+        super().backward(tensor, module=module, args=args, kwargs=kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after fwd+bwd
             htcore.mark_step()
+
+    def setup_module(self, module: Module) -> Module:
+        """Performs setup for the model, e.g., by wrapping it by another class."""
+        # Fabric doesn't support nn.Module with wrapped attributes currently.
+        # Refer https://github.com/Lightning-AI/pytorch-lightning/issues/19307 for the description.
+        # It is a workaround as default wrapper is overridden for HPU backend.
+        if hasattr(Module, "original__get_attr__"):
+            if module_available("lightning"):
+                from lightning.fabric.wrappers import _FabricModule
+            elif module_available("pytorch_lightning"):
+                from lightning_fabric.wrappers import _FabricModule
+
+            Module.__getattr__ = _FabricModule.original__get_attr__  # type: ignore
+
+        return super().setup_module(module)
 
     def optimizer_step(
         self,

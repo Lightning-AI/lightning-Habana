@@ -36,7 +36,7 @@ elif module_available("pytorch_lightning"):
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUParallelStrategy, SingleHPUStrategy
 
 from tests.conftest import arg_hpus
 from tests.helpers import ClassifDataModule, ClassificationModel
@@ -46,6 +46,7 @@ def test_availability():
     assert HPUAccelerator.is_available()
 
 
+@pytest.mark.standalone()
 def test_all_stages(tmpdir, arg_hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -53,7 +54,7 @@ def test_all_stages(tmpdir, arg_hpus):
     _strategy = SingleHPUStrategy()
     if arg_hpus > 1:
         parallel_hpus = [torch.device("hpu")] * arg_hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
+        _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
@@ -220,13 +221,13 @@ def test_strategy_choice_single_strategy():
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
-def test_strategy_choice_parallel_strategy(arg_hpus):
+def test_strategy_choice_ddp_strategy(arg_hpus):
     trainer = Trainer(
-        strategy=HPUParallelStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus),
+        strategy=HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus),
         accelerator=HPUAccelerator(),
         devices=arg_hpus,
     )
-    assert isinstance(trainer.strategy, HPUParallelStrategy)
+    assert isinstance(trainer.strategy, HPUDDPStrategy)
 
     trainer = Trainer(accelerator="hpu", devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
@@ -244,7 +245,7 @@ def test_inference_only(tmpdir, arg_hpus):
     _strategy = SingleHPUStrategy()
     if arg_hpus > 1:
         parallel_hpus = [torch.device("hpu")] * arg_hpus
-        _strategy = HPUParallelStrategy(parallel_devices=parallel_hpus)
+        _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
         default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=arg_hpus, strategy=_strategy
     )
@@ -262,12 +263,12 @@ def test_hpu_unsupported_device_type():
         Trainer(accelerator=HPUAccelerator(), devices=[1])
 
 
-def test_strategy_params_with_hpu_parallel_strategy():
+def test_strategy_params_with_hpu_ddp_strategy():
     bucket_cap_mb = 100
     gradient_as_bucket_view = True
     static_graph = True
     find_unused_parameters = True
-    strategy = HPUParallelStrategy(
+    strategy = HPUDDPStrategy(
         bucket_cap_mb=bucket_cap_mb,
         gradient_as_bucket_view=gradient_as_bucket_view,
         static_graph=static_graph,
@@ -373,7 +374,7 @@ class MetricsCallback(Callback):
         self.metrics.append(metric)
 
 
-class MockHPUParallelStrategy(HPUParallelStrategy):
+class MockHPUDDPStrategy(HPUDDPStrategy):
     def __init__(
         self,
         reduce_op="sum",
@@ -389,16 +390,15 @@ class MockHPUParallelStrategy(HPUParallelStrategy):
         return super().reduce(tensor, group, self.reduce_op)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_hpu_parallel_reduce_op_strategy_default():
+def test_hpu_ddp_reduce_op_strategy_default():
     """Test default reduce_op."""
-    strategy = MockHPUParallelStrategy()
+    strategy = MockHPUDDPStrategy()
     # Assert that the strategy's reduce_op attribute is set to the default "sum"
     assert strategy.reduce_op == "sum"
 
 
-@pytest.mark.skip(reason="TBD : Fix pytest issues")
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
+@pytest.mark.standalone()
+@pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
     [
@@ -442,14 +442,14 @@ def test_hpu_parallel_reduce_op_strategy_default():
     ],
 )
 def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
-    """Tests all reduce in HPUParallel strategy."""
+    """Tests all reduce in HPUDDP strategy."""
     seed_everything(42)
     _model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=arg_hpus,
-        strategy=MockHPUParallelStrategy(reduce_op=reduce_op, start_method="spawn"),
+        strategy=MockHPUDDPStrategy(reduce_op=reduce_op),
         max_epochs=1,
         fast_dev_run=3,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
@@ -458,18 +458,16 @@ def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
         trainer.fit(_model)
 
 
-@pytest.mark.skip(reason="TBD : Fix pytest issues")
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
     [
-        # Epoch = Sum(42, 43, 44) * 2, Step = 44 * 2 (for 2 ddp processes)
-        ("sum", 258.0, 88.0),
-        # Epoch = Max(42, 43, 44), Step = Max(44, ... (x2))
+        # Epoch = Sum(42, 43, 44), Step = Sum(44)
+        ("sum", 129.0, 44.0),
+        # Epoch = Max(42, 43, 44), Step = Max(44)
         ("max", 44.0, 44.0),
-        # Epoch = Min(42, 43, 44), Step = Min(44, ... (x2))
+        # Epoch = Min(42, 43, 44), Step = Min(44)
         ("min", 42.0, 44.0),
-        # Epoch = Mean(42(x2), 43(x2), 44(x2)), Step = Mean(44, ... (x2))
+        # Epoch = Mean(42, 43, 44), Step = Mean(44)
         ("mean", 43.0, 44.0),
     ],
 )
@@ -479,14 +477,18 @@ def test_reduce_op_logging(tmpdir, arg_hpus, reduce_op, logged_value_epoch, logg
     # It only accepts following string reduce_ops {min, max, mean, sum}
     # Each ddp process logs 3 values: 42, 43, and 44.
     # logger performs reduce depending on the reduce_op
+    if reduce_op == "sum":
+        logged_value_epoch *= arg_hpus
+        logged_value_step *= arg_hpus
+
     seed_everything(42)
     _model = BaseBM(reduce_op=reduce_op)
-
+    _strategy = HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * hpus) if hpus > 1 else SingleHPUStrategy()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=arg_hpus,
-        strategy=HPUParallelStrategy(start_method="spawn"),
+        strategy=_strategy,
         max_epochs=1,
         fast_dev_run=3,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),

@@ -27,7 +27,6 @@ if module_available("lightning"):
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
-    from lightning.pytorch.utilities.rank_zero import rank_zero_warn
     from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -38,7 +37,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
-    from pytorch_lightning.utilities.rank_zero import rank_zero_warn
     from pytorch_lightning.utilities.types import STEP_OUTPUT
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
@@ -47,6 +45,7 @@ from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
@@ -57,10 +56,10 @@ if _HABANA_FRAMEWORK_AVAILABLE:
 log = logging.getLogger(__name__)
 
 
-class HPUParallelStrategy(DDPStrategy):
+class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
     """Strategy for distributed training on multiple HPU devices."""
 
-    strategy_name = "hpu_parallel"
+    strategy_name = "hpu_ddp"
 
     def __init__(
         self,
@@ -76,10 +75,6 @@ class HPUParallelStrategy(DDPStrategy):
         process_group_backend: Optional[str] = "hccl",
         **kwargs: Any,
     ) -> None:
-        rank_zero_warn(
-            "HPUParallelStrategy will be deprecated from lightning-habana >=1.6.0, please"
-            " make use of HPUDDPStrategy."
-        )
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -96,7 +91,7 @@ class HPUParallelStrategy(DDPStrategy):
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:  # type: ignore[has-type]
+        if self._checkpoint_io is None:
             self._checkpoint_io = HPUCheckpointIO()
         elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
             self._checkpoint_io.checkpoint_io = HPUCheckpointIO()

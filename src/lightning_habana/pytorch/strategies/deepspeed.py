@@ -71,7 +71,7 @@ from torch.nn import Module
 from torch.optim import Optimizer
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
+from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
@@ -82,8 +82,8 @@ log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.12.1
-    RequirementCache("deepspeed==0.9.4+hpu.synapse.v1.12.1")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1
+    RequirementCache("deepspeed==0.12.4+hpu.synapse.v1.15.1")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -101,7 +101,7 @@ def remove_module_hooks(model: torch.nn.Module) -> None:
         module._load_state_dict_pre_hooks = OrderedDict()
 
 
-class HPUDeepSpeedStrategy(HPUParallelStrategy):
+class HPUDeepSpeedStrategy(HPUDDPStrategy):
     """Strategy to support deepspeed with HPU devices."""
 
     strategy_name = "hpu_deepspeed"
@@ -298,7 +298,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.12.1`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1`."
             )
 
         super().__init__(
@@ -872,13 +872,13 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
             )
         return False
 
-    def load_model_state_dict(self, checkpoint: Mapping[str, Any]) -> None:
+    def load_model_state_dict(self, checkpoint: Mapping[str, Any], strict: bool = True) -> None:
         # override to do nothing, deepspeed engine already loaded the weights in `load_checkpoint()`
         if self.load_full_weights and self.zero_stage_3:
             self.model_to_device()
-            self._restore_zero_state(checkpoint)
+            self._restore_zero_state(checkpoint, strict=strict)
 
-    def _restore_zero_state(self, ckpt: Mapping[str, Any]) -> None:
+    def _restore_zero_state(self, ckpt: Mapping[str, Any], strict: bool) -> None:
         """Overrides the normal load_state_dict behaviour in PyTorch.
 
         Ensure we gather parameters that may be sharded across processes before loading the
@@ -886,6 +886,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
 
         Args:
             ckpt: The ckpt file.
+            strict: Flag to enable strict loading
 
         """
         import deepspeed
@@ -914,7 +915,7 @@ class HPUDeepSpeedStrategy(HPUParallelStrategy):
                         state_dict=state_dict,
                         prefix=prefix,
                         local_metadata=local_metadata,
-                        strict=True,
+                        strict=strict,
                         missing_keys=missing_keys,
                         unexpected_keys=unexpected_keys,
                         error_msgs=error_msgs,

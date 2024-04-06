@@ -12,58 +12,80 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Dict, Optional
 
+import logging
+from datetime import timedelta
+from typing import Any, Dict, List, Literal, Optional
+
+import torch.distributed
 from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.accelerators import Accelerator
     from lightning.fabric.plugins import CheckpointIO
+    from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
+    from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
     from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning.fabric.plugins.precision import Precision
-    from lightning.fabric.strategies.single_device import SingleDeviceStrategy
-    from lightning.fabric.utilities.types import _DEVICE, Optimizable
+    from lightning.fabric.strategies.ddp import DDPStrategy
+    from lightning.fabric.utilities.types import Optimizable
 elif module_available("pytorch_lightning"):
     from lightning_fabric.accelerators import Accelerator
     from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
+    from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
     from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning_fabric.plugins.precision import Precision
-    from lightning_fabric.strategies.single_device import SingleDeviceStrategy
-    from lightning_fabric.utilities.types import _DEVICE, Optimizable
+    from lightning_fabric.strategies.ddp import DDPStrategy
+    from lightning_fabric.utilities.types import Optimizable
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from torch import Tensor
 from torch.nn import Module
 
+from lightning_habana import HPU_AVAILABLE
+from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
+    import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
-from lightning_habana import HPU_AVAILABLE
+log = logging.getLogger(__name__)
 
 
-class SingleHPUStrategy(SingleDeviceStrategy):
-    """Strategy for training on single HPU device."""
+class HPUDDPStrategy(DDPStrategy):
+    """Strategy for distributed training on multiple HPU devices."""
 
-    strategy_name = "single_hpu"
+    strategy_name = "hpu_ddp"
 
     def __init__(
         self,
-        device: _DEVICE = "hpu",
         accelerator: Optional[Accelerator] = None,
+        parallel_devices: Optional[List[torch.device]] = [torch.device("hpu")] * HPUAccelerator.auto_device_count(),
+        cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
         precision: Optional[Precision] = None,
-    ):
+        process_group_backend: Optional[str] = "hccl",
+        timeout: Optional[timedelta] = default_pg_timeout,
+        start_method: Literal["popen", "spawn", "fork", "forkserver"] = "popen",
+        **kwargs: Any,
+    ) -> None:
         if not HPU_AVAILABLE:
-            raise ValueError("`SingleHPUStrategy` requires HPU devices to run")
+            raise ValueError("`HPUDDPStrategy` requires HPU devices to run")
 
+        self._process_group_backend: Optional[str] = "hccl"
         super().__init__(
             accelerator=accelerator,
-            device=device,
+            parallel_devices=parallel_devices,
+            cluster_environment=cluster_environment,
             checkpoint_io=checkpoint_io,
             precision=precision,
+            process_group_backend=process_group_backend,
+            timeout=timeout,
+            start_method=start_method,
+            **kwargs,
         )
 
     @property
@@ -77,8 +99,23 @@ class SingleHPUStrategy(SingleDeviceStrategy):
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
         self._checkpoint_io = io
 
+    @property
+    def process_group_backend(self) -> Optional[str]:
+        return self._process_group_backend
+
+    def determine_ddp_device_ids(self) -> None:
+        return None
+
+    # def broadcast(self, obj: object, src: int = 0) -> object:  # type: ignore
+    #     obj = [obj]
+    #     if self.global_rank != src:
+    #         obj = [None]
+
+    #     broadcast_object_list(obj, src, group=_group.WORLD)
+    #     return obj[0]
+
     def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
-        super().backward(tensor, module=module, *args, **kwargs)
+        super().backward(tensor, module=module, args=args, kwargs=kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after fwd+bwd
             htcore.mark_step()
@@ -103,7 +140,7 @@ class SingleHPUStrategy(SingleDeviceStrategy):
         optimizer: Optimizable,
         **kwargs: Any,
     ) -> Any:
-        optimizer_output = super().optimizer_step(optimizer=optimizer, **kwargs)
+        optimizer_output = super().optimizer_step(optimizer=optimizer, kwargs=kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after optimizer
             htcore.mark_step()

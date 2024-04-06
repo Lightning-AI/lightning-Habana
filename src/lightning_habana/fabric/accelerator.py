@@ -18,9 +18,9 @@ import torch
 from lightning_utilities import module_available
 
 if module_available("lightning"):
-    from lightning.pytorch.accelerators.accelerator import Accelerator
+    from lightning.fabric.accelerators import Accelerator
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning.accelerators.accelerator import Accelerator
+    from lightning_fabric.accelerators import Accelerator
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 

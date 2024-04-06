@@ -89,6 +89,10 @@ class HPUProfiler(PyTorchProfiler):
         record_module_names: bool = True,
         **profiler_kwargs: Any,
     ) -> None:
+        assert os.environ.get("HABANA_PROFILE", None) in (
+            None,
+            "profile_api_light",
+        ), "`HABANA_PROFILE` should not be set when using `HPUProfiler`"
         super().__init__(
             dirpath=dirpath,
             filename=filename,

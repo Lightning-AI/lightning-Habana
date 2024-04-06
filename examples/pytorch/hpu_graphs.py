@@ -28,7 +28,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
-from lightning_habana.pytorch import HPUAccelerator, HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 
 
 def parse_args():
@@ -231,13 +231,13 @@ def train_model(model, data_module, hpus=1, mode="fit"):
     """Runs trainer.<fit / validate>."""
     _strategy = SingleHPUStrategy()
     if hpus > 1:
-        _strategy = HPUParallelStrategy()
+        _strategy = HPUDDPStrategy()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=hpus,
         strategy=_strategy,
         max_epochs=1,
-        fast_dev_run=100,
+        fast_dev_run=3,
     )
     print(f"starting {mode}")
     if hasattr(trainer, mode):
@@ -288,9 +288,7 @@ if __name__ == "__main__":
     _train_type = (
         "fit"
         if (args.run_type == "train" or args.run_type == "dynamicity")
-        else "test"
-        if args.run_type == "inference"
-        else None
+        else "test" if args.run_type == "inference" else None
     )
 
     for mode in args.mode:

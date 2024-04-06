@@ -15,7 +15,7 @@ jobs:
       version: ${{ steps.parse.outputs.tag }}
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-python@v4
+    - uses: actions/setup-python@v5
       with:
         python-version: 3.8
 
@@ -30,7 +30,7 @@ jobs:
     # We do this, since failures on test.pypi aren't that bad
     #- name: Publish to Test PyPI
     #  if: startsWith(github.event.ref, 'refs/tags') || github.event_name == 'release'
-    #  uses: pypa/gh-action-pypi-publish@v1.8.10
+    #  uses: pypa/gh-action-pypi-publish@v1.8.14
     #  with:
     #    user: __token__
     #    password: ${{ secrets.test_pypi_password }}
@@ -38,7 +38,7 @@ jobs:
 
     - name: Publish distribution 📦 to PyPI
       if: startsWith(github.ref, 'refs/tags/') && github.event_name != 'pull_request'
-      uses: pypa/gh-action-pypi-publish@v1.8.10
+      uses: pypa/gh-action-pypi-publish@v1.8.14
       with:
         user: __token__
         password: ${{ secrets.pypi_password }}
@@ -54,10 +54,31 @@ jobs:
         with:
           repository: Lightning-AI/lightning
           token: ${{ secrets.PAT_GHOST }}
+      - name: Bump the version in docs
+        run: |
+          import os, re
+
+          tag = os.environ.get("TAG", "???")
+          fpath = "docs/source-pytorch/conf.py"
+          with open(fpath, "r") as fp:
+              conf = fp.readlines()
+          found = False
+          for i, ln in enumerate(conf):
+              if "lightning-Habana" in ln:
+                  found = True
+              if found and "checkout=" in ln:
+                  ln = re.sub(r'checkout=".+"', f'checkout="{tag}"', ln)
+                  conf[i] = ln
+                  break
+          else:
+              raise RuntimeError(f"Failed to find checkout= for `lightning-Habana` in {fpath}")
+          with open(fpath, "w") as fp:
+              fp.writelines(conf)
+        shell: python
 
       - name: Create Pull Request
         if: startsWith(github.ref, 'refs/tags/')
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           title: "docs: Bump HPU ref `${{ env.TAG }}`"
           committer: GitHub <noreply@github.com>

@@ -20,17 +20,17 @@ from lightning_utilities import module_available
 from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
+_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
+
+if _HABANA_FRAMEWORK_AVAILABLE:
+    import habana_frameworks.torch.hpu as torch_hpu
+
 if module_available("lightning"):
     from lightning.fabric.utilities.exceptions import MisconfigurationException
     from lightning.fabric.utilities.types import _DEVICE
 elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.exceptions import MisconfigurationException
     from lightning_fabric.utilities.types import _DEVICE
-
-_HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.hpu as torch_hpu
 
 
 def _parse_hpus(devices: Optional[Union[int, str, List[int]]]) -> Optional[int]:
@@ -68,13 +68,14 @@ def _parse_hpu_synapse_versions(line: str) -> Tuple[str, str]:
     ('', '')
 
     """
+    hl = fw = ""
     try:
         # Item "None" of "Optional[Match[str]]" has no attribute "group"
         hl = re.search(r"hl-([\d\.]+)", line).group(1)  # type: ignore[union-attr]
         fw = re.search(r"fw-([\d\.]+)", line).group(1)  # type: ignore[union-attr]
     except AttributeError:
         rank_zero_warn("Provided string does not include Habana version; check if HPU is available with `hl-smi`.")
-        return "", ""
+
     return hl, fw
 
 
@@ -123,3 +124,17 @@ def device_count() -> int:
     except (AttributeError, NameError):
         rank_zero_debug("Function `device_count` failed, returning default count of 8.")
         return 8
+
+
+@lru_cache
+def is_fp8_available() -> Tuple[bool, str]:
+    """Returns a bool indicating if fp8 is available."""
+    from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
+
+    if not _HPU_SYNAPSE_GREATER_EQUAL_1_14_0:
+        raise OSError("fp8 training requires `Synapse AI release >= 1.14.0`.")
+    if not _HABANA_FRAMEWORK_AVAILABLE:
+        raise OSError("Habana Frameworks required for training on Habana devices.")
+    import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
+
+    return tengine.fp8.is_fp8_available()
