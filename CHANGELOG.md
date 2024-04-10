@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fix for "No profiler activity found" when using HPUProfiler. Added check for patching of ProfilerActivity. ([#172](https://github.com/Lightning-AI/lightning-Habana/pull/172))
+- Fixed "No profiler activity found" error with HPUProfiler. ([#172](https://github.com/Lightning-AI/lightning-Habana/pull/172))
 
 ### Removed
 
