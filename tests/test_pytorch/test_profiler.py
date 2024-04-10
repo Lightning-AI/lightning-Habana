@@ -17,6 +17,7 @@ import json
 import os
 import platform
 from contextlib import nullcontext
+from subprocess import run
 
 import pytest
 import torch
@@ -335,3 +336,40 @@ def test_hpu_profiler_env(monkeypatch):
     monkeypatch.setenv("HABANA_PROFILE", "1")
     with pytest.raises(AssertionError, match="`HABANA_PROFILE` should not be set when using `HPUProfiler`"):
         HPUProfiler()
+
+
+def test_hpu_profiler_lightning_habana_incorrect_import_order(tmpdir):
+    """Tests import order of lightning_hanbana wrt lightning.
+
+    Required for correctly patching PyTorchProfiler with HPU activities.
+
+    """
+    # Code with incorrect import order (lightning before lightning_habana)
+    code = """
+def _incorrect_imports():
+    from lightning_utilities import module_available
+
+    if module_available("lightning"):
+        import lightning
+    elif module_available("pytorch_lightning"):
+        import pytorch_lightning
+    from lightning_habana import HPUProfiler
+
+    HPUProfiler()
+
+_incorrect_imports()
+"""
+
+    # Write incorrect code to a file and run code in a new interpreter, Avoids use of modules from parent.
+    file_name = os.path.join(tmpdir, "script.py")
+
+    with open(file_name, "w", encoding="utf-8") as file:
+        file.write(code)
+
+    # Execute
+    p = run(["python", file_name], capture_output=True, check=False)
+
+    assert p.returncode != 0
+    assert (
+        "AssertionError: lightning_habana should be imported before lightning to use HPUProfiler" in p.stderr.decode()
+    )
