@@ -326,7 +326,7 @@ def test_hpu_precision_fp8_inference_quantization(tmpdir):
     assert torch.isclose(test_loss[0], test_loss[1], rtol=0.01, atol=0.01)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone_only()
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_with_parallel_strategy(tmpdir):
     """Negative test for fp8 inference not supported with HPUParallelStrategy."""
