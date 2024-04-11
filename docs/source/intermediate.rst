@@ -302,3 +302,21 @@ Runtime Environment Variables
 Habana runtime environment flags are used to change the behavior as well as enable or disable some features.
 
 For more information, refer to `Runtime Flags <https://docs.habana.ai/en/latest/PyTorch/Runtime_Flags.html#pytorch-runtime-flags>`__.
+
+
+----
+
+Using LightningCLI
+-------------------
+
+LightningCLI supports HPU. Following configurations from Lightning Habana are supported:
+
+* accelerator: "auto", "hpu".
+* strategies: "auto", "hpu_single", "hpu_parallel".
+* plugins: class instances of `HPUPrecisionPlugin` and `HPUCheckpointIO`.
+
+Limitations with HPU
+^^^^^^^^^^^^^^^^^^^^^
+
+* LightningCLI cannot use class instances of accelerator and strategies. `#19682 <https://github.com/Lightning-AI/pytorch-lightning/issues/19682>`__. Applies to Lightning accelerator and strategies as well.
+* `HPUProfiler` does not work with LightningCLI since it is unable to patch `torch.profiler.ProfilerActivity` list.
