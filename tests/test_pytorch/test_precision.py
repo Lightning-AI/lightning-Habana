@@ -327,6 +327,7 @@ def test_hpu_precision_fp8_inference_quantization(tmpdir):
 
 
 @pytest.mark.standalone()
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_with_parallel_strategy(tmpdir):
     """Negative test for fp8 inference not supported with HPUParallelStrategy."""
     model = BoringModel()
@@ -335,8 +336,9 @@ def test_hpu_precision_fp8_with_parallel_strategy(tmpdir):
     plugin.convert_modules(module=model, inference=True, quant=False)
 
     trainer = Trainer(
+        default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=1,
+        devices=2,
         strategy=HPUParallelStrategy(),
         plugins=plugin,
     )
