@@ -22,24 +22,22 @@ if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.types import ReduceOp
-    from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
-    from lightning.pytorch.trainer.states import TrainerFn
     from lightning.pytorch.utilities.rank_zero import rank_zero_warn
     from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.types import ReduceOp
-    from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
-    from pytorch_lightning.trainer.states import TrainerFn
     from pytorch_lightning.utilities.rank_zero import rank_zero_warn
     from pytorch_lightning.utilities.types import STEP_OUTPUT
 else:
@@ -95,14 +93,6 @@ class HPUParallelStrategy(DDPStrategy):
             process_group_backend=process_group_backend,
             **kwargs,
         )
-
-    def setup(self, trainer: "Trainer") -> None:
-        if (
-            trainer.state.fn in (TrainerFn.PREDICTING, TrainerFn.TESTING)
-            and trainer.precision_plugin.precision == "fp8"
-        ):
-            raise NotImplementedError("FP8 inference is not supported with HPUParallelStrategy yet !!!")
-        return super().setup(trainer)
 
     @property
     def checkpoint_io(self) -> CheckpointIO:

@@ -38,7 +38,7 @@ import re
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
-from lightning_habana.pytorch.strategies import HPUParallelStrategy, SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
 
 supported_precision = get_args(_PRECISION_INPUT)
 
@@ -328,8 +328,8 @@ def test_hpu_precision_fp8_inference_quantization(tmpdir):
 
 @pytest.mark.standalone_only()
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_precision_fp8_with_parallel_strategy(tmpdir):
-    """Negative test for fp8 inference not supported with HPUParallelStrategy."""
+def test_hpu_precision_fp8_with_ddp_strategy(tmpdir):
+    """Negative test for fp8 inference not supported with HPUDDPStrategy."""
     model = BoringModel()
     dm = BoringDataModule()
     plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
@@ -339,11 +339,11 @@ def test_hpu_precision_fp8_with_parallel_strategy(tmpdir):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=2,
-        strategy=HPUParallelStrategy(),
+        strategy=HPUDDPStrategy(),
         plugins=plugin,
     )
 
-    with pytest.raises(NotImplementedError, match="FP8 inference is not supported with HPUParallelStrategy yet !!!"):
+    with pytest.raises(NotImplementedError, match="FP8 inference is not supported with HPUDDPStrategy yet !!!"):
         trainer.test(model, dm)
 
 
