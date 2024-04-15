@@ -472,6 +472,102 @@ Limitations of DeepSpeed on HPU
 
 For further details on the supported DeepSpeed features and functionalities, refer to `Using DeepSpeed with HPU <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html>`_.
 
+
+----
+
+Using FSDP on HPU
+-------------------------
+
+Fully Sharded Data Parallel (FSDP) is supported by Intel® Gaudi® 2 AI accelerator for running distributed training on large-scale models.
+
+To enable FSDP training on HPU use HPUFSDPStrategy:
+
+.. code-block:: python
+
+    from lightning_habana.pytorch.strategies import HPUFSDPStrategy
+    from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
+
+    strategy=HPUFSDPStrategy(parallel_devices=[torch.device("hpu")] * 8,
+                                sharding_strategy="FULL_SHARD",
+                                precision_plugin=HPUFSDPPrecision("bf16-mixed")
+                            )
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=strategy, fast_dev_run=10, enable_model_summary=True)
+
+
+Choose sharding strategy
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sharding stragey can be configured to control the way model parameters, gradients, and optimizer states are sharded
+
+.. code-block:: python
+
+    strategy = HPUFSDPStrategy(
+        # Default: Shard weights, gradients, optimizer state (1 + 2 + 3)
+        sharding_strategy="FULL_SHARD",
+        # Shard gradients, optimizer state (2 + 3)
+        sharding_strategy="SHARD_GRAD_OP",
+        # Full-shard within a machine, replicate across machines
+        sharding_strategy="HYBRID_SHARD",
+        # Don't shard anything (similar to DDP)
+        sharding_strategy="NO_SHARD",
+    )
+    trainer = L.Trainer(..., strategy=strategy)
+
+
+
+Here is a full code example:
+
+
+.. code-block:: python
+
+    import torch
+    import torch.nn as nn
+    import torch.nn.functional as F
+    from torch.utils.data import DataLoader
+
+    import lightning as L
+    from lightning.pytorch.strategies import FSDPStrategy
+    from lightning.pytorch.demos import Transformer, WikiText2
+
+
+    class LanguageModel(L.LightningModule):
+        def __init__(self, vocab_size):
+            super().__init__()
+            self.model = Transformer(  # 1B parameters
+                vocab_size=vocab_size,
+                nlayers=32,
+                nhid=4096,
+                ninp=1024,
+                nhead=64,
+            )
+
+        def training_step(self, batch):
+            input, target = batch
+            output = self.model(input, target)
+            loss = F.nll_loss(output, target.view(-1))
+            self.log("train_loss", loss, prog_bar=True)
+            return loss
+
+        def configure_optimizers(self):
+            return torch.optim.Adam(self.parameters(), lr=0.1)
+
+
+    policy = {nn.TransformerEncoderLayer, nn.TransformerDecoderLayer}
+    dataset = WikiText2()
+    train_dataloader = DataLoader(dataset)
+
+    model = LanguageModel(vocab_size=dataset.vocab_size)
+
+    _strategy=HPUFSDPStrategy(parallel_devices=[torch.device("hpu")] * 8,
+                                sharding_strategy="FULL_SHARD",
+                                auto_wrap_policy=policy,
+                                precision_plugin=HPUFSDPPrecision("bf16-mixed")
+                            )
+
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=10, enable_model_summary=True)
+    trainer.fit(model, train_dataloader)
+
+
 ----
 
 Using HPU Graphs
