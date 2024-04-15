@@ -226,7 +226,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
                 cpu_offload=self.cpu_offload,
                 mixed_precision=self.mixed_precision_config,
                 sharding_strategy=self.sharding_strategy,
-                device_id=self.root_device,
+                device_id=self.root_device,  # Index based device selection is not supported on HPU
                 **self.kwargs,
             )
 
@@ -258,7 +258,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             cpu_offload=self.cpu_offload,
             mixed_precision=self.mixed_precision_config,
             sharding_strategy=self.sharding_strategy,
-            device_id=self.root_device,
+            device_id=self.root_device,  # Index based device selection is not supported on HPU
             **self.kwargs,
         ):
             yield
