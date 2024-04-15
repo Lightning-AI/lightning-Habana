@@ -478,95 +478,67 @@ For further details on the supported DeepSpeed features and functionalities, ref
 Using FSDP on HPU
 -------------------------
 
-Fully Sharded Data Parallel (FSDP) is supported by Intel® Gaudi® 2 AI accelerator for running distributed training on large-scale models.
+Fully Sharded Data Parallel (FSDP) is supported by Intel Gaudi 2 AI accelerator for running distributed training on large-scale models.
 
-To enable FSDP training on HPU use HPUFSDPStrategy:
+To enable FSDP training on HPU, use HPUFSDPStrategy:
 
 .. code-block:: python
 
     from lightning_habana.pytorch.strategies import HPUFSDPStrategy
-    from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
+    from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecisionPlugin
 
     strategy=HPUFSDPStrategy(parallel_devices=[torch.device("hpu")] * 8,
                                 sharding_strategy="FULL_SHARD",
-                                precision_plugin=HPUFSDPPrecision("bf16-mixed")
+                                precision_plugin=HPUFSDPPrecisionPlugin("bf16-mixed")
                             )
     trainer = Trainer(accelerator=HPUAccelerator(), strategy=strategy, fast_dev_run=10, enable_model_summary=True)
 
 
-Choose sharding strategy
+Choose Sharding Strategy
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Sharding stragey can be configured to control the way model parameters, gradients, and optimizer states are sharded
+Sharding stragey can be configured to control the way model parameters, gradients, and optimizer states are sharded. Sharding strategy can be one of the four values as shown below.
+
+#. "FULL_SHARD"     -   Default: Shard weights, gradients, optimizer state (1 + 2 + 3)
+#. "SHARD_GRAD_OP"  -   Shard gradients, optimizer state (2 + 3)
+#. "HYBRID_SHARD"   -   Full-shard within a machine, replicate across machines
+#. "NO_SHARD"       -   Don't shard anything (similar to DDP)
 
 .. code-block:: python
 
     strategy = HPUFSDPStrategy(
-        # Default: Shard weights, gradients, optimizer state (1 + 2 + 3)
         sharding_strategy="FULL_SHARD",
-        # Shard gradients, optimizer state (2 + 3)
-        sharding_strategy="SHARD_GRAD_OP",
-        # Full-shard within a machine, replicate across machines
-        sharding_strategy="HYBRID_SHARD",
-        # Don't shard anything (similar to DDP)
-        sharding_strategy="NO_SHARD",
+        ...,
     )
-    trainer = L.Trainer(..., strategy=strategy)
+    trainer = Trainer(..., strategy=strategy)
 
 
-
-Here is a full code example:
-
+Here is a sample code for Scaling Gaudi with PyTorch using the Fully Sharded Data Parallelism (FSDP) approach.
 
 .. code-block:: python
 
-    import torch
-    import torch.nn as nn
-    import torch.nn.functional as F
-    from torch.utils.data import DataLoader
-
-    import lightning as L
-    from lightning.pytorch.strategies import FSDPStrategy
-    from lightning.pytorch.demos import Transformer, WikiText2
-
-
-    class LanguageModel(L.LightningModule):
-        def __init__(self, vocab_size):
-            super().__init__()
-            self.model = Transformer(  # 1B parameters
-                vocab_size=vocab_size,
-                nlayers=32,
-                nhid=4096,
-                ninp=1024,
-                nhead=64,
-            )
-
-        def training_step(self, batch):
-            input, target = batch
-            output = self.model(input, target)
-            loss = F.nll_loss(output, target.view(-1))
-            self.log("train_loss", loss, prog_bar=True)
-            return loss
+    class MyModel(BoringModel):
+        def configure_model(self):
+            self.layer = torch.nn.Linear(32, 2)
 
         def configure_optimizers(self):
-            return torch.optim.Adam(self.parameters(), lr=0.1)
+            return torch.optim.AdamW(self.layer.parameters(), lr=0.1)
+
+    _strategy=HPUFSDPStrategy(
+        parallel_devices=[torch.device("hpu")] * 8,
+        sharding_strategy="SHARD_GRAD_OP",
+        precision_plugin=HPUFSDPPrecision("bf16-mixed"))
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=hpus,
+        strategy=_strategy,
+        max_epochs=1,
+    )
 
 
-    policy = {nn.TransformerEncoderLayer, nn.TransformerDecoderLayer}
-    dataset = WikiText2()
-    train_dataloader = DataLoader(dataset)
-
-    model = LanguageModel(vocab_size=dataset.vocab_size)
-
-    _strategy=HPUFSDPStrategy(parallel_devices=[torch.device("hpu")] * 8,
-                                sharding_strategy="FULL_SHARD",
-                                auto_wrap_policy=policy,
-                                precision_plugin=HPUFSDPPrecision("bf16-mixed")
-                            )
-
-    trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=10, enable_model_summary=True)
-    trainer.fit(model, train_dataloader)
-
+For more details on the supported FSDP features and functionalities, refer to `Using Fully Sharded Data Parallel (FSDP) with Intel Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FSDP/Pytorch_FSDP.html>`_.
 
 ----
 
