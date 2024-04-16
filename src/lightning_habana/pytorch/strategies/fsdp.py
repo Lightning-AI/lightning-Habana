@@ -17,88 +17,59 @@ from datetime import timedelta
 from typing import TYPE_CHECKING, Any, Callable, Generator, List, Literal, Optional, Set, Type, Union
 
 import torch
-from lightning_utilities.core.rank_zero import rank_zero_only as utils_rank_zero_only
+from lightning_utilities import module_available
 from torch.nn import Module
 from typing_extensions import override
-from lightning_utilities import module_available
+
 if module_available("lightning"):
     import lightning.pytorch as pl
-    from lightning.fabric.plugins import CheckpointIO
-    from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
-    from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning.fabric.utilities.optimizer import _optimizers_to_device
-    from lightning.fabric.plugins.precision import Precision
-
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
     from lightning.fabric.strategies import _StrategyRegistry
     from lightning.fabric.strategies.fsdp import (
         _has_meta_device_parameters,
         _move_torchmetrics_to_device,
-        _optimizer_has_flat_params,
         _setup_activation_checkpointing,
     )
     from lightning.fabric.utilities.distributed import group as _group
-    from lightning.fabric.utilities.imports import (
-        _TORCH_GREATER_EQUAL_2_0,
-    )
+    from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import Precision
-    from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
     from lightning.pytorch.strategies.fsdp import FSDPStrategy
-    from lightning.pytorch.trainer.states import TrainerFn
-    from lightning.pytorch.utilities.model_helpers import is_overridden
-    from lightning.pytorch.utilities.rank_zero import rank_zero_info, rank_zero_only, rank_zero_warn
+    from lightning.pytorch.utilities.rank_zero import rank_zero_warn
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.plugins import CheckpointIO
-    from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
-    from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning_fabric.utilities.optimizer import _optimizers_to_device
-    from lightning_fabric.plugins.precision import Precision
+    import pytorch_lightning as pl
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
     from lightning_fabric.strategies import _StrategyRegistry
     from lightning_fabric.strategies.fsdp import (
         _has_meta_device_parameters,
         _move_torchmetrics_to_device,
-        _optimizer_has_flat_params,
         _setup_activation_checkpointing,
     )
     from lightning_fabric.utilities.distributed import group as _group
-    from lightning_fabric.utilities.imports import (
-        _TORCH_GREATER_EQUAL_2_0,
-    )
-    from lightning_fabric.plugins import CheckpointIO
-    from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
-    from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning_fabric.plugins.precision import Precision
-    from lightning_fabric.utilities.optimizer import _optimizers_to_device
-    import pytorch_lightning as pl
+    from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import Precision
     from pytorch_lightning.strategies.fsdp import FSDPStrategy
-    from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
-    from pytorch_lightning.trainer.states import TrainerFn
-    from pytorch_lightning.utilities.model_helpers import is_overridden
-    from pytorch_lightning.utilities.rank_zero import rank_zero_info, rank_zero_only, rank_zero_warn
+    from pytorch_lightning.utilities.rank_zero import rank_zero_warn
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
-from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
+from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
+from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_LESSER_EQUAL_2_2_3
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch as ht
-    import habana_frameworks.torch.core as htcore
     import habana_frameworks.torch.distributed.hccl as hpu_dist
 
 if TYPE_CHECKING:
     from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload, MixedPrecision, ShardingStrategy
-
     from torch.distributed.fsdp.wrap import ModuleWrapPolicy
+
     _POLICY = Union[Set[Type[Module]], Callable[[Module, bool, int], bool], ModuleWrapPolicy]
 
     _SHARDING_STRATEGY = Union[ShardingStrategy, Literal["FULL_SHARD", "SHARD_GRAD_OP", "NO_SHARD", "HYBRID_SHARD"]]
@@ -189,7 +160,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     def precision_plugin(self, precision_plugin: Optional[HPUFSDPPrecision]) -> None:
         if precision_plugin is not None and not isinstance(precision_plugin, HPUFSDPPrecision):
             raise TypeError(
-                 f"The FSDP strategy can only work with the `HPUFSDPPrecision` plugin, found {precision_plugin}"
+                f"The FSDP strategy can only work with the `HPUFSDPPrecision` plugin, found {precision_plugin}"
             )
         self._precision_plugin = precision_plugin
 
@@ -205,8 +176,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
     @override
     def _setup_model(self, model: Module) -> Module:
-        """Wraps the model into a :class:`~torch.distributed.fsdp.fully_sharded_data_parallel.FullyShardedDataParallel`
-        module."""
+
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in model.modules()):
@@ -274,6 +244,13 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
         _hpu_broadcast_object_list(obj, src, group=_group.WORLD)
         return obj[0]
+
+    def reduce(
+        self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
+    ) -> torch.Tensor:
+        if isinstance(tensor, torch.Tensor):
+            return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
+        return tensor
 
     @classmethod
     def get_registered_strategies(cls) -> List[str]:

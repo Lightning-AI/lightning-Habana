@@ -14,8 +14,8 @@
 
 from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.pytorch.strategies.deepspeed import HPUDeepSpeedStrategy
+from lightning_habana.pytorch.strategies.fsdp import HPUFSDPStrategy
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
-from lightning_habana.pytorch.strategies.fsdp import HPUFSDPStrategy
 
 __all__ = ["HPUFSDPStrategy", "HPUDDPStrategy", "HPUDeepSpeedStrategy", "HPUParallelStrategy", "SingleHPUStrategy"]

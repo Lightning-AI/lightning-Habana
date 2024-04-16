@@ -14,10 +14,10 @@
 
 from contextlib import contextmanager
 from typing import Any, ContextManager, Generator, Mapping, Optional, Union
-from typing_extensions import get_args
 
 import torch
 from lightning_utilities import module_available
+from typing_extensions import get_args
 
 if module_available("lightning"):
     from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
@@ -26,7 +26,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin, _PRECISION_INPUT
+from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
 
@@ -54,11 +54,9 @@ class HPUFSDPPrecision(FSDPPrecision, HPUPrecisionPlugin):
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
-                f"`precision={precision!r}` is not supported."
-                f" `precision` must be one of: {supported_precision}."
+                f"`precision={precision!r}` is not supported." f" `precision` must be one of: {supported_precision}."
             )
-        super(HPUFSDPPrecision, self).__init__(precision)
-
+        super().__init__(precision)
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
