@@ -93,7 +93,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         accelerator: Optional["pl.accelerators.Accelerator"] = None,
         parallel_devices: Optional[List[torch.device]] = [torch.device("hpu")] * HPUAccelerator.auto_device_count(),
         cluster_environment: Optional[ClusterEnvironment] = None,
-        checkpoint_io: Optional[CheckpointIO] = None,
+        checkpoint_io: Optional[CheckpointIO] = HPUCheckpointIO(),
         precision_plugin: Optional[Precision] = HPUFSDPPrecision("bf16-mixed"),
         process_group_backend: Optional[str] = "hccl",
         timeout: Optional[timedelta] = default_pg_timeout,
@@ -124,19 +124,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             sharding_strategy=sharding_strategy,
             state_dict_type=state_dict_type,
         )
-
-    @property
-    def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:  # type: ignore[has-type]
-            self._checkpoint_io = HPUCheckpointIO()
-        elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
-            self._checkpoint_io.checkpoint_io = HPUCheckpointIO()
-
-        return self._checkpoint_io
-
-    @checkpoint_io.setter
-    def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io  # type: ignore
 
     @property
     def mixed_precision_config(self) -> Optional["MixedPrecision"]:
