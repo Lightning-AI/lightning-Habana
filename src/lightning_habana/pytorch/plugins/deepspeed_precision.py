@@ -13,8 +13,9 @@
 # limitations under the License.
 
 
-from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Mapping, Optional, Union
 
+import torch
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.optim import LBFGS, Optimizer
@@ -36,12 +37,16 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
+from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
 
-_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed"]
+if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
+    import habana_frameworks.torch.core as htcore
+    from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
-if TYPE_CHECKING:
-    import deepspeed
+import deepspeed
+
+from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
 
 warning_cache = WarningCache()
 
@@ -59,8 +64,10 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         self,
         precision: _PRECISION_INPUT,
         device: str = "hpu",
+        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
+        replace_layers: bool = False,
     ) -> None:
-        super().__init__(precision=precision)
+        super().__init__(device=device, precision=precision, recipe=recipe, replace_layers=replace_layers)
 
     def backward(
         self,
@@ -116,3 +123,52 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         gradient_clip_algorithm: GradClipAlgorithmType = GradClipAlgorithmType.NORM,
     ) -> None:
         """DeepSpeed handles gradient clipping internally."""
+        pass
+
+    def _enable_fp8_inference(
+        self,
+        module: torch.nn.Module,
+        quant: bool = True,
+        fp8_data_path: Optional[str] = None,
+        ds_inference_kwargs: Optional[dict] = None,
+    ) -> None:
+        """Convert modules for fp8 inference.
+
+        This module cannot be used with trainer.fit.
+
+        """
+        ds_inference_kwargs = {} if ds_inference_kwargs is None else ds_inference_kwargs
+        if "dtype" not in ds_inference_kwargs:
+            ds_inference_kwargs["dtype"] = torch.bfloat16
+        assert ds_inference_kwargs["dtype"] in (torch.bfloat16, torch.float)
+
+        self._setup_fp8_quant_config(quant, fp8_data_path)
+        from quantization_toolkit import habana_quantization_toolkit
+
+        htcore.hpu_set_env()
+        try:
+            module = deepspeed.init_inference(module, **ds_inference_kwargs)
+            habana_quantization_toolkit.prep_model(module)
+            htcore.hpu_initialize(module)
+        except FileNotFoundError as e:
+            print(
+                "Please run the fp8 measurement using a portion of data and try again. "
+                "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
+                "and run trainer.fit() to dump measurement data."
+            )
+            raise e
+
+    def convert_modules(
+        self,
+        module: torch.nn.Module,
+        inference: bool = False,
+        quant: bool = True,
+        fp8_data_path: Optional[str] = None,
+        ds_inference_kwargs: Optional[dict] = None,
+    ) -> torch.nn.Module:
+        """Enable support for fp8."""
+        if inference is True and self.fp8_inference_available:
+            self._enable_fp8_inference(module, quant, fp8_data_path, ds_inference_kwargs)
+        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
+            self._enable_fp8_training(module)
+        return module

@@ -115,6 +115,7 @@ fp8 Training
 -------------
 
 Lightning supports fp8 training using HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`.
+
 fp8 training is only available on Gaudi2 and above. Output from fp8 supported modules is in `torch.bfloat16`.
 
 The plugin accepts following args for the fp8 training:
@@ -157,8 +158,12 @@ The plugin accepts following args for the fp8 training:
 
     Users may still use `HPUPrecisionPlugin` to train in `bf16-mixed` precision for modules not supported by `transformer_engine`.
 
-For more details on `transformer_engine` and `recipes`, refer to `FP8 Training with Intel Gaudi Transformer Engine <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html>`__.
 
+.. note::
+
+    To enable fp8 training with HPUDeepSpeedStrategy, use HPUDeepSpeedPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUDeepSpeedPrecisionPlugin` instead of HPUPrecisionPlugin, while keeping all other steps the same.
+
+For more details on `transformer_engine` and `recipes`, refer to `FP8 Training with Intel Gaudi Transformer Engine <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FP8_Training/index.html>`__.
 
 
 ----
@@ -239,6 +244,12 @@ HQT uses configuration jsons for selecting between quant and measurement modes. 
 User may also set `QUANT_CONFIG` environment variable pointing to the json to use during training.
 
 Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information.
+
+
+.. note::
+
+    To enable fp8 inference with HPUDeepSpeedStrategy, use HPUDeepSpeedPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUDeepSpeedPrecisionPlugin` instead of HPUPrecisionPlugin, while keeping all other steps the same.
+
 
 **Limitations**
 

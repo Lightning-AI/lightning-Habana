@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import importlib
 import json
 import os
@@ -601,3 +600,53 @@ def test_mixed_precision_compare_accuracy(tmpdir):
     if not is_gaudi:
         # Assert loss is close between baseline and fp8
         assert torch.allclose(torch.tensor(loss_list[0]), torch.tensor(loss_list[-1]), rtol=0.1, atol=0.1)
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("precision", ["bf16-mixed", "fp8"])
+def test_hpu_precision_active_with_te_module(tmpdir, precision):
+    """Tests that fp8 precision is only active when HPUPrecision plugin is init with fp8, even if module from.
+
+    transformer engine is used.
+
+    """
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+
+        def training_step(self, batch, batch_idx):
+            """Training step."""
+            # torch.autocast is enabled for both bf16 and fp8
+            assert torch.hpu.is_autocast_hpu_enabled()
+            # fp8 training is only enabled when precision is fp8,
+            # even if module used is from transformer engine.
+            if precision == "fp8":
+                assert tengine.fp8.is_fp8_enabled()
+            else:
+                assert not tengine.fp8.is_fp8_enabled()
+            return super().training_step(batch, batch_idx)
+
+        def configure_optimizers(self):
+            """Configure optimizer."""
+            from torch.optim.adamw import AdamW
+
+            return AdamW(self.parameters())
+
+    seed_everything(42)
+    model = TestModel()
+    _plugin = HPUPrecisionPlugin(device="hpu", precision=precision)
+    # HPUPrecisionPlugin.convert_modules not reqiored as self.layer is already a transformer engine module
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        fast_dev_run=True,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=_plugin,
+    )
+    trainer.fit(model)
