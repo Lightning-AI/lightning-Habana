@@ -145,7 +145,6 @@ def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count)
         ("Kernel"),
     ],
 )
-@pytest.mark.xfail(strict=False, reason="TBF: Could not find event kernel in trace")
 def test_hpu_trace_event(tmpdir, event_name):
     # Run model and prep json
     model = BoringModel()
