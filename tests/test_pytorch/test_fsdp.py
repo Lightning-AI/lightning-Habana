@@ -279,7 +279,7 @@ def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
     plugin = HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=8,
+        devices=hpus,
         strategy=strategy,
         log_every_n_steps=1,
         plugins=plugin,

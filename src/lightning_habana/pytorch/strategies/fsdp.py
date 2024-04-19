@@ -33,7 +33,6 @@ if module_available("lightning"):
     )
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.types import ReduceOp
-    from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import Precision
     from lightning.pytorch.strategies.fsdp import FSDPStrategy
     from lightning.pytorch.utilities.rank_zero import rank_zero_warn
@@ -49,7 +48,6 @@ elif module_available("pytorch_lightning"):
     )
     from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.types import ReduceOp
-    from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import Precision
     from pytorch_lightning.strategies.fsdp import FSDPStrategy
     from pytorch_lightning.utilities.rank_zero import rank_zero_warn
