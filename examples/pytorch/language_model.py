@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import argparse
-import sys
 import os
+import sys
+
 import torch
 import torch.nn as nn
 from lightning.pytorch.utilities import rank_zero_info

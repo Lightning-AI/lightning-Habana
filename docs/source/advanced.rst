@@ -540,7 +540,7 @@ Here is a sample code for Scaling Gaudi with PyTorch using the Fully Sharded Dat
 
 Limitations of FSDP on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   1. This is an experimental featue.
+   1. This is an experimental feature.
    2. Saving/loading checkpoint using FSDP strategy is not fully enabled.
    3. If you encounter stability issues when running your model with FSDP, set PT_HPU_EAGER_PIPELINE_ENABLE=false flag.
 

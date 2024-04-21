@@ -14,13 +14,12 @@
 import logging
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Callable, Generator, Dict, List, Literal, Optional, Set, Type, Union
-from torch.optim import Optimizer
-import torch
+from typing import TYPE_CHECKING, Any, Callable, Dict, Generator, List, Literal, Optional, Set, Type, Union
 
 import torch
 from lightning_utilities import module_available
 from torch.nn import Module
+from torch.optim import Optimizer
 from typing_extensions import override
 
 if module_available("lightning"):
@@ -37,7 +36,7 @@ if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.precision import Precision
     from lightning.pytorch.strategies.fsdp import FSDPStrategy
-    from lightning.pytorch.utilities.rank_zero import rank_zero_warn, rank_zero_info
+    from lightning.pytorch.utilities.rank_zero import rank_zero_info, rank_zero_warn
 elif module_available("pytorch_lightning"):
     import pytorch_lightning as pl
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -52,7 +51,7 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.precision import Precision
     from pytorch_lightning.strategies.fsdp import FSDPStrategy
-    from pytorch_lightning.utilities.rank_zero import rank_zero_warn, rank_zero_info
+    from pytorch_lightning.utilities.rank_zero import rank_zero_info, rank_zero_warn
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
@@ -123,7 +122,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             activation_checkpointing_policy=activation_checkpointing_policy,
             sharding_strategy=sharding_strategy,
             state_dict_type=state_dict_type,
-            **kwargs
+            **kwargs,
         )
 
     @property
@@ -135,7 +134,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             return plugin.mixed_precision_config
         return None
 
-    @property  # type: ignore[override]
+    @property
     @override
     def precision_plugin(self) -> HPUFSDPPrecision:
         plugin = self._precision_plugin
@@ -162,7 +161,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
         super().setup_environment()
 
-    @override
     def _setup_model(self, model: Module) -> Module:
 
         from torch.distributed.fsdp import FullyShardedDataParallel
@@ -195,22 +193,19 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
         return model
 
-    @override
     def optimizer_state(self, optimizer: Optimizer) -> Dict[str, torch.Tensor]:
         rank_zero_info("Optimizer state checkpointing is not enabled yet on HPU.")
+        return super().optimizer_state(optimizer)
 
-    @override
     def setup(self, trainer: "pl.Trainer") -> None:
         self.model_to_device()
         super().setup(trainer)
 
-    @override
     def model_to_device(self) -> None:
         assert self.model is not None
         self.model.to(self.root_device)
 
     @contextmanager
-    @override
     def model_sharded_context(self) -> Generator[None, None, None]:
         from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel
         from torch.distributed.fsdp.wrap import enable_wrap

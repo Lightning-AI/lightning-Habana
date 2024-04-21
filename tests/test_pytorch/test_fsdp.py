@@ -226,7 +226,7 @@ def test_fsdp_custom_mixed_precision():
 def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
     if hpus <= 1:
-       pytest.skip(reason="Test reqruires multiple cards")
+        pytest.skip(reason="Test reqruires multiple cards")
 
     model = TestBoringModel()
     config = CPUOffload()
@@ -243,7 +243,7 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
         sync_batchnorm=False,
     )
 
-    #_run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
+    # _run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
     trainer.fit(model)
 
 
@@ -296,7 +296,6 @@ def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
         fast_dev_run=10,
         enable_model_summary=True,
         enable_checkpointing=False,
-
     )
     trainer.fit(model)
     ref_loss = trainer.callback_metrics["train_loss"].detach().to("cpu")
@@ -316,13 +315,14 @@ def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
         log_every_n_steps=1,
         enable_model_summary=True,
         enable_checkpointing=False,
-
     )
     trainer.fit(model)
 
     final_loss = trainer.callback_metrics["train_loss"].detach().to("cpu")
 
-    assert torch.allclose(ref_loss, final_loss, rtol=1e-4, atol=1e-4), f"incorrect loss value {final_loss}, expected {ref_loss}"
+    assert torch.allclose(
+        ref_loss, final_loss, rtol=1e-4, atol=1e-4
+    ), f"incorrect loss value {final_loss}, expected {ref_loss}"
 
 
 @pytest.mark.standalone()
@@ -350,7 +350,7 @@ def test_fsdp_strategy_sync_batchnorm_compile(tmpdir, hpus):
     )
     trainer.fit(compiled_model)
 
-    #_run_multiple_stages(trainer, compiled_model, os.path.join(tmpdir, "last.ckpt"))
+    # _run_multiple_stages(trainer, compiled_model, os.path.join(tmpdir, "last.ckpt"))
 
 
 @pytest.mark.standalone()
@@ -383,7 +383,6 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
         ),
         max_steps=1,
         enable_checkpointing=False,
-
     )
     trainer.fit(model)
 
@@ -405,7 +404,7 @@ def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
         max_epochs=1,
     )
 
-    #_run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
+    # _run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
     trainer.fit(model)
 
 
