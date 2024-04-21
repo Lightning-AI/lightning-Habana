@@ -14,7 +14,7 @@
 
 import argparse
 import sys
-
+import os
 import torch
 import torch.nn as nn
 from lightning.pytorch.utilities import rank_zero_info
@@ -83,6 +83,8 @@ if __name__ == "__main__":
     if options.verbose:
         print(f"Running language model with FSDP on HPU with {options=}")
 
+    os.environ["PT_HPU_LAZY_MODE"] = "0"
+
     if options.devices < 2:
         print("The script requires a multi device setup")
         sys.exit(1)
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     plugin = HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=8,
+        devices=options.devices,
         strategy=strategy,
         plugins=plugin,
         fast_dev_run=10,

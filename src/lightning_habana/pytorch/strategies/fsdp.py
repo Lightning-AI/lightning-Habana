@@ -14,7 +14,9 @@
 import logging
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Callable, Generator, List, Literal, Optional, Set, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Generator, Dict, List, Literal, Optional, Set, Type, Union
+from torch.optim import Optimizer
+import torch
 
 import torch
 from lightning_utilities import module_available
@@ -35,7 +37,7 @@ if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.precision import Precision
     from lightning.pytorch.strategies.fsdp import FSDPStrategy
-    from lightning.pytorch.utilities.rank_zero import rank_zero_warn
+    from lightning.pytorch.utilities.rank_zero import rank_zero_warn, rank_zero_info
 elif module_available("pytorch_lightning"):
     import pytorch_lightning as pl
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -50,7 +52,7 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.precision import Precision
     from pytorch_lightning.strategies.fsdp import FSDPStrategy
-    from pytorch_lightning.utilities.rank_zero import rank_zero_warn
+    from pytorch_lightning.utilities.rank_zero import rank_zero_warn, rank_zero_info
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
@@ -121,6 +123,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             activation_checkpointing_policy=activation_checkpointing_policy,
             sharding_strategy=sharding_strategy,
             state_dict_type=state_dict_type,
+            **kwargs
         )
 
     @property
@@ -191,6 +194,10 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         _setup_activation_checkpointing(model, self._activation_checkpointing_kwargs)
 
         return model
+
+    @override
+    def optimizer_state(self, optimizer: Optimizer) -> Dict[str, torch.Tensor]:
+        rank_zero_info("Optimizer state checkpointing is not enabled yet on HPU.")
 
     @override
     def setup(self, trainer: "pl.Trainer") -> None:

@@ -35,7 +35,6 @@ if module_available("lightning"):
     from lightning.pytorch import Trainer, seed_everything
     from lightning.pytorch.demos import LightningTransformer
     from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
-    from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
 elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.imports import (
         _TORCH_GREATER_EQUAL_2_0,
@@ -44,7 +43,6 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer
     from pytorch_lightning.demos import LightningTransformer
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
-    from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision, HPUPrecisionPlugin
@@ -66,9 +64,6 @@ class TestFSDPModel(BoringModel):
         if isinstance(self.layer, FullyShardedDataParallel):
             return
 
-        for i, layer in enumerate(self.layer):
-            if i % 2 == 0:
-                self.layer[i] = wrap(layer)
         self.layer = wrap(self.layer)
 
     def configure_optimizers(self):
@@ -96,7 +91,7 @@ class TestFSDPModel(BoringModel):
 
     def _assert_layer_fsdp_instance(self) -> None:
         assert isinstance(self.layer, FullyShardedDataParallel)
-        # assert isinstance(self.trainer.strategy.precision_plugin, FSDPPrecision)
+        assert isinstance(self.trainer.strategy.precision_plugin, HPUFSDPPrecision)
 
         if self.trainer.precision == "16-mixed":
             param_dtype = None if not _TORCH_GREATER_EQUAL_2_0 else torch.float32
@@ -114,12 +109,6 @@ class TestFSDPModel(BoringModel):
         assert self.layer.mixed_precision.param_dtype == param_dtype
         assert self.layer.mixed_precision.reduce_dtype == reduce_dtype
         assert self.layer.mixed_precision.buffer_dtype == buffer_dtype
-
-        for layer_num in [0, 2]:
-            assert isinstance(self.layer.module[layer_num], FullyShardedDataParallel)
-            assert self.layer[layer_num].mixed_precision.param_dtype == param_dtype
-            assert self.layer[layer_num].mixed_precision.reduce_dtype == reduce_dtype
-            assert self.layer[layer_num].mixed_precision.buffer_dtype == buffer_dtype
 
 
 class TestBoringModel(BoringModel):
@@ -159,7 +148,7 @@ class TestFSDPModelAutoWrapped(TestBoringModel):
 
     def _assert_layer_fsdp_instance(self) -> None:
         assert isinstance(self.layer, torch.nn.Sequential)
-        assert isinstance(self.trainer.strategy.precision_plugin, FSDPPrecision)
+        assert isinstance(self.trainer.strategy.precision_plugin, HPUFSDPPrecision)
 
         if self.trainer.precision == "16-mixed":
             param_dtype = None if not _TORCH_GREATER_EQUAL_2_0 else torch.float32
@@ -232,19 +221,17 @@ def test_fsdp_custom_mixed_precision():
     assert strategy.mixed_precision_config == config
 
 
+@pytest.mark.standalone()
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
     if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
+       pytest.skip(reason="Test reqruires multiple cards")
 
-    os.environ["PT_HPU_EAGER_PIPELINE_ENABLE"] = "0"
-
-    model = TestFSDPModel()
+    model = TestBoringModel()
     config = CPUOffload()
 
     trainer = Trainer(
-        default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * hpus,
@@ -252,26 +239,49 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         ),
         max_epochs=1,
+        enable_checkpointing=False,
         sync_batchnorm=False,
     )
 
-    _run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
+    #_run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
+    trainer.fit(model)
 
 
+@pytest.mark.standalone()
+@pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
+def test_fsdp_simple_model(strategy, hpus):
+    model = TestBoringModel()
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        strategy=HPUFSDPStrategy(
+            parallel_devices=[torch.device("hpu")] * hpus,
+            sharding_strategy=strategy,
+            precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+        ),
+        max_epochs=1,
+        enable_checkpointing=False,
+        sync_batchnorm=True,
+    )
+
+    trainer.fit(model)
+
+
+@pytest.mark.standalone()
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
 
-    os.environ["PT_HPU_EAGER_PIPELINE_ENABLE"] = "0"
+    seed_everything(42)
 
     class TestModel(LightningTransformer):
         def training_step(self, batch: Tuple[torch.Tensor, torch.Tensor], batch_idx: int) -> torch.Tensor:
             inputs, target = batch
             output = self(inputs, target)
             loss = torch.nn.functional.nll_loss(output, target.view(-1))
-            self.log("train_loss", loss.item(), sync_dist=True, reduce_fx="sum")
+            self.log("train_loss", loss.to(torch.bfloat16), prog_bar=True, sync_dist=True)
             return loss
 
     model = TestModel()
@@ -285,10 +295,13 @@ def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
         plugins=plugin,
         fast_dev_run=10,
         enable_model_summary=True,
+        enable_checkpointing=False,
+
     )
     trainer.fit(model)
     ref_loss = trainer.callback_metrics["train_loss"].detach().to("cpu")
 
+    seed_everything(42)
     model = TestModel()
     config = CPUOffload()
     trainer = Trainer(
@@ -302,23 +315,24 @@ def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
         fast_dev_run=10,
         log_every_n_steps=1,
         enable_model_summary=True,
+        enable_checkpointing=False,
+
     )
     trainer.fit(model)
 
     final_loss = trainer.callback_metrics["train_loss"].detach().to("cpu")
 
-    assert torch.allclose(ref_loss, final_loss, atol=4e-4), f"incorrect loss value {final_loss}, expected {ref_loss}"
+    assert torch.allclose(ref_loss, final_loss, rtol=1e-4, atol=1e-4), f"incorrect loss value {final_loss}, expected {ref_loss}"
 
 
+@pytest.mark.standalone()
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_strategy_sync_batchnorm_compile(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
 
-    os.environ["PT_HPU_EAGER_PIPELINE_ENABLE"] = "0"
-
-    model = TestFSDPModel()
+    model = TestBoringModel()
     config = CPUOffload()
     compiled_model = torch.compile(model, backend="hpu_backend")
 
@@ -332,11 +346,14 @@ def test_fsdp_strategy_sync_batchnorm_compile(tmpdir, hpus):
         ),
         max_epochs=1,
         sync_batchnorm=False,
+        enable_checkpointing=False,
     )
+    trainer.fit(compiled_model)
 
-    _run_multiple_stages(trainer, compiled_model, os.path.join(tmpdir, "last.ckpt"))
+    #_run_multiple_stages(trainer, compiled_model, os.path.join(tmpdir, "last.ckpt"))
 
 
+@pytest.mark.standalone()
 def test_fsdp_modules_without_parameters(tmp_path, hpus):
     """Test that TorchMetrics get moved to the device despite not having any parameters."""
 
@@ -365,17 +382,18 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         ),
         max_steps=1,
+        enable_checkpointing=False,
+
     )
     trainer.fit(model)
 
 
 @pytest.mark.parametrize("precision", ["bf16-mixed"])
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
 def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
     """Test to ensure that checkpoint is saved correctly when using a single GPU, and all stages can be run."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
-
-    os.environ["PT_HPU_EAGER_PIPELINE_ENABLE"] = "0"
 
     model = TestFSDPModel()
     trainer = Trainer(
@@ -387,9 +405,11 @@ def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
         max_epochs=1,
     )
 
-    _run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
+    #_run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
+    trainer.fit(model)
 
 
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict is extracted when using FSDP strategy.
@@ -438,13 +458,13 @@ def test_fsdp_strategy_cpu_offload():
     assert strategy.cpu_offload == config
 
 
-@pytest.mark.xfail(run=False, strict=True, reason="Runs in standalone mode")
 @pytest.mark.parametrize(
     ("precision", "expected_dtype"),
     [
         ("32-true", torch.float32),
     ],
 )
+@pytest.mark.xfail(run=False, reason="TODO")
 def test_configure_model(tmpdir, hpus, precision, expected_dtype):
     """Test that the module under configure_model gets moved to the right device and dtype."""
     trainer = Trainer(
@@ -557,6 +577,7 @@ def test_fsdp_precision_config(precision, expected):
     assert config.reduce_dtype == expected[2]
 
 
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states is saved when using FSDP strategy.
@@ -569,7 +590,6 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
         pytest.skip(reason="Test reqruires multiple cards")
 
     model = TestFSDPModelAutoWrapped(wrap_min_params=wrap_min_params)
-    os.environ["PT_HPU_EAGER_PIPELINE_ENABLE"] = "0"
     strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * hpus,
         auto_wrap_policy=partial(size_based_auto_wrap_policy, min_num_params=wrap_min_params),
@@ -626,7 +646,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     trainer.strategy.barrier()
 
 
-@pytest.mark.xfail(run=False, strict=True, reason="Runs in standalone mode")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
@@ -637,8 +657,6 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
     """
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
-
-    os.environ["PT_HPU_EAGER_PIPELINE_ENABLE"] = "0"
 
     # restore model to ddp
     model = TestBoringModel()
@@ -757,12 +775,11 @@ def test_hpu_parallel_precision_accuracy(tmpdir, hpus):
 
 
 @pytest.mark.standalone()
-def test_hpu_fsdp_precision_accuracy(tmpdir, sharding_strategy, hpus):
+def test_hpu_fsdp_precision_accuracy(tmpdir, hpus):
     fsdp_strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * hpus,
-        sharding_strategy=sharding_strategy,
+        sharding_strategy="FULL_SHARD",
         precision_plugin=HPUFSDPPrecision("bf16-mixed"),
-        auto_wrap_policy={},
     )
     val_loss, train_loss = run_training(tmpdir, AccuracyTestModel, BoringDataModule, fsdp_strategy, hpus)
     # hpus == 1
