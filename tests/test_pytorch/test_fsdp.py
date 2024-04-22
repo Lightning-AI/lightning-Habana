@@ -14,7 +14,7 @@
 
 import os
 from functools import partial
-from typing import Optional, Tuple
+from typing import Optional
 from unittest import mock
 from unittest.mock import ANY, MagicMock, Mock
 
@@ -28,11 +28,9 @@ from torchmetrics import Accuracy
 
 if module_available("lightning"):
     from lightning.pytorch import Trainer, seed_everything
-    from lightning.pytorch.demos import LightningTransformer
     from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer
-    from pytorch_lightning.demos import LightningTransformer
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
