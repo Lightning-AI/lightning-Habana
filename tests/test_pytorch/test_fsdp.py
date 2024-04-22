@@ -14,7 +14,6 @@
 
 import os
 from functools import partial
-from pathlib import Path
 from typing import Optional, Tuple
 from unittest import mock
 from unittest.mock import ANY, MagicMock, Mock
@@ -39,6 +38,7 @@ elif module_available("pytorch_lightning"):
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
+
 
 class TestFSDPModel(BoringModel):
     def __init__(self):
