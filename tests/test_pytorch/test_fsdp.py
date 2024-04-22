@@ -28,18 +28,10 @@ from torch.distributed.fsdp.wrap import size_based_auto_wrap_policy, wrap
 from torchmetrics import Accuracy
 
 if module_available("lightning"):
-    from lightning.fabric.utilities.imports import (
-        _TORCH_GREATER_EQUAL_2_0,
-        _TORCH_GREATER_EQUAL_2_1,
-    )
     from lightning.pytorch import Trainer, seed_everything
     from lightning.pytorch.demos import LightningTransformer
     from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.utilities.imports import (
-        _TORCH_GREATER_EQUAL_2_0,
-        _TORCH_GREATER_EQUAL_2_1,
-    )
     from pytorch_lightning import Trainer
     from pytorch_lightning.demos import LightningTransformer
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
@@ -47,7 +39,6 @@ elif module_available("pytorch_lightning"):
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
-
 
 class TestFSDPModel(BoringModel):
     def __init__(self):
@@ -67,7 +58,6 @@ class TestFSDPModel(BoringModel):
         self.layer = wrap(self.layer)
 
     def configure_optimizers(self):
-        # There is some issue with SGD optimizer state in FSDP
         return torch.optim.AdamW(self.layer.parameters(), lr=0.1)
 
     def on_train_batch_start(self, batch, batch_idx):
@@ -94,10 +84,10 @@ class TestFSDPModel(BoringModel):
         assert isinstance(self.trainer.strategy.precision_plugin, HPUFSDPPrecision)
 
         if self.trainer.precision == "16-mixed":
-            param_dtype = None if not _TORCH_GREATER_EQUAL_2_0 else torch.float32
+            param_dtype = torch.float32
             reduce_dtype = buffer_dtype = torch.float16
         elif self.trainer.precision == "bf16-mixed":
-            param_dtype = None if not _TORCH_GREATER_EQUAL_2_0 else torch.float32
+            param_dtype = torch.float32
             reduce_dtype = buffer_dtype = torch.bfloat16
         elif self.trainer.precision == "16-true":
             param_dtype = reduce_dtype = buffer_dtype = torch.float16
@@ -120,9 +110,8 @@ class TestBoringModel(BoringModel):
         self.should_be_wrapped = [wrap_min_params < (32 * 32 + 32), None, wrap_min_params < (32 * 2 + 2)]
 
     def configure_optimizers(self):
-        parameters = self.parameters() if _TORCH_GREATER_EQUAL_2_0 else self.trainer.model.parameters()
+        parameters = self.parameters()
 
-        # SGD's FSDP optimizer state is fixed in https://github.com/pytorch/pytorch/pull/99214
         return torch.optim.AdamW(parameters, lr=0.1)
 
 
@@ -151,10 +140,10 @@ class TestFSDPModelAutoWrapped(TestBoringModel):
         assert isinstance(self.trainer.strategy.precision_plugin, HPUFSDPPrecision)
 
         if self.trainer.precision == "16-mixed":
-            param_dtype = None if not _TORCH_GREATER_EQUAL_2_0 else torch.float32
+            param_dtype = torch.float32
             reduce_dtype = buffer_dtype = torch.float16
         elif self.trainer.precision == "bf16-mixed":
-            param_dtype = None if not _TORCH_GREATER_EQUAL_2_0 else torch.float32
+            param_dtype = torch.float32
             reduce_dtype = buffer_dtype = torch.bfloat16
         elif self.trainer.precision == "16-true":
             param_dtype = reduce_dtype = buffer_dtype = torch.float16
@@ -172,46 +161,6 @@ class TestFSDPModelAutoWrapped(TestBoringModel):
             assert self.layer[layer_num].mixed_precision.param_dtype == param_dtype
             assert self.layer[layer_num].mixed_precision.reduce_dtype == reduce_dtype
             assert self.layer[layer_num].mixed_precision.buffer_dtype == buffer_dtype
-
-
-def _run_multiple_stages(trainer, model, model_path: Optional[str] = None):
-
-    trainer.fit(model)
-    trainer.test(model)
-
-    model_path = trainer.strategy.broadcast(model_path)
-    model_path = Path(model_path if model_path else trainer.checkpoint_callback.last_model_path)
-
-    # Save another checkpoint after testing, without optimizer states
-    trainer.save_checkpoint(model_path.with_name("after-test"))
-    trainer.save_checkpoint(model_path, weights_only=True)
-
-    _assert_save_equality(trainer, model_path, cls=model.__class__)
-
-    with torch.inference_mode():
-        # Test entry point
-        trainer.test(model)  # model is wrapped, will not call `configure_model`
-
-        # provide model path, will create a new unwrapped model and load and then call `configure_shared_model` to wrap
-        trainer.test(ckpt_path=model_path)
-
-        # Predict entry point
-        trainer.predict(model)  # model is wrapped, will not call `configure_model`
-
-        # provide model path, will create a new unwrapped model and load and then call `configure_shared_model` to wrap
-        trainer.predict(ckpt_path=model_path)
-
-
-def _assert_save_equality(trainer, ckpt_path, cls=TestFSDPModel):
-    # Use FullySharded to get the state dict for the sake of comparison
-    model_state_dict = trainer.strategy.lightning_module_state_dict()
-
-    if trainer.is_global_zero:
-        saved_model = cls.load_from_checkpoint(ckpt_path)
-
-        # Assert model parameters are identical after loading
-        for ddp_param, shard_param in zip(model_state_dict.values(), saved_model.state_dict().values()):
-            assert torch.equal(ddp_param, shard_param)
 
 
 def test_fsdp_custom_mixed_precision():
@@ -243,7 +192,6 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
         sync_batchnorm=False,
     )
 
-    # _run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
     trainer.fit(model)
 
 
@@ -350,8 +298,6 @@ def test_fsdp_strategy_sync_batchnorm_compile(tmpdir, hpus):
     )
     trainer.fit(compiled_model)
 
-    # _run_multiple_stages(trainer, compiled_model, os.path.join(tmpdir, "last.ckpt"))
-
 
 @pytest.mark.standalone()
 def test_fsdp_modules_without_parameters(tmp_path, hpus):
@@ -388,7 +334,7 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
 
 
 @pytest.mark.parametrize("precision", ["bf16-mixed"])
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
 def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
     """Test to ensure that checkpoint is saved correctly when using a single GPU, and all stages can be run."""
     if hpus <= 1:
@@ -404,11 +350,10 @@ def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
         max_epochs=1,
     )
 
-    # _run_multiple_stages(trainer, model, os.path.join(tmpdir, "last.ckpt"))
     trainer.fit(model)
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict is extracted when using FSDP strategy.
@@ -576,7 +521,7 @@ def test_fsdp_precision_config(precision, expected):
     assert config.reduce_dtype == expected[2]
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states is saved when using FSDP strategy.
@@ -613,11 +558,8 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     if trainer.global_rank != 0:
         assert len(model_state_dict) == 0
 
-    if trainer.global_rank != 0 and _TORCH_GREATER_EQUAL_2_1 or not _TORCH_GREATER_EQUAL_2_0:
+    if trainer.global_rank != 0:
         assert len(optimizer_state_dict) == 0
-
-    if not _TORCH_GREATER_EQUAL_2_0:
-        return
 
     # restore model to ddp
     parallel_hpus = [torch.device("hpu")] * hpus
@@ -645,7 +587,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     trainer.strategy.barrier()
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is not currentlys supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
@@ -697,10 +639,10 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
     if trainer.global_rank != 0:
         assert len(restored_model_state_dict) == 0
 
-    if trainer.global_rank != 0 and _TORCH_GREATER_EQUAL_2_1 or not _TORCH_GREATER_EQUAL_2_0:
+    if trainer.global_rank != 0:
         assert len(restored_optimizer_state_dict) == 0
 
-    if trainer.global_rank == 0 and _TORCH_GREATER_EQUAL_2_0:
+    if trainer.global_rank == 0:
         # assert everything is the same
         assert len(model_state_dict) == len(restored_model_state_dict)
         assert len(optimizer_state_dict) == len(restored_optimizer_state_dict)
