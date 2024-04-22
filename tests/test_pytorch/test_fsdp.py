@@ -189,7 +189,7 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
         ),
         max_epochs=1,
         enable_checkpointing=False,
-        sync_batchnorm=False,
+        sync_batchnorm=True,
     )
 
     trainer.fit(model)
@@ -274,8 +274,8 @@ def test_fsdp_strategy_parity_with_ddp(tmpdir, hpus):
 
 
 @pytest.mark.standalone()
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_fsdp_strategy_sync_batchnorm_compile(tmpdir, hpus):
+@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
+def test_fsdp_strategy_simple_model_compile(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
@@ -334,7 +334,7 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
 
 
 @pytest.mark.parametrize("precision", ["bf16-mixed"])
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported.")
 def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
     """Test to ensure that checkpoint is saved correctly when using a single GPU, and all stages can be run."""
     if hpus <= 1:
@@ -353,7 +353,7 @@ def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
     trainer.fit(model)
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported.")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict is extracted when using FSDP strategy.
@@ -408,7 +408,7 @@ def test_fsdp_strategy_cpu_offload():
         ("32-true", torch.float32),
     ],
 )
-@pytest.mark.xfail(run=False, reason="TODO")
+@pytest.mark.xfail(run=False, reason="Failure in rank validation of layer weights.")
 def test_configure_model(tmpdir, hpus, precision, expected_dtype):
     """Test that the module under configure_model gets moved to the right device and dtype."""
     trainer = Trainer(
@@ -587,7 +587,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     trainer.strategy.barrier()
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported")
+@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported.")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
