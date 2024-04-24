@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
+from typing import Any, Callable, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available
@@ -50,7 +50,7 @@ _HPU_DEEPSPEED_AVAILABLE = (
     # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1
     RequirementCache("deepspeed==0.12.4+hpu.synapse.v1.15.1")
 )
-if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
+if _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
 
 
@@ -155,7 +155,6 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
 
         htcore.hpu_set_env()
         module = module.to("hpu")
-        import deepspeed
 
         module = deepspeed.init_inference(module, **ds_inference_kwargs)
         super()._setup_fp8_inference_modules(module, quant, fp8_data_path)
