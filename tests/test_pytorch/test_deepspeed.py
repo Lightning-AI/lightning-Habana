@@ -20,19 +20,18 @@ import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 import pytest
 import torch
 from habana_frameworks.torch.hpex.experimental.transformer_engine import recipe
-from lightning import seed_everything
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 if module_available("lightning"):
-    from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch import LightningModule, Trainer, seed_everything
     from lightning.pytorch.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.loggers import CSVLogger
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.loggers import CSVLogger
@@ -194,7 +193,18 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
     assert strategy.config == deepspeed_config
 
 
-@pytest.mark.parametrize("precision", ["bf16-mixed", "fp8"])
+@pytest.mark.parametrize(
+    "precision",
+    [
+        "bf16-mixed",
+        pytest.param(
+            "fp8",
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
+    ],
+)
 def test_hpu_deepspeed_precision_choice(tmpdir, precision):
     """Tests precision plugin with supported precisions."""
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision=precision)]
