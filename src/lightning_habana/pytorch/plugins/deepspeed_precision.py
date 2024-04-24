@@ -13,10 +13,11 @@
 # limitations under the License.
 
 
-from typing import Any, Callable, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available
+from lightning_utilities.core.imports import RequirementCache
 from torch import Tensor
 from torch.optim import LBFGS, Optimizer
 
@@ -37,6 +38,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
+from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
 
@@ -44,9 +46,13 @@ if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
-import deepspeed
+_HPU_DEEPSPEED_AVAILABLE = (
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1
+    RequirementCache("deepspeed==0.12.4+hpu.synapse.v1.15.1")
+)
+if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
+    import deepspeed
 
-from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
 
 warning_cache = WarningCache()
 
@@ -143,6 +149,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         assert ds_inference_kwargs["dtype"] in (torch.bfloat16, torch.float)
 
         self._setup_fp8_quant_config(quant, fp8_data_path)
+        import deepspeed
         from quantization_toolkit import habana_quantization_toolkit
 
         htcore.hpu_set_env()
