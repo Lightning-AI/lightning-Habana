@@ -132,12 +132,18 @@ class HPUPrecisionPlugin(Precision):
         This module cannot be used to run trainer.fit.
 
         """
-        self._setup_fp8_quant_config(quant, fp8_data_path)
-        from quantization_toolkit import habana_quantization_toolkit
-
         htcore.hpu_set_env()
+        module = module.to("hpu")
+        self._setup_fp8_inference_modules(module, quant, fp8_data_path)
+
+    def _setup_fp8_inference_modules(
+        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+    ) -> None:
+        """Convert module for fp8 inference."""
         try:
-            module = module.to("hpu")
+            self._setup_fp8_quant_config(quant, fp8_data_path)
+            from quantization_toolkit import habana_quantization_toolkit
+
             habana_quantization_toolkit.prep_model(module)
             htcore.hpu_initialize(module)
         except FileNotFoundError as e:
@@ -146,6 +152,9 @@ class HPUPrecisionPlugin(Precision):
                 "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
                 "and run trainer.fit() to dump measurement data."
             )
+            raise e
+        except ModuleNotFoundError as e:
+            print("quantization_toolkit not found. Please install it using `pip install habana_quantization_toolkit`.")
             raise e
 
     def _enable_fp8_training(self, module: torch.nn.Module) -> None:

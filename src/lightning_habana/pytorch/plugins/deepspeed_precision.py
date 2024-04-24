@@ -73,6 +73,11 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         replace_layers: bool = False,
     ) -> None:
+        if not _HPU_DEEPSPEED_AVAILABLE:
+            raise MisconfigurationException(
+                "To use the `HPUDeepSpeedPrecisionPlugin`, you must have hpu DeepSpeed installed."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1`."
+            )
         super().__init__(device=device, precision=precision, recipe=recipe, replace_layers=replace_layers)
 
     def backward(
@@ -148,22 +153,12 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
             ds_inference_kwargs["dtype"] = torch.bfloat16
         assert ds_inference_kwargs["dtype"] in (torch.bfloat16, torch.float)
 
-        self._setup_fp8_quant_config(quant, fp8_data_path)
-        import deepspeed
-        from quantization_toolkit import habana_quantization_toolkit
-
         htcore.hpu_set_env()
-        try:
-            module = deepspeed.init_inference(module, **ds_inference_kwargs)
-            habana_quantization_toolkit.prep_model(module)
-            htcore.hpu_initialize(module)
-        except FileNotFoundError as e:
-            print(
-                "Please run the fp8 measurement using a portion of data and try again. "
-                "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
-                "and run trainer.fit() to dump measurement data."
-            )
-            raise e
+        module = module.to("hpu")
+        import deepspeed
+
+        module = deepspeed.init_inference(module, **ds_inference_kwargs)
+        super()._setup_fp8_inference_modules(module, quant, fp8_data_path)
 
     def convert_modules(
         self,
