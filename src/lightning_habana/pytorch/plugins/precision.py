@@ -106,6 +106,70 @@ class HPUPrecisionPlugin(Precision):
                 f"fp8 inference available: {self.fp8_inference_available}."
             )
 
+    def _setup_fp8_quant_config(self, quant: bool = True, fp8_data_path: Optional[str] = None) -> None:
+        """Setup QUANT_CONFIG for before importing HQT."""
+        if os.environ.get("QUANT_CONFIG", None) is None:
+            # Use default jsons in case one is not provided via env variable
+            fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
+            assert fp8_data_path is not None
+            # Create a copy in fp8_dump_path to avoid modifying package jsons.
+            fp8_json = MAXABS_QUANT if quant else MAXABS_MEASURE
+            if fp8_data_path is not None:
+                modify_fp8_json(
+                    file_path=fp8_json,
+                    patch={
+                        "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
+                        "dump_stats_xlsx_path": os.path.join(fp8_data_path, "hqt", "fp8stats.xlsx"),
+                    },
+                )
+            os.environ["QUANT_CONFIG"] = fp8_json
+
+    def _enable_fp8_inference(
+        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+    ) -> None:
+        """Convert module for fp8 inference.
+
+        This module cannot be used to run trainer.fit.
+
+        """
+        htcore.hpu_set_env()
+        module = module.to("hpu")
+        self._setup_fp8_inference_modules(module, quant, fp8_data_path)
+
+    def _setup_fp8_inference_modules(
+        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+    ) -> None:
+        """Convert module for fp8 inference."""
+        try:
+            self._setup_fp8_quant_config(quant, fp8_data_path)
+            from quantization_toolkit import habana_quantization_toolkit
+
+            habana_quantization_toolkit.prep_model(module)
+            htcore.hpu_initialize(module)
+        except FileNotFoundError as e:
+            print(
+                "Please run the fp8 measurement using a portion of data and try again. "
+                "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
+                "and run trainer.fit() to dump measurement data."
+            )
+            raise e
+        except ModuleNotFoundError as e:
+            print("quantization_toolkit not found. Please install it using `pip install habana_quantization_toolkit`.")
+            raise e
+
+    def _enable_fp8_training(self, module: torch.nn.Module) -> None:
+        """Convert module for fp8 training."""
+        # In case model already contains a transformer engine modules,
+        # assume user responsibility for conversion of required layers.
+        if any(
+            "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
+        ):
+            rank_zero_info(
+                f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
+            )
+        else:
+            _replace_layers(module)
+
     def convert_modules(
         self,
         module: torch.nn.Module,
@@ -115,51 +179,9 @@ class HPUPrecisionPlugin(Precision):
     ) -> torch.nn.Module:
         """Enable support for fp8."""
         if inference is True and self.fp8_inference_available:
-            # Convert module for fp8 inference. This module cannot be used to run trainer.fit.
-            # Env needs to be set before importing Habana Quantization Toolkit
-            if os.environ.get("QUANT_CONFIG", None) is None:
-                # Use default jsons in case one is not provided via env variable
-                fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
-                assert fp8_data_path is not None
-                # Create a copy in fp8_dump_path to avoid modifying package jsons.
-                fp8_json = MAXABS_QUANT if quant else MAXABS_MEASURE
-                if fp8_data_path is not None:
-                    modify_fp8_json(
-                        file_path=fp8_json,
-                        patch={
-                            "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
-                            "dump_stats_xlsx_path": os.path.join(fp8_data_path, "hqt", "fp8stats.xlsx"),
-                        },
-                    )
-                os.environ["QUANT_CONFIG"] = fp8_json
-
-            from quantization_toolkit import habana_quantization_toolkit  # noqa
-
-            htcore.hpu_set_env(module)
-            try:
-                module = module.to("hpu")
-                habana_quantization_toolkit.prep_model(module)
-                htcore.hpu_initialize(module)
-            except FileNotFoundError as e:
-                print(
-                    "Please run the fp8 measurement using a portion of data and try again. "
-                    "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
-                    "and run trainer.fit() to dump measurement data."
-                )
-                raise e
-
+            self._enable_fp8_inference(module, quant, fp8_data_path)
         if self.fp8_train_available is True and self.replace_layers is True and inference is False:
-            # Convert module for fp8 training.
-            # In case model already contains a transformer engine modules,
-            # assume user responsibility for conversion of required layers.
-            if any(
-                "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
-            ):
-                rank_zero_info(
-                    f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
-                )
-            else:
-                _replace_layers(module)
+            self._enable_fp8_training(module)
         return module
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
