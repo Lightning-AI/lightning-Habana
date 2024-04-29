@@ -16,20 +16,22 @@ import json
 import os
 from typing import Any, Dict
 
+import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 import pytest
 import torch
+from habana_frameworks.torch.hpex.experimental.transformer_engine import recipe
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 if module_available("lightning"):
-    from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch import LightningModule, Trainer, seed_everything
     from lightning.pytorch.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.loggers import CSVLogger
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.loggers import CSVLogger
@@ -191,8 +193,21 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
     assert strategy.config == deepspeed_config
 
 
-def test_hpu_deepspeed_precision_choice(tmpdir):
-    _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
+@pytest.mark.parametrize(
+    "precision",
+    [
+        "bf16-mixed",
+        pytest.param(
+            "fp8",
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
+    ],
+)
+def test_hpu_deepspeed_precision_choice(tmpdir, precision):
+    """Tests precision plugin with supported precisions."""
+    _plugins = [HPUDeepSpeedPrecisionPlugin(precision=precision)]
     trainer = Trainer(
         fast_dev_run=True,
         default_root_dir=tmpdir,
@@ -203,7 +218,7 @@ def test_hpu_deepspeed_precision_choice(tmpdir):
 
     assert isinstance(trainer.strategy, HPUDeepSpeedStrategy)
     assert isinstance(trainer.strategy.precision_plugin, HPUDeepSpeedPrecisionPlugin)
-    assert trainer.strategy.precision_plugin.precision == "bf16-mixed"
+    assert trainer.strategy.precision_plugin.precision == precision
 
 
 def test_hpu_deepspeed_with_invalid_config_path():
@@ -772,3 +787,155 @@ def test_lightning_deepspeed_inference_config(get_device_count, dtype):
     assert torch.allclose(
         preds[0].detach().to(torch.float), expected
     ), f"incorrect result value {preds}, expected {expected}"
+
+
+@pytest.mark.parametrize("stage", [1, 2, 3])
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
+    """Test compare training accuracy between bf16 and fp8 precision for deepspeed."""
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+
+        def training_step(self, batch, batch_idx):
+            """Training step."""
+            loss = super().training_step(batch, batch_idx)
+            self.log("train_loss", loss.get("loss"), prog_bar=True, sync_dist=True)
+            return loss
+
+        def validation_step(self, batch, batch_idx):
+            """Validation step."""
+            loss = super().validation_step(batch, batch_idx)
+            self.log("val_loss", loss.get("x"), prog_bar=True, sync_dist=True)
+            return loss
+
+        def configure_optimizers(self):
+            """Configure optimizer."""
+            from torch.optim.adamw import AdamW
+
+            return AdamW(self.parameters())
+
+    def run_training(tmpdir, model, plugin, strategy):
+        """Runs a model and returns loss."""
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            fast_dev_run=True,
+            accelerator=HPUAccelerator(),
+            devices=get_device_count,
+            strategy=strategy,
+            plugins=plugin,
+        )
+        trainer.fit(model)
+        return trainer.callback_metrics["val_loss"], trainer.callback_metrics["train_loss"]
+
+    precision_plugin_params_list = [
+        ({"device": "hpu", "precision": "bf16-mixed"}),
+        ({"device": "hpu", "precision": "fp8", "replace_layers": True, "recipe": recipe.DelayedScaling()}),
+    ]
+
+    loss_list = []
+
+    for params in precision_plugin_params_list:
+        seed_everything(42)
+        model = TestModel()
+        _plugin = HPUDeepSpeedPrecisionPlugin(**params)
+        _strategy = HPUDeepSpeedStrategy(stage=stage)
+        loss_list.append(run_training(tmpdir, model, _plugin, _strategy))
+
+    assert torch.allclose(torch.tensor(loss_list[0][1]), torch.tensor(loss_list[1][1]), rtol=1e-2, atol=1e-2)
+
+
+@pytest.mark.standalone_only()
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="Accessory test for fp8 inference.")
+def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
+    """Test maintain bf16 test loss used in fp8 inference accuracy test using deepspeed."""
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """init."""
+            super().__init__()
+            self.layer = torch.nn.Linear(32, 2)
+
+        def test_step(self, batch, batch_idx):
+            """Training step."""
+            loss = super().test_step(batch, batch_idx)
+            self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
+            return loss
+
+    def run_training(tmpdir, model, plugin, strategy):
+        """Runs a model and returns loss."""
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=HPUAccelerator(),
+            devices=get_device_count,
+            strategy=strategy,
+            plugins=plugin,
+            fast_dev_run=True,
+        )
+        trainer.test(model)
+        return trainer.callback_metrics["test_loss"]
+
+    seed_everything(42)
+    model = TestModel()
+    _plugin = HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")
+    _strategy = HPUDeepSpeedStrategy()
+
+    bf16_test_loss = run_training(tmpdir, model, _plugin, _strategy)
+    bf16_loss = torch.tensor(0.414062)
+    if get_device_count == 2:
+        bf16_loss = torch.tensor(1.253906)
+    assert torch.allclose(bf16_test_loss, bf16_loss, rtol=1e-5, atol=1e-5)
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reconfigured in same process
+@pytest.mark.parametrize("quant", [False, True])
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, get_device_count, quant):
+    """Test compare inference accuracy between bf16 and fp8 precision for deepspeed."""
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """init."""
+            super().__init__()
+            self.layer = torch.nn.Linear(32, 2)
+
+        def test_step(self, batch, batch_idx):
+            """Training step."""
+            loss = super().test_step(batch, batch_idx)
+            self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
+            return loss
+
+    def run_training(tmpdir, model, plugin, strategy):
+        """Runs a model and returns loss."""
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=HPUAccelerator(),
+            devices=get_device_count,
+            strategy=strategy,
+            plugins=plugin,
+            fast_dev_run=True,
+        )
+        trainer.test(model)
+        return trainer.callback_metrics["test_loss"]
+
+    seed_everything(42)
+    model = TestModel()
+    _plugin = HPUDeepSpeedPrecisionPlugin(precision="fp8")
+    _strategy = HPUDeepSpeedStrategy()
+    _plugin.convert_modules(model, inference=True, quant=quant)
+
+    fp8_test_loss = run_training(tmpdir, model, _plugin, _strategy)
+    if quant is True:
+        bf16_loss = torch.tensor(0.4141)
+        if get_device_count == 2:
+            bf16_loss = torch.tensor(1.253906)
+        assert torch.allclose(fp8_test_loss, bf16_loss, rtol=1e-2, atol=1e-2)
