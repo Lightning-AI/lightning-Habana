@@ -8,3 +8,7 @@
 /.github/       @borda @jerome-habana @carmocca
 /.azure/        @borda @jerome-habana @carmocca
 *.yml           @borda @jerome-habana
+
+# Releasing
+/README.md                              @jerome-habana @borda @lantiga
+/src/lightning_habana/__about__.py      @jerome-habana @borda @lantiga
