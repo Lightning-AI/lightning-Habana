@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from lightning_habana.pytorch.plugins.deepspeed_precision import HPUDeepSpeedPrecisionPlugin
+from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 
-__all__ = ["HPUPrecisionPlugin", "HPUCheckpointIO", "HPUDeepSpeedPrecisionPlugin"]
+__all__ = ["HPUPrecisionPlugin", "HPUCheckpointIO", "HPUDeepSpeedPrecisionPlugin", "HPUFSDPPrecision"]

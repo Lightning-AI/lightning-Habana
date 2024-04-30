@@ -12,7 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added support for Intel Gaudi Profiler. Deprecate `HABANA_PROFILE` environment variable from HPUProfiler. ([#158](https://github.com/Lightning-AI/lightning-Habana/pull/158))
 - Added support for FP8 inference. ([#162](https://github.com/Lightning-AI/lightning-Habana/pull/162))
 - Added support for LightningCLI. ([#173](https://github.com/Lightning-AI/lightning-Habana/pull/173))
+- Added experimental support for FSDP on HPU. ([#174](https://github.com/Lightning-AI/lightning-Habana/pull/174))
 - Added support for FP8 inference with DeepSpeed. ([#176](https://github.com/Lightning-AI/lightning-Habana/pull/176))
+
 
 ### Changed
 

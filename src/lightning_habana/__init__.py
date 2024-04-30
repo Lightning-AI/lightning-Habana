@@ -20,11 +20,13 @@ from lightning_habana.__about__ import *  # noqa: F401, F403
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.datamodule.datamodule import HPUDataModule
 from lightning_habana.pytorch.plugins.deepspeed_precision import HPUDeepSpeedPrecisionPlugin
+from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.plugins.precision import HPUPrecisionPlugin
 from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.pytorch.strategies.deepspeed import HPUDeepSpeedStrategy
+from lightning_habana.pytorch.strategies.fsdp import HPUFSDPStrategy
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
@@ -50,6 +52,7 @@ __all__ = [
     "HPUDDPStrategy",
     "HPUDeepSpeedStrategy",
     "HPUParallelStrategy",
+    "HPUFSDPStrategy",
     "SingleHPUStrategy",
     "HPUPrecisionPlugin",
     "HPUCheckpointIO",
@@ -57,4 +60,5 @@ __all__ = [
     "HPUProfiler",
     "HPU_AVAILABLE",
     "HPUDeepSpeedPrecisionPlugin",
+    "HPUFSDPPrecision",
 ]

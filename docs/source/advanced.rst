@@ -472,6 +472,80 @@ Limitations of DeepSpeed on HPU
 
 For further details on the supported DeepSpeed features and functionalities, refer to `Using DeepSpeed with HPU <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html>`_.
 
+
+----
+
+Using FSDP on HPU
+-------------------------
+
+Fully Sharded Data Parallel (FSDP) is supported by Intel Gaudi 2 AI accelerator for running distributed training on large-scale models.
+
+To enable FSDP training on HPU, use HPUFSDPStrategy:
+
+.. code-block:: python
+
+    from lightning_habana.pytorch.strategies import HPUFSDPStrategy
+    from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecisionPlugin
+
+    strategy=HPUFSDPStrategy(parallel_devices=[torch.device("hpu")] * 8,
+                                sharding_strategy="FULL_SHARD",
+                                precision_plugin=HPUFSDPPrecisionPlugin("bf16-mixed")
+                            )
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=strategy, fast_dev_run=10, enable_model_summary=True)
+
+
+Choose Sharding Strategy
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sharding stragey can be configured to control the way model parameters, gradients, and optimizer states are sharded. Sharding strategy can be one of the four values as shown below.
+
+#. "FULL_SHARD"     -   Default: Shard weights, gradients, optimizer state (1 + 2 + 3)
+#. "SHARD_GRAD_OP"  -   Shard gradients, optimizer state (2 + 3)
+#. "HYBRID_SHARD"   -   Full-shard within a machine, replicate across machines
+#. "NO_SHARD"       -   Don't shard anything (similar to DDP)
+
+.. code-block:: python
+
+    strategy = HPUFSDPStrategy(
+        sharding_strategy="FULL_SHARD",
+        ...,
+    )
+    trainer = Trainer(..., strategy=strategy)
+
+
+Here is a sample code for Scaling Gaudi with PyTorch using the Fully Sharded Data Parallelism (FSDP) approach.
+
+.. code-block:: python
+
+    class MyModel(BoringModel):
+        def configure_model(self):
+            self.layer = torch.nn.Linear(32, 2)
+
+        def configure_optimizers(self):
+            return torch.optim.AdamW(self.layer.parameters(), lr=0.1)
+
+    _strategy=HPUFSDPStrategy(
+        parallel_devices=[torch.device("hpu")] * 8,
+        sharding_strategy="SHARD_GRAD_OP",
+        precision_plugin=HPUFSDPPrecision("bf16-mixed"))
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=hpus,
+        strategy=_strategy,
+        max_epochs=1,
+    )
+
+
+Limitations of FSDP on HPU
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   1. This is an experimental feature.
+   2. Saving/loading checkpoint using FSDP strategy is not fully enabled.
+   3. If you encounter stability issues when running your model with FSDP, set PT_HPU_EAGER_PIPELINE_ENABLE=false flag.
+
+For more details on the supported FSDP features and functionalities, and limitations refer to `Using Fully Sharded Data Parallel (FSDP) with Intel Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FSDP/Pytorch_FSDP.html>`_.
+
 ----
 
 Using HPU Graphs

@@ -79,6 +79,7 @@ declare -a results
 # Get test list and run each test individually
 tests=$(grep -oP '^tests/test_\S+' "$TEST_FILE")
 for test in $tests; do
+  echo "Executing test: $test"
   result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml)
   retval=$?
   last_line=$(tail -n 1 <<< "$result")
