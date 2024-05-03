@@ -546,6 +546,12 @@ Limitations of FSDP on HPU
 
 For more details on the supported FSDP features and functionalities, and limitations refer to `Using Fully Sharded Data Parallel (FSDP) with Intel Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FSDP/Pytorch_FSDP.html>`_.
 
+.. note::
+
+    This is an experimental feature.
+    This feature requires lightning/pytorch-lightning >= 2.3.0 or install nightly from the source.
+
+
 ----
 
 Using HPU Graphs
