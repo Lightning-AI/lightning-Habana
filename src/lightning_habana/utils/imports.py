@@ -27,8 +27,8 @@ _TORCH_GREATER_EQUAL_2_0_0 = compare_version("torch", operator.ge, "2.0.0")
 _LIGHTNING_GREATER_EQUAL_2_0_0 = compare_version("lightning", operator.ge, "2.0.0") or compare_version(
     "pytorch_lightning", operator.ge, "2.0.0"
 )
-_LIGHTNING_GREATER_EQUAL_2_3_0 = compare_version("lightning", operator.ge, "2.3.0") or compare_version(
-    "pytorch_lightning", operator.ge, "2.3.0"
+_LIGHTNING_GREATER_EQUAL_2_3_0 = compare_version("lightning", operator.ge, "2.3.0", True) or compare_version(
+    "pytorch_lightning", operator.ge, "2.3.0", True
 )
 _TORCHVISION_AVAILABLE = RequirementCache("torchvision")
 _KINETO_AVAILABLE = torch.profiler.kineto_available()
