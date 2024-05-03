@@ -60,7 +60,7 @@ from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_LESSER_EQUAL_2_2_3
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.distributed.hccl as hpu_dist
@@ -105,8 +105,8 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         state_dict_type: Literal["full", "sharded"] = "full",
         **kwargs: Any,
     ) -> None:
-        if _LIGHTNING_LESSER_EQUAL_2_2_3:
-            raise OSError("HPUFSDPStrategy requires `pytorch-lightning > 2.2.3`.")
+        if not _LIGHTNING_GREATER_EQUAL_2_3_0:
+            raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
