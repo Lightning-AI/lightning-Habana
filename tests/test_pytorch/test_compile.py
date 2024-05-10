@@ -190,7 +190,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
     model_to_train = BoringModel()
     model_to_eval = BoringModel()
     compiled_train_model = torch.compile(model_to_train, backend="hpu_backend")
-    compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
+    compiled_eval_model = torch.compile(model_to_eval, backend="hpu_backend")
 
     _strategy = SingleHPUStrategy()
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]

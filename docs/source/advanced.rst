@@ -815,19 +815,14 @@ Using ``torch.compile``
 ------------------------
 
 PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
-The following compile backends are now available to support HPU: `hpu_backend` for training and `aot_hpu_training_backend` for inference.
+The following compile backend is now available to support training & inference on HPU: `hpu_backend` .
 
 .. code-block:: python
 
     compiled_train_model = torch.compile(model_to_train, backend="hpu_backend")
-    compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
+    compiled_eval_model = torch.compile(model_to_eval, backend="hpu_backend")
 
 Please refer to `GAUDI Release Notes <https://docs.habana.ai/en/latest/Release_Notes/GAUDI_Release_Notes.html>`_
-
-.. note::
-
-    For models using torch.compile, `aot_hpu_training_backend` is now deprecated and will be removed in a future release.
-    Replace `aot_hpu_training_backend` with `hpu_backend`.
 
 
 ----
