@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated to common `hpu_backend` interface for compile support. ([#183](https://github.com/Lightning-AI/lightning-Habana/pull/183))
+- Removed obsoleted documentation entries. ([#184](https://github.com/Lightning-AI/lightning-Habana/pull/184))
 
 
 ### Fixed
