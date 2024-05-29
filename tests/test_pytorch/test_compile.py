@@ -29,6 +29,9 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
+from contextlib import nullcontext
+
+from lightning_habana import HPUProfiler
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
@@ -239,3 +242,19 @@ def test_ddp_strategy_with_compile(tmp_path, hpus):
     assert _strategy._ddp_kwargs["gradient_as_bucket_view"] is True
     assert _strategy._ddp_kwargs["static_graph"] is True
     assert _strategy._ddp_kwargs["find_unused_parameters"] is True
+
+
+@pytest.mark.usefixtures("_is_compile_allowed")
+def test_hpu_profiler_with_compile(tmpdir):
+    """Tests profilers with torch.compile."""
+    model = BoringModel()
+    compiled_model = torch.compile(model, backend="hpu_backend")
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        fast_dev_run=5,
+        profiler=HPUProfiler(dirpath=tmpdir),
+    )
+    with nullcontext():
+        trainer.fit(compiled_model)
