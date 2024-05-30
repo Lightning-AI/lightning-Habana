@@ -465,10 +465,8 @@ Using Configuration
 
 Limitations of DeepSpeed on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   1. DeepSpeed Zero Stage 3 is not yet supported by Gaudi2.
-   2. Offloading to Nvme is not yet verified on HPU with DeepSpeed Zero Stage 3 Offload configuration.
-   3. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
-   4. DeepSpeed inference with float16 is not supported on Gaudi1.
+   1. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
+   2. DeepSpeed inference with float16 is not supported on Gaudi1.
 
 For further details on the supported DeepSpeed features and functionalities, refer to `Using DeepSpeed with HPU <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html>`_.
 

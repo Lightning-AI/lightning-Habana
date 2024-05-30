@@ -487,15 +487,6 @@ def test_lightning_model(
         checkpoint_in_cpu,
     )
 
-    if zero_config == 3 and HPUAccelerator.get_device_name() == "GAUDI2":
-        pytest.skip(reason="Not supported ")
-
-    if zero_config == 0 and cpu_offload is True:
-        pytest.skip("Zero stage 0 and cpu_offload is an invalid configuration")
-
-    if zero_config == "infinity" and cpu_offload is False:
-        pytest.skip("Not running zero_infinity without cpu_offload")
-
     model = SampleModel()
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     _accumulate_grad_batches = config["train_micro_batch_size_per_gpu"]
