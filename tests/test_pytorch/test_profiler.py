@@ -370,6 +370,5 @@ _incorrect_imports()
     p = run(["python", file_name], capture_output=True, check=False)
 
     assert p.returncode != 0
-    assert (
-        "AssertionError: lightning_habana should be imported before lightning to use HPUProfiler" in p.stderr.decode()
-    )
+    assert "AssertionError" in p.stderr.decode()
+    assert "lightning_habana should be imported before lightning to use HPUProfiler." in p.stderr.decode()
