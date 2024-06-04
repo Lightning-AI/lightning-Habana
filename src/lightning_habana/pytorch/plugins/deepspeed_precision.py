@@ -47,8 +47,8 @@ if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1
-    RequirementCache("deepspeed==0.12.4+hpu.synapse.v1.15.1")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.0
+    RequirementCache("deepspeed==0.14.0+hpu.synapse.v1.16.0")
 )
 if _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -76,7 +76,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedPrecisionPlugin`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.0`."
             )
         super().__init__(device=device, precision=precision, recipe=recipe, replace_layers=replace_layers)
 
