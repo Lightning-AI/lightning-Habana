@@ -936,6 +936,7 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
             from quantization_toolkit import habana_quantization_toolkit  # noqa
 
             habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
         return super().on_test_end()
 
     def on_predict_end(self) -> None:
@@ -943,6 +944,7 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
             from quantization_toolkit import habana_quantization_toolkit  # noqa
 
             habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
         return super().on_predict_end()
 
     @classmethod
