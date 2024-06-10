@@ -22,7 +22,7 @@ from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-_HABANA_QUANTIZATION_TOOLKIT_AVAILABLE = package_available("quantization_toolkit")
+_HABANA_QUANTIZATION_TOOLKIT_AVAILABLE = package_available("habana_quantization_toolkit")
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu

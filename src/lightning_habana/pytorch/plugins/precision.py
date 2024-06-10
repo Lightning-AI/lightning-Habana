@@ -142,7 +142,7 @@ class HPUPrecisionPlugin(Precision):
         """Convert module for fp8 inference."""
         try:
             self._setup_fp8_quant_config(quant, fp8_data_path)
-            from quantization_toolkit import habana_quantization_toolkit
+            import habana_quantization_toolkit
 
             habana_quantization_toolkit.prep_model(module)
             htcore.quantization.hpu_inference_initialize(module)
