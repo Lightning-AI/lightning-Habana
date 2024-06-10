@@ -49,7 +49,7 @@ from torch.optim.optimizer import Optimizer
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_2_3_0
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
@@ -196,7 +196,12 @@ def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # 
     my_rank = get_rank()
     # Serialize object_list elements to tensors on src rank.
     if my_rank == src:
-        tensor_list, size_list = zip(*[_object_to_tensor(obj, device) for obj in object_list])
+        tensor_list = []
+        size_list = []
+        if _TORCH_LESSER_2_3_0:
+            tensor_list, size_list = zip(*[_object_to_tensor(obj, device) for obj in object_list])
+        else:
+            tensor_list, size_list = zip(*[_object_to_tensor(obj, device, group) for obj in object_list])
         object_sizes_tensor = torch.cat(size_list)
     else:
         object_sizes_tensor = torch.empty(len(object_list), dtype=torch.long)
@@ -258,4 +263,7 @@ def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # 
             if obj_view.device != torch.device("cpu"):
                 obj_view = obj_view.cpu()
             offset += obj_size
-            object_list[i] = _tensor_to_object(obj_view, obj_size)
+            if _TORCH_LESSER_2_3_0:
+                object_list[i] = _tensor_to_object(obj_view, obj_size)
+            else:
+                object_list[i] = _tensor_to_object(obj_view, obj_size, group)
