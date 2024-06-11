@@ -132,7 +132,7 @@ class HPUPrecisionPlugin(Precision):
         This module cannot be used to run trainer.fit.
 
         """
-        htcore.hpu_set_env()
+        htcore.quantization.hpu_set_inference_env()
         module = module.to("hpu")
         self._setup_fp8_inference_modules(module, quant, fp8_data_path)
 
@@ -142,10 +142,10 @@ class HPUPrecisionPlugin(Precision):
         """Convert module for fp8 inference."""
         try:
             self._setup_fp8_quant_config(quant, fp8_data_path)
-            from quantization_toolkit import habana_quantization_toolkit
+            import habana_quantization_toolkit
 
             habana_quantization_toolkit.prep_model(module)
-            htcore.hpu_initialize(module)
+            htcore.quantization.hpu_inference_initialize(module)
         except FileNotFoundError as e:
             print(
                 "Please run the fp8 measurement using a portion of data and try again. "

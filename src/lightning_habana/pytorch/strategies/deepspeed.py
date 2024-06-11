@@ -75,7 +75,7 @@ from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.core as htcore  # noqa: F401
+    import habana_frameworks.torch.core as htcore
     import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
@@ -936,6 +936,7 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
             from quantization_toolkit import habana_quantization_toolkit  # noqa
 
             habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
         return super().on_test_end()
 
     def on_predict_end(self) -> None:
@@ -943,6 +944,7 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
             from quantization_toolkit import habana_quantization_toolkit  # noqa
 
             habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
         return super().on_predict_end()
 
     @classmethod

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Updated to common `hpu_backend` interface for compile support. ([#183](https://github.com/Lightning-AI/lightning-Habana/pull/183))
 - Updated to Intel Gaudi software Release 1.16.0 ([#191](https://github.com/Lightning-AI/lightning-Habana/pull/191))
+- Updated HQT APIs to be in accordance with Intel Gaudi software Release 1.16.0 ([#192](https://github.com/Lightning-AI/lightning-Habana/pull/192))
 
 ### Fixed
 
