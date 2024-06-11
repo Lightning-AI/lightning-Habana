@@ -21,7 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed deepspeed documentation & tests based on synapse AI release 1.15.1 and latest PTL fabric. ([#184](https://github.com/Lightning-AI/lightning-Habana/pull/184))
 - Workaround to resolve label name issue in HPUProfiler with torch.compile. ([#185](https://github.com/Lightning-AI/lightning-Habana/pull/185))
-
+- Fixed incompatibility issue for PyTorch>=2.3.0 ([#193](https://github.com/Lightning-AI/lightning-Habana/pull/193))
+-
 ### Removed
 
 -
