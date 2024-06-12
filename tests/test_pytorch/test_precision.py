@@ -563,8 +563,8 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
         (BMPluginActive, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
         (BMPluginActive, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
         pytest.param(
-            BMPluginActive, 
-            HPUPrecisionPlugin, 
+            BMPluginActive,
+            HPUPrecisionPlugin,
             {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
@@ -618,7 +618,7 @@ def test_mixed_precision_compare_accuracy(tmpdir):
                     "precision": "fp8",
                     "replace_layers": True,
                 },
-            )
+            ),
         )
 
     loss_list = []

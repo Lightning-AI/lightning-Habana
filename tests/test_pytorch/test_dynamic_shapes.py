@@ -78,6 +78,7 @@ def test_dynamic_shapes_graph_compiler(tmpdir, hpus, monkeypatch):
 
     assert cached_compiles[0] <= default_compiles[0]
 
+
 @pytest.mark.standalone_only()
 def test_dynamic_shapes_auto_detect_recompilations(tmpdir):
     """Test auto_detect_recompilations tool."""
