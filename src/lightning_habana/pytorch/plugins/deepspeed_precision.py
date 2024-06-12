@@ -58,17 +58,24 @@ warning_cache = WarningCache()
 
 
 class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
-    """Plugin that enables bfloat support on HPUs.
+    """Plugin that enables mixed precision support on HPUs.
 
     Args:
-        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
-        device: The device for ``torch.autocast``.
+        precision (_PRECISION_INPUT, optional): Precision input. Defaults to "32-true".
+        recipe (Optional[Union[Mapping[str, Any], "DelayedScaling"]], optional):
+            recipe for fp8 training. Defaults to None.
+        replace_layers (bool, optional): Replace module with transformer engine equivalent. Defaults to False.
+
+    Raises:
+        OSError: Unsupported Synapse version.
+        ValueError: Invalid precision value(s).
+        NotImplementedError: fp8 not available.
 
     """
 
     def __init__(
         self,
-        precision: _PRECISION_INPUT,
+        precision: _PRECISION_INPUT = "32-true",
         device: str = "hpu",
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         replace_layers: bool = False,
@@ -78,7 +85,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
                 "To use the `HPUDeepSpeedPrecisionPlugin`, you must have hpu DeepSpeed installed."
                 " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.0`."
             )
-        super().__init__(device=device, precision=precision, recipe=recipe, replace_layers=replace_layers)
+        super().__init__(precision=precision, recipe=recipe, replace_layers=replace_layers)
 
     def backward(
         self,
@@ -153,7 +160,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
             ds_inference_kwargs["dtype"] = torch.bfloat16
         assert ds_inference_kwargs["dtype"] in (torch.bfloat16, torch.float)
 
-        htcore.hpu_set_env()
+        htcore.quantization.hpu_set_inference_env()
         module = module.to("hpu")
 
         module = deepspeed.init_inference(module, **ds_inference_kwargs)

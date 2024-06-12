@@ -33,6 +33,7 @@ HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPreci
 
 In addition to the default settings, you can choose to override these defaults and provide your own BF16 (LOWER_LIST) and FP32 (FP32_LIST)
 The `LOWER_LIST` and `FP32_LIST` environment variables must be set before any instances begin.
+HPUPrecisionPlugin supports `bf16-mixed` and `16-mixed` for mixed precision training. It is advised to use `bf16-mixed` over `16-mixed` where possible.
 
 The following is an excerpt from an MNIST example implemented on a single HPU.
 
@@ -156,7 +157,7 @@ The plugin accepts following args for the fp8 training:
     1. Import `transformer_engine` and replace your modules with `transformer_engine` modules in the model.
     2. Wrap the forward pass of the training with `fp8_autocast`.
 
-    Users may still use `HPUPrecisionPlugin` to train in `bf16-mixed` precision for modules not supported by `transformer_engine`.
+    Users may still use `HPUPrecisionPlugin` to train in mixed precision for modules not supported by `transformer_engine`.
 
 
 .. note::
@@ -254,9 +255,9 @@ Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/P
 **Limitations**
 
 1. Measurement mode and Quantization mode cannot be run in single process. Please run in measurement mode first, followed by quantization mode. Measurement data may be re-used for inference in quantiztion mode for the given model.
-2. Only single card inference is currently supported. Support for multiple cards will be enabled in a future release.
 
 For more details, refer to `Inference Using FP8 <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html>`__.
+For a list of data types supported with HPU, refer to `PyTorch Support Matrix <https://docs.habana.ai/en/v1.15.1/PyTorch/Reference/PyTorch_Support_Matrix.html>`__.
 
 ----
 
