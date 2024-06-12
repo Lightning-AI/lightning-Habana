@@ -403,9 +403,12 @@ def test_hpu_precision_synapse_version(monkeypatch):
             HPUPrecisionPlugin,
             {"precision": "bf16"},
         ),
-        (
+        pytest.param(
             HPUPrecisionPlugin,
             {"precision": "16-mixed"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+            ),
         ),
         (
             HPUPrecisionPlugin,
@@ -559,7 +562,14 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
         (BMAutocastDecorator, None, None),
         (BMPluginActive, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
         (BMPluginActive, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
-        (BMPluginActive, HPUPrecisionPlugin, {"precision": "16-mixed"}),
+        pytest.param(
+            BMPluginActive, 
+            HPUPrecisionPlugin, 
+            {"precision": "16-mixed"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
+        ),
         pytest.param(
             BMPluginActive,
             HPUPrecisionPlugin,
@@ -596,11 +606,11 @@ def test_mixed_precision_compare_accuracy(tmpdir):
         (BMAutocastDecorator, None, None),
         (BaseBM, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
         (BaseBM, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
-        (BaseBM, HPUPrecisionPlugin, {"precision": "16-mixed"}),
     ]
     is_gaudi = HPUAccelerator().get_device_name() == "GAUDI"
     if not is_gaudi:
         model_plugin_list.append(
+            (BaseBM, HPUPrecisionPlugin, {"precision": "16-mixed"}),
             (
                 BaseBM,
                 HPUPrecisionPlugin,
@@ -708,7 +718,12 @@ def test_hpu_precision_long_type(int64_support, expectation):
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
             ),
         ),
-        torch.float16,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+            ),
+        ),
         torch.float32,
         torch.bfloat16,
         torch.bool,
