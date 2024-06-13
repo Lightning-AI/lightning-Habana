@@ -550,7 +550,7 @@ def test_hpu_precision_supported_precision(precision):
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
-        ), 
+        ),
         pytest.param(
             HPUPrecisionPlugin,
             {"precision": "fp8"},
