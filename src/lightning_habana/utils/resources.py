@@ -142,6 +142,16 @@ def is_fp8_available() -> Tuple[bool, str]:
     return tengine.fp8.is_fp8_available()
 
 
+@lru_cache
+def is_fp16_available() -> Tuple[bool, str]:
+    """Returns a bool indicating if fp16 is available."""
+    if not _HABANA_FRAMEWORK_AVAILABLE:
+        raise OSError("Habana Frameworks required for training on Habana devices.")
+    if torch_hpu.get_device_name() == "GAUDI":
+        return False, "FP16 not supported on Gaudi, Gaudi2 or higher required."
+    return True, ""
+
+
 def modify_fp8_json(file_path: str, patch: dict) -> None:
     """Edit a specific entry in a JSON file.
 

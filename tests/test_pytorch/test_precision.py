@@ -367,12 +367,27 @@ def test_hpu_precision_fp8_output(tmpdir):
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
-def test_hpu_precision_fp8_on_gaudi():
+@pytest.mark.parametrize(
+    ("precision", "expectation"),
+    [
+        (
+            "fp8",
+            pytest.raises(
+                NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
+            ),
+        ),
+        (
+            "16-mixed",
+            pytest.raises(
+                NotImplementedError, match="fp16 not supported: FP16 not supported on Gaudi, Gaudi2 or higher required."
+            ),
+        ),
+    ],
+)
+def test_hpu_precision_not_supported_on_gaudi(precision, expectation):
     """Test fp8 with unsupported Habana device."""
-    with pytest.raises(
-        NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
-    ):
-        HPUPrecisionPlugin(precision="fp8")
+    with expectation:
+        HPUPrecisionPlugin(precision=precision)
 
 
 def test_hpu_precision_synapse_version(monkeypatch):

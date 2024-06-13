@@ -25,6 +25,7 @@ from lightning_habana.utils.resources import (
     _HABANA_FRAMEWORK_AVAILABLE,
     _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE,
     is_fp8_available,
+    is_fp16_available,
     modify_fp8_json,
 )
 
@@ -106,6 +107,11 @@ class HPUPrecisionPlugin(Precision):
         self.recipe = None
         self.fp8_train_available = False
         self.fp8_inference_available = False
+
+        if self.precision == "16-mixed":
+            fp16_available, reason_no_fp16 = is_fp16_available()
+            if not fp16_available:
+                raise NotImplementedError(f"fp16 not supported: {reason_no_fp16}.")
 
         if self.precision == "fp8":
             fp8_available, reason_no_fp8 = is_fp8_available()
