@@ -513,7 +513,12 @@ def test_precision_plugin_invalid_precision_init():
         "32-true",
         "bf16",
         "bf16-mixed",
-        "16-mixed",
+        pytest.param(
+            "fp16",
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+            ),
+        ),
         pytest.param(
             "fp8",
             marks=pytest.mark.skipif(
@@ -539,10 +544,13 @@ def test_hpu_precision_supported_precision(precision):
             HPUPrecisionPlugin,
             {"precision": "bf16-mixed"},
         ),
-        (
+        pytest.param(
             HPUPrecisionPlugin,
-            {"precision": "16-mixed"},
-        ),
+            {"precision": "fp16"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+            ),
+        ), 
         pytest.param(
             HPUPrecisionPlugin,
             {"precision": "fp8"},
