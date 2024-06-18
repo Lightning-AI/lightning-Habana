@@ -41,7 +41,6 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUDeepSpeedPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.deepspeed import _HPU_DEEPSPEED_AVAILABLE
-from lightning_habana.utils.resources import is_fp8_available, is_fp16_available
 
 if _HPU_DEEPSPEED_AVAILABLE:
     from deepspeed.runtime.activation_checkpointing.checkpointing import checkpoint
@@ -200,7 +199,9 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
         "bf16-mixed",
         pytest.param(
             "fp8",
-            marks=pytest.mark.skipif(not is_fp8_available()[0], reason="fp8 supported on Gaudi2 and above."),
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+            ),
         ),
     ],
 )
@@ -780,7 +781,7 @@ def test_lightning_deepspeed_inference_config(get_device_count, dtype):
 
 
 @pytest.mark.parametrize("stage", [1, 2, 3])
-@pytest.mark.skipif(not is_fp8_available()[0], reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
     """Test compare training accuracy between bf16 and fp8 precision for deepspeed."""
 
@@ -827,11 +828,15 @@ def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
         ({"precision": "bf16-mixed"}),
         pytest.param(
             {"precision": "16-mixed"},
-            marks=pytest.mark.skipif(not is_fp16_available()[0], reason="fp16 supported on Gaudi2 and above"),
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+            ),
         ),
         pytest.param(
             {"precision": "fp8", "replace_layers": True, "recipe": recipe.DelayedScaling()},
-            marks=pytest.mark.skipif(not is_fp8_available()[0], reason="fp8 supported on Gaudi2 and above"),
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+            ),
         ),
     ]
 
@@ -848,7 +853,7 @@ def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
 
 
 @pytest.mark.standalone_only()
-@pytest.mark.skipif(not is_fp8_available()[0], reason="Accessory test for fp8 inference.")
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="Accessory test for fp8 inference.")
 def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
     """Test maintain bf16 test loss used in fp8 inference accuracy test using deepspeed."""
 
@@ -893,7 +898,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
 
 @pytest.mark.standalone_only()  # HQT cannot be reconfigured in same process
 @pytest.mark.parametrize("quant", [False, True])
-@pytest.mark.skipif(not is_fp8_available()[0], reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, get_device_count, quant):
     """Test compare inference accuracy between bf16 and fp8 precision for deepspeed."""
 

@@ -72,7 +72,6 @@ echo "$test_command"
 eval "$test_command" > $TEST_FILE
 cat $TEST_FILE
 sed -i '$d' $TEST_FILE
-sleep 10
 
 # Declare an array to store test results
 declare -a results
