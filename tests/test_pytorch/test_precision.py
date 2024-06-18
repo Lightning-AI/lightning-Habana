@@ -789,3 +789,42 @@ def test_dtypes_op_output_dtype(intype):
     assert t3.dtype == intype if intype not in (torch.bfloat16, torch.float32) else torch.bfloat16
     assert t4.dtype == intype
     assert t5.dtype == torch.float32
+
+
+@pytest.mark.parametrize(
+    "intype",
+    [
+        torch.int8,
+        torch.int16,
+        torch.int32,
+        torch.int64,
+    ],
+)
+def test_hpu_dtype_lightning_module(intype, tmpdir):
+
+    seed_everything(42)
+
+    class TestBM(BaseBM):
+        def forward(self, x):
+            # Perform operations in given dtype, considering PyTorch Op compatibility:
+            # https://docs.habana.ai/en/latest/PyTorch/Reference/Pytorch_Operators/Pytorch_Operators.html#pytorch-operators
+            x = x.to(intype)
+            identity = torch.eye(x.shape[1], device=x.device, dtype=x.dtype)
+            x = torch.mm(x, identity)
+            assert x.dtype == intype
+
+            # Convert dtypes for unsupported Ops.
+            # eg int to float for torch.nn.Linear.
+            return self.layer(x.to(torch.bfloat16))
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
+        fast_dev_run=3,
+    )
+
+    model = TestBM()
+    trainer.fit(model)
