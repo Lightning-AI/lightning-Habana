@@ -759,7 +759,7 @@ def test_hpu_supported_dtypes_tensor_creation(dtype):
 
 
 @pytest.mark.parametrize("intype", [torch.int8, torch.int16, torch.int32, torch.int64, torch.bfloat16, torch.float32])
-def test_dtypes_op_output_dtype(intype):
+def test_hpu_dtypes_op_output_dtype(intype):
     """Test dtypes type promotion."""
     t1 = torch.tensor([[1, 2], [2, 1]], dtype=intype, device=torch.device("hpu"))
     t2 = torch.tensor([[2, 1], [1, 2]], dtype=intype, device=torch.device("hpu"))
@@ -791,40 +791,33 @@ def test_dtypes_op_output_dtype(intype):
     assert t5.dtype == torch.float32
 
 
-@pytest.mark.parametrize(
-    "intype",
-    [
-        torch.int8,
-        torch.int16,
-        torch.int32,
-        torch.int64,
-    ],
-)
-def test_hpu_dtype_lightning_module(intype, tmpdir):
+@pytest.mark.parametrize("intype", [torch.int8, torch.int16, torch.int32, torch.int64])
+def test_hpu_dtypes_compare_cpu_accuracy(intype, tmpdir):
+    """Test dtypes type promotion."""
 
-    seed_everything(42)
-
-    class TestBM(BaseBM):
+    class TestModel(BaseBM):
         def forward(self, x):
-            # Perform operations in given dtype, considering PyTorch Op compatibility:
-            # https://docs.habana.ai/en/latest/PyTorch/Reference/Pytorch_Operators/Pytorch_Operators.html#pytorch-operators
+            # Perform some operations in given dtype
             x = x.to(intype)
-            identity = torch.eye(x.shape[1], device=x.device, dtype=x.dtype)
-            x = torch.mm(x, identity)
-            assert x.dtype == intype
+            identity = torch.eye(x.shape[1], device=x.device, dtype=intype)
+            x = torch.addmm(x, x, identity)
 
-            # Convert dtypes for unsupported Ops.
-            # eg int to float for torch.nn.Linear.
-            return self.layer(x.to(torch.bfloat16))
+            return super().forward(x.to(torch.float32))
 
-    trainer = Trainer(
-        default_root_dir=tmpdir,
-        accelerator=HPUAccelerator(),
-        devices=1,
-        strategy=SingleHPUStrategy(),
-        plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
-        fast_dev_run=3,
-    )
+    metrics = []
+    for accelerator in [HPUAccelerator(), "cpu"]:
+        seed_everything(42)
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=accelerator,
+            devices=1,
+            strategy=SingleHPUStrategy() if isinstance(accelerator, HPUAccelerator) else "auto",
+            fast_dev_run=1,
+        )
 
-    model = TestBM()
-    trainer.fit(model)
+        trainer.fit(TestModel())
+        metrics.append(trainer.logged_metrics)
+
+    # Compare metrics between cpu and hpu
+    assert torch.equal(metrics[0].get("train_loss"), metrics[1].get("train_loss"))
+    assert torch.equal(metrics[0].get("val_loss"), metrics[1].get("val_loss"))
