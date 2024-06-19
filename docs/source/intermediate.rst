@@ -119,10 +119,9 @@ Lightning supports fp8 training using HPUPrecisionPlugin, :class:`~lightning_hab
 
 fp8 training is only available on Gaudi2 and above. Output from fp8 supported modules is in `torch.bfloat16`.
 
-The plugin accepts following args for the fp8 training:
+For fp8 training, call plugin.convert_modules(). The function accepts following args for the fp8 training:
 
 1. `replace_layers` : Set `True` to let the plugin replace `torch.nn.Modules` with `transformer_engine` equivalent modules. You can directly import and use modules from `transformer_engine` as well.
-
 2. `recipe` : fp8 recipe used in training.
 
 .. code-block:: python
@@ -135,10 +134,10 @@ The plugin accepts following args for the fp8 training:
     model = BoringModel()
 
     # init the precision plugin for fp8 training.
-    plugin = HPUPrecisionPlugin(precision="fp8", replace_layers=True, recipe=recipe.DelayedScaling())
+    plugin = HPUPrecisionPlugin(precision="fp8")
 
     # Replace torch.nn.Modules with transformer engine equivalent modules
-    plugin.convert_modules(model)
+    plugin.convert_modules(model, replace_layers=True, recipe=recipe.DelayedScaling())
 
     # Initialize a trainer with HPUPrecisionPlugin
     trainer = Trainer(

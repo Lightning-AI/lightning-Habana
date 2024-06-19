@@ -62,14 +62,11 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
 
     Args:
         precision (_PRECISION_INPUT, optional): Precision input. Defaults to "32-true".
-        recipe (Optional[Union[Mapping[str, Any], "DelayedScaling"]], optional):
-            recipe for fp8 training. Defaults to None.
-        replace_layers (bool, optional): Replace module with transformer engine equivalent. Defaults to False.
 
     Raises:
         OSError: Unsupported Synapse version.
-        ValueError: Invalid precision value(s).
-        NotImplementedError: fp8 not available.
+        ValueError: Invalid precision value.
+        NotImplementedError: fp8 / fp16 not available.
 
     """
 
@@ -77,15 +74,13 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         self,
         precision: _PRECISION_INPUT = "32-true",
         device: str = "hpu",
-        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
-        replace_layers: bool = False,
     ) -> None:
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedPrecisionPlugin`, you must have hpu DeepSpeed installed."
                 " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.0`."
             )
-        super().__init__(precision=precision, recipe=recipe, replace_layers=replace_layers)
+        super().__init__(device=device, precision=precision)
 
     def backward(
         self,
@@ -170,13 +165,15 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         self,
         module: torch.nn.Module,
         inference: bool = False,
+        replace_layers: bool = False,
+        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         quant: bool = True,
         fp8_data_path: Optional[str] = None,
         ds_inference_kwargs: Optional[dict] = None,
     ) -> torch.nn.Module:
         """Enable support for fp8."""
-        if inference is True and self.fp8_inference_available:
+        if inference and self.fp8_inference_available:
             self._enable_fp8_inference(module, quant, fp8_data_path, ds_inference_kwargs)
-        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
-            self._enable_fp8_training(module)
+        if not inference and self.fp8_train_available:
+            self._enable_fp8_training(module, replace_layers, recipe)
         return module

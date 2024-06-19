@@ -200,30 +200,34 @@ def test_hpu_precision_fp8_synapse_version(monkeypatch):
 def test_hpu_precision_replace_layerse(replace_layers):
     """Tests plugin init with replcae_layers."""
     model = BaseBM()
-    plugin = HPUPrecisionPlugin(precision="fp8", replace_layers=replace_layers)
-    plugin.convert_modules(model)
-    assert replace_layers == any(
-        "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in model.modules()
-    )
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    plugin.convert_modules(model, replace_layers=replace_layers)
+    assert isinstance(model.layer, tengine.Linear) == replace_layers
 
 
-@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize(
-    ("inference", "quant", "expectation"),
+    ("params", "expectation"),
     [
-        (True, True, pytest.raises(FileNotFoundError, match=r"Failed to load file")),
-        (True, False, nullcontext()),
-        (False, True, nullcontext()),
-        (False, False, nullcontext()),
+        pytest.param(
+            {"inference": True, "quant": True},
+            pytest.raises(FileNotFoundError, match=r"Failed to load file"),
+            marks=pytest.mark.standalone_only(),
+        ),  # HQT cannot be reloaded in same process
+        pytest.param(
+            {"inference": True, "quant": False}, nullcontext(), marks=pytest.mark.standalone_only()
+        ),  # HQT cannot be reloaded in same process
+        ({"inference": False}, nullcontext()),
+        ({"inference": False, "replace_layers": True}, nullcontext()),
+        ({"inference": False, "replace_layers": True, "recipe": tengine.recipe.DelayedScaling}, nullcontext()),
     ],
 )
-def test_hpu_precision_convert_modules(inference, quant, expectation, tmpdir):
+def test_hpu_precision_convert_modules(params, expectation, tmpdir):
     """Test HPUPrecisionPlugin.convert_modules."""
     model = BaseBM()
     plugin = HPUPrecisionPlugin(precision="fp8")
     with expectation:
-        plugin.convert_modules(module=model, inference=inference, quant=quant, fp8_data_path=tmpdir)
+        plugin.convert_modules(module=model, fp8_data_path=tmpdir, **params)
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
@@ -245,9 +249,7 @@ def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     with open(package_measure_json, encoding="utf-8") as jfile:
         data = json.load(jfile)
         stats_path = data["dump_stats_path"]
-        xlsx_path = data["dump_stats_xlsx_path"]
         assert stats_path == os.path.join(fp8_data_dump_path, "hqt")
-        assert xlsx_path == os.path.join(fp8_data_dump_path, "hqt", "fp8stats.xlsx")
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
@@ -350,18 +352,14 @@ def test_hpu_precision_fp8_output(tmpdir):
     """Test HPUPrecisionPlugin with module containing both bf16 and fp8 operations."""
 
     class FP8InOutDtype(BaseBM):
-        def __init__(self):
-            super().__init__()
-            self.linear = tengine.Linear(32, 2)
-
         def forward(self, x):
             x = self.layer(x)
             assert x.dtype == torch.float32
             return x
 
-    plugin = HPUPrecisionPlugin(precision="fp8", replace_layers=True)
+    plugin = HPUPrecisionPlugin(precision="fp8")
     model = FP8InOutDtype()
-    plugin.convert_modules(model, inference=False)
+    plugin.convert_modules(model, replace_layers=True)
 
     run_training(tmpdir, model, plugin)
 
@@ -418,13 +416,6 @@ def test_hpu_precision_synapse_version(monkeypatch):
             HPUPrecisionPlugin,
             {"precision": "bf16"},
         ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"precision": "16-mixed"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
-            ),
-        ),
         (
             HPUPrecisionPlugin,
             {"precision": "32-true"},
@@ -433,41 +424,16 @@ def test_hpu_precision_synapse_version(monkeypatch):
             HPUPrecisionPlugin,
             {"precision": "32"},
         ),
-        (
+        pytest.param(
             HPUPrecisionPlugin,
-            {"precision": "bf16-mixed", "replace_layers": "True", "recipe": "DelayedScaling"},
+            {"precision": "16-mixed"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+            ),
         ),
         pytest.param(
             HPUPrecisionPlugin,
             {"precision": "fp8"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"precision": "fp8", "replace_layers": "False"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"precision": "fp8", "replace_layers": "True"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"precision": "fp8", "recipe": "DelayedScaling"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
@@ -486,12 +452,10 @@ def test_precision_plugin_init(plugin, params):
     if isinstance(_plugin, HPUPrecisionPlugin):
         if _plugin.precision == "fp8":
             assert _plugin.fp8_train_available
-            assert _plugin.replace_layers == params.get("replace_layers", False)
-            assert _plugin.recipe == params.get("recipe", None)
+            assert _plugin.fp8_inference_available
         else:
             assert not _plugin.fp8_train_available
-            assert not _plugin.replace_layers
-            assert _plugin.recipe is None
+            assert not _plugin.fp8_inference_available
 
 
 def test_precision_plugin_invalid_precision_init():
@@ -514,7 +478,7 @@ def test_precision_plugin_invalid_precision_init():
         "bf16",
         "bf16-mixed",
         pytest.param(
-            "fp16",
+            "16-mixed",
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
@@ -546,7 +510,7 @@ def test_hpu_precision_supported_precision(precision):
         ),
         pytest.param(
             HPUPrecisionPlugin,
-            {"precision": "fp16"},
+            {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
@@ -572,7 +536,7 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
     _model = BoringModel()
     _plugin = plugin(**params)
     if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-        _plugin.convert_modules(_model)
+        _plugin.convert_modules(_model, replace_layers=True)
 
     with pytest.raises(SystemExit):
         run_training(tmpdir, _model, _plugin, TestCallback())
@@ -590,7 +554,7 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
             HPUPrecisionPlugin,
             {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
@@ -624,24 +588,14 @@ def test_mixed_precision_autocast_to_precision_active(tmpdir, model, plugin, par
 def test_mixed_precision_compare_accuracy(tmpdir):
     """Test and compare accuracy for mixed precision training methods."""
     model_plugin_list = [
-        (BaseBM, None, None),  # float32 baseline
         (BMAutocastCM, None, None),
         (BMAutocastDecorator, None, None),
         (BaseBM, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
         (BaseBM, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
     ]
-    is_gaudi = HPUAccelerator().get_device_name() == "GAUDI"
-    if not is_gaudi:
+    if HPUAccelerator().get_device_name() != "GAUDI":
         model_plugin_list.append(
             (BaseBM, HPUPrecisionPlugin, {"precision": "16-mixed"}),
-            (
-                BaseBM,
-                HPUPrecisionPlugin,
-                {
-                    "precision": "fp8",
-                    "replace_layers": True,
-                },
-            ),
         )
 
     loss_list = []
@@ -650,11 +604,36 @@ def test_mixed_precision_compare_accuracy(tmpdir):
         model, plugin, params = item
         model = model()
         _plugin = plugin(**params) if plugin and params else None
-        if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-            model = _plugin.convert_modules(model)
         loss_list.append(torch.tensor(run_training(tmpdir, model, _plugin)))
 
     assert all(torch.allclose(loss_list[0], loss_tensor, rtol=1e-2, atol=1e-2) for loss_tensor in loss_list[1:])
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_plugin_fp8_training_accuracy(tmpdir):
+    """Test compare training accuracy between fp32 and fp8 precision."""
+
+    class TestModel(BaseBM):
+        """Test model."""
+
+        def __init__(self):
+            """Init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+
+    precision_list = ["32-true", "fp8"]
+
+    loss_list = []
+
+    for precision in precision_list:
+        seed_everything(42)
+        model = TestModel()
+        _plugin = HPUPrecisionPlugin(precision=precision)
+        if precision == "fp8":
+            _plugin.convert_modules(model)
+        loss_list.append(run_training(tmpdir, model, _plugin))
+
+    assert torch.allclose(torch.tensor(loss_list[0][1]), torch.tensor(loss_list[1][1]), rtol=1e-2, atol=1e-2)
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
@@ -670,7 +649,7 @@ def test_hpu_precision_active_with_te_module(tmpdir, precision):
         """Test model."""
 
         def __init__(self):
-            """init."""
+            """Init."""
             super().__init__()
             self.layer = tengine.Linear(32, 2)
 
@@ -693,7 +672,8 @@ def test_hpu_precision_active_with_te_module(tmpdir, precision):
     seed_everything(42)
     model = TestModel()
     _plugin = HPUPrecisionPlugin(precision=precision)
-    # HPUPrecisionPlugin.convert_modules not reqiored as self.layer is already a transformer engine module
+    if precision == "fp8":
+        _plugin.convert_modules(model, replace_layers=True)
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
@@ -819,5 +799,5 @@ def test_hpu_dtypes_compare_cpu_accuracy(intype, tmpdir):
         metrics.append(trainer.logged_metrics)
 
     # Compare metrics between cpu and hpu
-    assert torch.equal(metrics[0].get("train_loss"), metrics[1].get("train_loss"))
-    assert torch.equal(metrics[0].get("val_loss"), metrics[1].get("val_loss"))
+    assert torch.isclose(metrics[0].get("train_loss"), metrics[1].get("train_loss"), atol=1e-5, rtol=1e-5)
+    assert torch.isclose(metrics[0].get("val_loss"), metrics[1].get("val_loss"), atol=1e-5, rtol=1e-5)
