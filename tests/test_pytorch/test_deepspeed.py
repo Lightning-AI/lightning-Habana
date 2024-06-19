@@ -825,8 +825,19 @@ def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
         return trainer.callback_metrics["val_loss"], trainer.callback_metrics["train_loss"]
 
     precision_plugin_params_list = [
-        ({"device": "hpu", "precision": "bf16-mixed"}),
-        ({"device": "hpu", "precision": "fp8", "replace_layers": True, "recipe": recipe.DelayedScaling()}),
+        ({"precision": "bf16-mixed"}),
+        pytest.param(
+            {"precision": "16-mixed"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+            ),
+        ),
+        pytest.param(
+            {"precision": "fp8", "replace_layers": True, "recipe": recipe.DelayedScaling()},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+            ),
+        ),
     ]
 
     loss_list = []

@@ -15,6 +15,7 @@
 import csv
 import os
 
+import pytest
 import torch
 from habana_frameworks.torch.hpu.metrics import metric_global
 from habana_frameworks.torch.utils.experimental import detect_recompilation_auto_model
@@ -78,6 +79,7 @@ def test_dynamic_shapes_graph_compiler(tmpdir, hpus, monkeypatch):
     assert cached_compiles[0] <= default_compiles[0]
 
 
+@pytest.mark.standalone_only()
 def test_dynamic_shapes_auto_detect_recompilations(tmpdir):
     """Test auto_detect_recompilations tool."""
 
@@ -94,10 +96,6 @@ def test_dynamic_shapes_auto_detect_recompilations(tmpdir):
         except FileNotFoundError:
             print(f"Error: CSV file not found: {csv_file_path}")
             return None
-
-    # Close dist pg if initialized.
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        torch.distributed.destroy_process_group()
 
     seed_everything(42)
     model = DynamicOpsBoringModel()

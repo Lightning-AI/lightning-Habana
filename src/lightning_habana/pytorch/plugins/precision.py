@@ -25,6 +25,7 @@ from lightning_habana.utils.resources import (
     _HABANA_FRAMEWORK_AVAILABLE,
     _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE,
     is_fp8_available,
+    is_fp16_available,
     modify_fp8_json,
 )
 
@@ -37,7 +38,15 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8"]
+_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8", "16-mixed"]
+
+_AMP_DICT = {
+    "32": torch.float32,
+    "32-true": torch.float32,
+    "bf16": torch.bfloat16,
+    "bf16-mixed": torch.bfloat16,
+    "16-mixed": torch.float16,
+}
 
 if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
@@ -61,14 +70,21 @@ class HPUPrecisionPlugin(Precision):
     """Plugin that enables mixed precision support on HPUs.
 
     Args:
-        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
-        device: The device for ``torch.autocast``.
+        precision (_PRECISION_INPUT, optional): Precision input. Defaults to "32-true".
+        recipe (Optional[Union[Mapping[str, Any], "DelayedScaling"]], optional):
+            recipe for fp8 training. Defaults to None.
+        replace_layers (bool, optional): Replace module with transformer engine equivalent. Defaults to False.
+
+    Raises:
+        OSError: Unsupported Synapse version.
+        ValueError: Invalid precision value(s).
+        NotImplementedError: fp8 not available.
 
     """
 
     def __init__(
         self,
-        precision: _PRECISION_INPUT,
+        precision: _PRECISION_INPUT = "32-true",
         device: str = "hpu",
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         replace_layers: bool = False,
@@ -85,12 +101,17 @@ class HPUPrecisionPlugin(Precision):
         self.replace_layers = False
         self.device = device
 
-        if any([recipe, replace_layers]) and precision != "fp8":
+        if any([recipe, replace_layers]) and self.precision != "fp8":
             rank_zero_warn(f"Precision is not 'fp8'. Params {recipe=} and {replace_layers=} will not be set.")
 
         self.recipe = None
         self.fp8_train_available = False
         self.fp8_inference_available = False
+
+        if self.precision == "16-mixed":
+            fp16_available, reason_no_fp16 = is_fp16_available()
+            if not fp16_available:
+                raise NotImplementedError(f"fp16 not supported: {reason_no_fp16}.")
 
         if self.precision == "fp8":
             fp8_available, reason_no_fp8 = is_fp8_available()
@@ -102,7 +123,7 @@ class HPUPrecisionPlugin(Precision):
             self.replace_layers = replace_layers
 
             rank_zero_info(
-                f"fp8 training available: {self.fp8_train_available}. "
+                f"fp8 training available: {self.fp8_train_available}."
                 f"fp8 inference available: {self.fp8_inference_available}."
             )
 
@@ -119,7 +140,6 @@ class HPUPrecisionPlugin(Precision):
                     file_path=fp8_json,
                     patch={
                         "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
-                        "dump_stats_xlsx_path": os.path.join(fp8_data_path, "hqt", "fp8stats.xlsx"),
                     },
                 )
             os.environ["QUANT_CONFIG"] = fp8_json
@@ -177,18 +197,31 @@ class HPUPrecisionPlugin(Precision):
         quant: bool = True,
         fp8_data_path: Optional[str] = None,
     ) -> torch.nn.Module:
-        """Enable support for fp8."""
-        if inference is True and self.fp8_inference_available:
+        """Convert modules for FP8 precision.
+
+        Args:
+            module (torch.nn.Module): Module to convert
+            inference (bool, optional): Convert module for inference (True) / Training (False). Defaults to False.
+            quant (bool, optional): Convert module for measurement (False) / Quantization (True) during inference.
+                Defaults to True.
+            fp8_data_path (Optional[str], optional): Path to dump fp8 inference measurement data. Defaults to None.
+
+        Returns:
+            torch.nn.Module: FP8 enabled module
+
+        """
+        assert self.precision == "fp8", "HPUPrecisionPlugin.convert_modules() should only be used with precision=`fp8`."
+        if inference and self.fp8_inference_available:
             self._enable_fp8_inference(module, quant, fp8_data_path)
-        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
+        if self.fp8_train_available and self.replace_layers and not inference:
             self._enable_fp8_training(module)
         return module
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
         if self.fp8_train_available:
-            return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+            return tengine.fp8_autocast(enabled=True, fp8_recipe=self.recipe)
+        return torch.autocast(device_type="hpu", dtype=_AMP_DICT[self.precision], enabled=True)
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:
@@ -215,18 +248,3 @@ def _replace_layers(module: torch.nn.Module) -> None:
             module.__setattr__(name, replacement)
         else:
             _replace_layers(child)
-
-
-@contextmanager
-def _nested_precision_cm(
-    fp8_enabled: bool, recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]]
-) -> Generator[Any, Any, Any]:
-    """CM to nest fp8 precision with torch.autocast.
-
-    This enables the ops that do not support fp8 to run with torch autocast.
-
-    """
-    with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True), tengine.fp8_autocast(
-        enabled=fp8_enabled, fp8_recipe=recipe
-    ):
-        yield
