@@ -222,7 +222,7 @@ def test_fsdp_simple_model_activation_cp(strategy, hpus):
             parallel_devices=[torch.device("hpu")] * hpus,
             sharding_strategy=strategy,
             precision_plugin=HPUFSDPPrecision("32-true"),
-            activation_checkpointing_policy={torch.nn.Linear}
+            activation_checkpointing_policy={torch.nn.Linear},
         ),
         max_epochs=1,
         fast_dev_run=1,
@@ -243,7 +243,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, hpus):
             parallel_devices=[torch.device("hpu")] * hpus,
             sharding_strategy=strategy,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
-            activation_checkpointing_policy={torch.nn.Linear}
+            activation_checkpointing_policy={torch.nn.Linear},
         ),
         max_epochs=1,
         fast_dev_run=1,

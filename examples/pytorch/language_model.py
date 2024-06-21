@@ -110,7 +110,9 @@ if __name__ == "__main__":
             enable_model_summary=True,
         )
         trainer.fit(model, train_dataloader)
-        rank_zero_info(f"Peak Memory alloc using DDP strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB")
+        rank_zero_info(
+            f"Peak Memory alloc using DDP strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
+        )
     else:
         htorch.hpu.reset_peak_memory_stats()
         model = LanguageModel(vocab_size=dataset.vocab_size)
@@ -123,4 +125,6 @@ if __name__ == "__main__":
 
         trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=1, enable_model_summary=True)
         trainer.fit(model, train_dataloader)
-        rank_zero_info(f"Peak Memory alloc using FSDP {options.strategy} strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB")
+        rank_zero_info(
+            f"Peak Memory alloc using FSDP {options.strategy} strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
+        )
