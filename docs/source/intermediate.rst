@@ -137,7 +137,7 @@ For nested contexts, the scope of a given context and its `enabled` parameter de
 
         with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
             torch.hpu.is_autocast_hpu_enabled() # Returns False
-            with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
+            with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True):
                 torch.hpu.is_autocast_hpu_enabled() # Returns True
             torch.hpu.is_autocast_hpu_enabled() # Returns False
 
