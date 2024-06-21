@@ -20,11 +20,11 @@ from lightning_utilities import module_available
 from typing_extensions import get_args
 
 if module_available("lightning"):
-    from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
     from lightning.fabric.plugins.precision.utils import _DtypeContextManager
+    from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
 elif module_available("pytorch_lightning"):
-    from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
     from lightning_fabric.plugins.precision.utils import _DtypeContextManager
+    from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
