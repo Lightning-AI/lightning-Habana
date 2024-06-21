@@ -21,12 +21,12 @@ from typing_extensions import get_args
 
 if module_available("lightning"):
     from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
+    from lightning.fabric.plugins.precision.utils import _DtypeContextManager
 elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
+    from lightning_fabric.plugins.precision.utils import _DtypeContextManager
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
-
-from lightning.fabric.plugins.precision.utils import _DtypeContextManager
 
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0

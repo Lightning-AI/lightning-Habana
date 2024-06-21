@@ -536,37 +536,6 @@ Here is a sample code for Scaling Gaudi with PyTorch using the Fully Sharded Dat
     )
 
 
-Activation checkpointing with FSDP on HPU
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The following sample code demonstrates the usage of activation checkpointing with HPU.
-
-
-.. code-block:: python
-
-    class MyModel(BoringModel):
-        def configure_model(self):
-            self.layer = torch.nn.Linear(32, 2)
-
-        def configure_optimizers(self):
-            return torch.optim.AdamW(self.layer.parameters(), lr=0.1)
-
-    _strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * 8,
-        sharding_strategy="SHARD_GRAD_OP",
-        precision_plugin=HPUFSDPPrecision("32-true"),
-        activation_checkpointing_policy={torch.nn.Linear}
-    )
-
-    trainer = Trainer(
-        default_root_dir=tmpdir,
-        accelerator=HPUAccelerator(),
-        devices=hpus,
-        strategy=_strategy,
-        max_epochs=1,
-    )
-
-
 Limitations of FSDP on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    1. This is an experimental feature.
