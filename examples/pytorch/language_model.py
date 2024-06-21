@@ -41,10 +41,6 @@ class LanguageModel(LightningModule):
         super().__init__()
         self.model = Transformer(
             vocab_size=vocab_size,
-            nlayers=32,
-            nhid=4096,
-            ninp=1024,
-            nhead=64,
         )
 
     def training_step(self, batch):
@@ -69,8 +65,8 @@ def parse_args():
         "--strategy",
         type=str,
         default="FULL_SHARD",
-        help="FSDP strategies to be applied.\
-            The value can be one of FULL_SHARD, SHARD_GRAD_OP, HYBRID_SHARD, NO_SHARD",
+        help="FSDP/DDP strategies to be applied.\
+            The value can be one of FULL_SHARD, SHARD_GRAD_OP, HYBRID_SHARD, NO_SHARD, DDP",
     )
 
     return parser.parse_args()
@@ -90,7 +86,7 @@ if __name__ == "__main__":
         print("The script requires a multi device setup")
         sys.exit(1)
 
-    if options.strategy not in ["FULL_SHARD", "SHARD_GRAD_OP", "HYBRID_SHARD", "NO_SHARD"]:
+    if options.strategy not in ["FULL_SHARD", "SHARD_GRAD_OP", "HYBRID_SHARD", "NO_SHARD", "DDP"]:
         print(
             f"Invalid strategy {options.strategy}.\
             The value must be one of FULL_SHARD, SHARD_GRAD_OP, HYBRID_SHARD, NO_SHARD"
@@ -101,29 +97,30 @@ if __name__ == "__main__":
     dataset = WikiText2()
     train_dataloader = DataLoader(dataset)
 
-    model = LanguageModel(vocab_size=dataset.vocab_size)
-    strategy = HPUDDPStrategy()
-    plugin = HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
-    trainer = Trainer(
-        accelerator=HPUAccelerator(),
-        devices=options.devices,
-        strategy=strategy,
-        plugins=plugin,
-        fast_dev_run=10,
-        enable_model_summary=True,
-    )
-    trainer.fit(model, train_dataloader)
-    rank_zero_info(f"Peak Memory alloc using DDP on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB")
+    if options.strategy == "DDP":
+        model = LanguageModel(vocab_size=dataset.vocab_size)
+        strategy = HPUDDPStrategy()
+        plugin = HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
+        trainer = Trainer(
+            accelerator=HPUAccelerator(),
+            devices=options.devices,
+            strategy=strategy,
+            plugins=plugin,
+            fast_dev_run=10,
+            enable_model_summary=True,
+        )
+        trainer.fit(model, train_dataloader)
+        rank_zero_info(f"Peak Memory alloc using DDP strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB")
+    else:
+        htorch.hpu.reset_peak_memory_stats()
+        model = LanguageModel(vocab_size=dataset.vocab_size)
+        _strategy = HPUFSDPStrategy(
+            parallel_devices=[torch.device("hpu")] * options.devices,
+            sharding_strategy=options.strategy,
+            auto_wrap_policy=policy,
+            precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+        )
 
-    htorch.hpu.reset_peak_memory_stats()
-    model = LanguageModel(vocab_size=dataset.vocab_size)
-    _strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * options.devices,
-        sharding_strategy=options.strategy,
-        auto_wrap_policy=policy,
-        precision_plugin=HPUFSDPPrecision("bf16-mixed"),
-    )
-
-    trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=10, enable_model_summary=True)
-    trainer.fit(model, train_dataloader)
-    rank_zero_info(f"Peak Memory alloc using FSDP on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB")
+        trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=1, enable_model_summary=True)
+        trainer.fit(model, train_dataloader)
+        rank_zero_info(f"Peak Memory alloc using FSDP {options.strategy} strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB")

@@ -26,6 +26,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
+from lightning.fabric.plugins.precision.utils import _DtypeContextManager
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
@@ -56,11 +57,15 @@ class HPUFSDPPrecision(FSDPPrecision, HPUPrecisionPlugin):
             raise ValueError(
                 f"`precision={precision!r}` is not supported." f" `precision` must be one of: {supported_precision}."
             )
+        self.precision = precision
         super().__init__(precision)
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+        if "mixed" in self.precision:
+            return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+        return _DtypeContextManager(self._desired_input_dtype)
+
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:

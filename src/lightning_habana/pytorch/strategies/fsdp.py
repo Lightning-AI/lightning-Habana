@@ -192,10 +192,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
         return model
 
-    def optimizer_state(self, optimizer: Optimizer) -> Dict[str, torch.Tensor]:
-        rank_zero_info("Optimizer state checkpointing is not enabled yet on HPU.")
-        return super().optimizer_state(optimizer)
-
     def setup(self, trainer: "pl.Trainer") -> None:
         self.model_to_device()
         super().setup(trainer)

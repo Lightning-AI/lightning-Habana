@@ -170,7 +170,7 @@ def test_fsdp_custom_mixed_precision():
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
-    """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
+    """Test to ensure that sync_batchnorm works when using FSDP on HPU."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
 
@@ -211,9 +211,50 @@ def test_fsdp_simple_model(strategy, hpus):
     trainer.fit(model)
 
 
+@pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
+def test_fsdp_simple_model_activation_cp(strategy, hpus):
+    model = BoringModel()
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        num_sanity_val_steps=0,
+        strategy=HPUFSDPStrategy(
+            parallel_devices=[torch.device("hpu")] * hpus,
+            sharding_strategy=strategy,
+            precision_plugin=HPUFSDPPrecision("32-true"),
+            activation_checkpointing_policy={torch.nn.Linear}
+        ),
+        max_epochs=1,
+        fast_dev_run=1,
+    )
+
+    trainer.fit(model)
+
+
+@pytest.mark.xfail(run=False, reason="Failure in applying autocast during recompute.")
+@pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
+def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, hpus):
+    model = BoringModel()
+
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        num_sanity_val_steps=0,
+        strategy=HPUFSDPStrategy(
+            parallel_devices=[torch.device("hpu")] * hpus,
+            sharding_strategy=strategy,
+            precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+            activation_checkpointing_policy={torch.nn.Linear}
+        ),
+        max_epochs=1,
+        fast_dev_run=1,
+    )
+
+    trainer.fit(model)
+
+
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
 def test_fsdp_strategy_simple_model_compile(tmpdir, hpus):
-    """Test to ensure that sync_batchnorm works when using FSDP and GPU, and all stages can be run."""
+    """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
 
@@ -270,28 +311,47 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
     trainer.fit(model)
 
 
-@pytest.mark.parametrize("precision", ["bf16-mixed"])
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported in Synapse <= 1.15.")
-def test_fsdp_strategy_checkpoint(tmpdir, hpus, precision):
-    """Test to ensure that checkpoint is saved correctly when using a single GPU, and all stages can be run."""
+@pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
+@pytest.mark.standalone()
+def test_fsdp_strategy_checkpoint(tmpdir, hpus, state_dict_type):
+    """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
     if hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
+
+    if state_dict_type == "sharded":
+        pytest.xfail(reason="Sharded checkpointing is not yet enabled")
 
     model = TestFSDPModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * hpus, precision_plugin=HPUFSDPPrecision(precision)
+            parallel_devices=[torch.device("hpu")] * hpus,
+            precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+            state_dict_type=state_dict_type,
         ),
         max_epochs=1,
     )
 
     trainer.fit(model)
+    trainer.save_checkpoint(os.path.join(tmpdir, "last.ckpt"))
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=HPUFSDPStrategy(
+            parallel_devices=[torch.device("hpu")] * hpus,
+            precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+            state_dict_type=state_dict_type,
+        ),
+        max_epochs=1,
+    )
+
+    trainer.fit(model, ckpt_path=os.path.join(tmpdir, "last.ckpt"))
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported.")
-@pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
+@pytest.mark.standalone()
+@pytest.mark.parametrize("wrap_min_params", [1024])
 def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict is extracted when using FSDP strategy.
 
@@ -458,8 +518,7 @@ def test_fsdp_precision_config(precision, expected):
     assert config.reduce_dtype == expected[2]
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported in Synapse <= 1.15.")
-@pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
+@pytest.mark.parametrize("wrap_min_params", [1024])
 def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states is saved when using FSDP strategy.
 
@@ -524,7 +583,6 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
     trainer.strategy.barrier()
 
 
-@pytest.mark.xfail(run=False, reason="Saving/loading optimizer states is currently not supported in Synapse <= 1.15.")
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
     """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
