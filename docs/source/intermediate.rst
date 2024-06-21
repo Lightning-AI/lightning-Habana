@@ -70,7 +70,7 @@ The following is an excerpt from an MNIST example implemented on a single HPU.
 For more granular control over with mixed precision training, one can use torch.autocast from native PyTorch.
 
 Instances of autocast serve as context managers or decorators that allow regions of your script to run in mixed precision.
-These also allow for fine tuning with `enabled` for enabling and disabling mixed precision training for certain parts of the code.
+
 
 .. code-block:: python
 
@@ -105,6 +105,46 @@ These also allow for fine tuning with `enabled` for enabling and disabling mixed
 
     # Train the model ⚡
     trainer.fit(model, datamodule=dm)
+
+
+`torch.autocast` context manager allows fine-tuning of mixed precision training with `enabled` parameter.
+It can be used alongside `HPUPrecisionPlugin`, which globally enables mixed precision, while local `torch.autocast` contexts can disable it for particular model parts.
+Alternatively, users can forgo `HPUPrecisionPlugin` and use only `torch.autocast` to control precision for every Op.
+For nested contexts, the scope of a given context and its `enabled` parameter determine whether mixed precision is enabled or disabled in that region.
+
+
+.. code::python
+
+    # Granular autocast control without HPUPrecisionPlugin
+    def forward(self, x):
+        """Forward."""
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True):
+            torch.hpu.is_autocast_hpu_enabled() # Returns True
+
+            with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
+                torch.hpu.is_autocast_hpu_enabled() # Returns False
+
+            # Re-entering autocast enabled region
+            torch.hpu.is_autocast_hpu_enabled() # Returns True
+        return super().forward(x)
+
+    # Granular autocast control with HPUPrecisionPlugin
+    def forward(self, x):
+        """Forward."""
+        # HPUPrecisionPlugin wraps a forward_context on train / val / predict / test _steps.
+        # This makes torch.autocast(enabled=True) as used in previous example redundant.
+        torch.hpu.is_autocast_hpu_enabled() # Returns True
+
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
+            torch.hpu.is_autocast_hpu_enabled() # Returns False
+            with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
+                torch.hpu.is_autocast_hpu_enabled() # Returns True
+            torch.hpu.is_autocast_hpu_enabled() # Returns False
+
+        # Re-entering autocast enabled region
+        torch.hpu.is_autocast_hpu_enabled() # Returns True
+        return super().forward(x)
+
 
 For more details, please refer to
 `Native PyTorch Autocast <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html>`__.

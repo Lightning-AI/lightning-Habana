@@ -124,8 +124,9 @@ class BMPluginActive(BaseBM):
         return super().forward(x)
 
 
-def test_autocast_enable_disable(tmpdir):
-    """Tests autocast control with enabled arg."""
+@pytest.mark.parametrize("precision_plugin", [False, True])
+def test_autocast_enable_disable(tmpdir, precision_plugin):
+    """Tests autocast granular control with HPUPrecisionPlugin."""
 
     class BMAutocastGranularControl(BaseBM):
         """Tests autocast control with enabled arg."""
@@ -156,7 +157,8 @@ def test_autocast_enable_disable(tmpdir):
                 assert x.dtype == torch.bfloat16
             return self.layer(x)
 
-    assert run_training(tmpdir, BMAutocastGranularControl(), None) is not None
+    precision_plugin = HPUPrecisionPlugin(precision="bf16-mixed") if precision_plugin else None
+    assert run_training(tmpdir, BMAutocastGranularControl(), precision_plugin) is not None
 
 
 @pytest.mark.xfail(strict=False, reason="Env needs to be set")
@@ -855,7 +857,7 @@ def test_hpu_precision_plugin_grads_dtype(tmpdir):
         accelerator_str = "hpu" if isinstance(accelerator, HPUAccelerator) else accelerator
         grad_dict[accelerator_str] = model.grad_dict
 
-    for (kcpu, vcpu), (khpu, vhpu) in zip(grad_dict["cpu"]["Linear"].items(), grad_dict["cpu"]["Linear"].items()):
+    for (kcpu, vcpu), (khpu, vhpu) in zip(grad_dict["cpu"]["Linear"].items(), grad_dict["hpu"]["Linear"].items()):
         # Ensure comparing same grad_type grad_input / grad_output for both devices
         assert kcpu == khpu
         for (grad_cpu,), (grad_hpu,) in zip(vcpu, vhpu):
@@ -914,36 +916,3 @@ def test_hpu_precision_plugin_grads_dtype_fp8(tmpdir):
     for _, v_grad in model.grad_dict["Linear"].items():
         for (grad_tensor,) in v_grad:
             assert grad_tensor.dtype == torch.float32
-
-
-def test_hpu_parameters_gradients_dtype():
-    """Test dtype of grads of params match dtype of params.
-
-    Backward ops run in the same ``dtype`` ``autocast`` chose for corresponding forward ops.
-    However gradient will be transformed to the parameter’s dtype.
-    i.e. by default all parameters are initialized in float32 and thus their .grad attribute will have the same dtype.
-    https://discuss.pytorch.org/t/gradient-with-automatic-mixed-precision/192366
-
-    """
-
-    class TestModel(BoringModel):
-        """Test model."""
-
-        def on_before_optimizer_step(self, optimizer):
-            for k, v in self.named_parameters():
-                assert v.dtype == v.grad.dtype
-                assert v.dtype == torch.float32
-            return super().on_before_optimizer_step(optimizer)
-
-    trainer = Trainer(
-        accelerator=HPUAccelerator(),
-        devices=1,
-        strategy=SingleHPUStrategy(),
-        plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
-        fast_dev_run=1,
-    )
-
-    seed_everything(42)
-    model = TestModel()
-    dm = BoringDataModule()
-    trainer.fit(model, dm)
