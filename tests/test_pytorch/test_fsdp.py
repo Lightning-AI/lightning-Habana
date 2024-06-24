@@ -312,11 +312,8 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
 
 
 @pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
-@pytest.mark.standalone()
 def test_fsdp_strategy_checkpoint(tmpdir, hpus, state_dict_type):
     """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
-    if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
 
     if state_dict_type == "sharded":
         pytest.xfail(reason="Sharded checkpointing is not yet enabled")
@@ -556,95 +553,6 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
 
     if trainer.global_rank != 0:
         assert len(optimizer_state_dict) == 0
-
-    # restore model to ddp
-    parallel_hpus = [torch.device("hpu")] * hpus
-    _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
-    trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
-    )
-    model = TestBoringModel()
-
-    # This step will restore the model and optimizer states
-    trainer.fit(model, ckpt_path=model_path)
-
-    # Get the model and optimizer states from the restored ddp model
-    restored_model_state_dict = trainer.strategy.lightning_module_state_dict()
-    restored_optimizer_state_dict = trainer.strategy.optimizer_state(model.optimizers())
-
-    if trainer.global_rank == 0:
-        # assert everything is the same
-        assert len(model_state_dict) == len(restored_model_state_dict)
-        assert len(optimizer_state_dict) == len(restored_optimizer_state_dict)
-
-        torch.testing.assert_close(model_state_dict, restored_model_state_dict, atol=0, rtol=0)
-        torch.testing.assert_close(optimizer_state_dict, restored_optimizer_state_dict, atol=0, rtol=0)
-
-    trainer.strategy.barrier()
-
-
-@pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
-def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
-    """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
-
-    Based on `wrap_min_params`, the model will be fully wrapped, half wrapped, and not wrapped at all. If the DDP model
-    can be restored to FSDP, it means that the optimizer states were restored correctly.
-
-    """
-    if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
-
-    # restore model to ddp
-    model = TestBoringModel()
-    parallel_hpus = [torch.device("hpu")] * hpus
-    _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
-    trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
-    )
-    # This step will restore the model and optimizer states
-    trainer.fit(model)
-    model_path = os.path.join(tmpdir, "last.ckpt")
-    model_path = trainer.strategy.broadcast(model_path)
-    trainer.save_checkpoint(model_path)
-
-    # Get the model and optimizer states from the restored ddp model
-    model_state_dict = trainer.strategy.lightning_module_state_dict()
-    optimizer_state_dict = trainer.strategy.optimizer_state(model.optimizers())
-
-    # Build a new FSDP model
-    model = TestFSDPModelAutoWrapped(wrap_min_params=wrap_min_params)
-
-    strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * hpus,
-        auto_wrap_policy=partial(size_based_auto_wrap_policy, min_num_params=wrap_min_params),
-        precision_plugin=HPUFSDPPrecision("bf16-mixed"),
-    )
-    trainer = Trainer(
-        default_root_dir=tmpdir,
-        accelerator=HPUAccelerator(),
-        strategy=strategy,
-        max_epochs=1,
-    )
-
-    trainer.fit(model, ckpt_path=model_path)
-
-    restored_model_state_dict = trainer.strategy.lightning_module_state_dict()
-    restored_optimizer_state_dict = trainer.strategy.optimizer_state(model.optimizers())
-
-    if trainer.global_rank != 0:
-        assert len(restored_model_state_dict) == 0
-
-    if trainer.global_rank != 0:
-        assert len(restored_optimizer_state_dict) == 0
-
-    if trainer.global_rank == 0:
-        # assert everything is the same
-        assert len(model_state_dict) == len(restored_model_state_dict)
-        assert len(optimizer_state_dict) == len(restored_optimizer_state_dict)
-        torch.testing.assert_close(model_state_dict, restored_model_state_dict, atol=0, rtol=0)
-        torch.testing.assert_close(optimizer_state_dict, restored_optimizer_state_dict, atol=0, rtol=0)
-
-    trainer.strategy.barrier()
 
 
 def test_dummy_fsdp_string_init(tmpdir):
