@@ -314,7 +314,6 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
 @pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
 def test_fsdp_strategy_checkpoint(tmpdir, hpus, state_dict_type):
     """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
-
     if state_dict_type == "sharded":
         pytest.xfail(reason="Sharded checkpointing is not yet enabled")
 
