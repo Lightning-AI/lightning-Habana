@@ -126,5 +126,6 @@ if __name__ == "__main__":
         trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=1, enable_model_summary=True)
         trainer.fit(model, train_dataloader)
         rank_zero_info(
-            f"Peak Memory alloc using FSDP {options.strategy} strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
+            f"Peak Memory alloc using FSDP {options.strategy} strategy "
+            f" on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
         )
