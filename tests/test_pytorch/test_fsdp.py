@@ -39,7 +39,7 @@ from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if not _LIGHTNING_GREATER_EQUAL_2_3_0:
-    pytest.skip("The tests require lightning version 2.3.0 or above", allow_module_level=True)
+    pytestmark = pytest.mark.skip(reason="The tests require lightning version 2.3.0 or above")
 
 
 class TestFSDPModel(BoringModel):

@@ -18,16 +18,17 @@ import sys
 
 import torch
 import torch.nn as nn
-from lightning.pytorch.utilities import rank_zero_info
 from lightning_utilities import module_available
 from torch.utils.data import DataLoader
 
 if module_available("lightning"):
     from lightning.pytorch import LightningModule, Trainer, seed_everything
     from lightning.pytorch.demos import Transformer, WikiText2
+    from lightning.pytorch.utilities import rank_zero_info
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.demos import Transformer, WikiText2
+    from pytorch_lightning.utilities import rank_zero_info
 
 
 import habana_frameworks.torch as htorch
