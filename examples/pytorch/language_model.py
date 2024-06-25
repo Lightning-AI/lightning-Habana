@@ -81,6 +81,7 @@ if __name__ == "__main__":
     options = parse_args()
     if not _LIGHTNING_GREATER_EQUAL_2_3_0:
         print("The example requires lightning version 2.3.0 or above")
+        exit(0)
 
     if options.verbose:
         print(f"Running language model with FSDP on HPU with {options=}")
