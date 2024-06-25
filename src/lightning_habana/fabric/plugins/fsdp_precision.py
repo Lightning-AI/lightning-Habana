@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import Any, ContextManager, Generator, Mapping, Optional, Union
+from typing import Any, Generator, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available

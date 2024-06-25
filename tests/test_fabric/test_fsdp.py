@@ -14,13 +14,14 @@
 
 import os
 from copy import deepcopy
+
 import pytest
 import torch
 import torch.nn as nn
+from lightning_utilities import module_available
 from torch.distributed.fsdp import FlatParameter, FullyShardedDataParallel
 from torch.distributed.fsdp.wrap import always_wrap_policy, wrap
 from torch.utils.data import DataLoader
-from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric import Fabric
@@ -36,9 +37,9 @@ from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 from tests.test_fabric.fabric_helpers import RandomDataset
 
-
 if not _LIGHTNING_GREATER_EQUAL_2_3_0:
     pytestmark = pytest.mark.skip(reason="The tests require lightning version 2.3.0 or above")
+
 
 def test_hpu_fsdp_strategy_defaults():
     strategy = HPUFSDPStrategy()
@@ -257,8 +258,8 @@ def test_setup_with_orig_params_and_multiple_param_groups(hpus):
 @pytest.mark.parametrize("move_to_device", [True, False])
 def test_setup_module_move_to_device(hpus, move_to_device):
     """Test that `move_to_device` does nothing, FSDP decides which device parameters get moved to which device
-    (sharding)."""
-
+    (sharding).
+    """
     if hpus != 2:
         pytest.skip(reason="Test requires 2 HPU cards")
 
