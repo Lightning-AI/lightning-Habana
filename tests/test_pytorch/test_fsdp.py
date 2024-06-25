@@ -172,7 +172,7 @@ def test_fsdp_custom_mixed_precision():
 def test_fsdp_strategy_sync_batchnorm(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP on HPU."""
     if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
+        pytest.skip(reason="Test requires multiple cards")
 
     model = TestBoringModel()
     config = CPUOffload()
@@ -256,7 +256,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, hpus):
 def test_fsdp_strategy_simple_model_compile(tmpdir, hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
+        pytest.skip(reason="Test requires multiple cards")
 
     model = TestBoringModel()
     config = CPUOffload()
@@ -528,7 +528,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, hpus):
 
     """
     if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
+        pytest.skip(reason="Test requires multiple cards")
 
     model = TestFSDPModelAutoWrapped(wrap_min_params=wrap_min_params)
     strategy = HPUFSDPStrategy(
@@ -595,7 +595,7 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, hpus):
 
     """
     if hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
+        pytest.skip(reason="Test requires multiple cards")
 
     # restore model to ddp
     model = TestBoringModel()
