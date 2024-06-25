@@ -59,7 +59,7 @@ class HPUFSDPPrecision(FSDPPrecision, HPUPrecision):
             )
         super().__init__(precision)
 
-    def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
+    def autocast_context_manager(self) -> torch.autocast:
         """Return Autocast context manager."""
         return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
 
