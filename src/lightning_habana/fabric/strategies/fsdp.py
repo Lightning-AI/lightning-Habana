@@ -29,7 +29,6 @@ if module_available("lightning"):
     from lightning.fabric.strategies import _StrategyRegistry
     from lightning.fabric.strategies.fsdp import (
         FSDPStrategy,
-        _has_meta_device_parameters_or_buffers,
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
@@ -45,7 +44,6 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.strategies import _StrategyRegistry
     from lightning_fabric.strategies.fsdp import (
         FSDPStrategy,
-        _has_meta_device_parameters_or_buffers,
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
@@ -161,12 +159,13 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in module.modules()):
-            # The user has wrapped their submodules manually, don't apply the auto wrap policy.
-            if _has_meta_device_parameters_or_buffers(module):
-                rank_zero_warn(
-                    "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
-                )
-            if "auto_wrap_policy" in self._fsdp_kwargs:
+            # TBD: Enable meta device check once we move to PTL>=2.3 which has HPU fsdp support
+            # # The user has wrapped their submodules manually, don't apply the auto wrap policy.
+            # if _has_meta_device_parameters_or_buffers(module):
+            #     rank_zero_warn(
+            #         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
+            #     )
+            # if "auto_wrap_policy" in self._fsdp_kwargs:
                 rank_zero_warn(
                     "A FSDP `auto_wrap_policy` is set, but the model is already wrapped. The policy will be ignored."
                 )
