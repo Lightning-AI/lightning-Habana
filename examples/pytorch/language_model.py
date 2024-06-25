@@ -34,7 +34,7 @@ import habana_frameworks.torch as htorch
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
-
+from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 class LanguageModel(LightningModule):
     def __init__(self, vocab_size):
@@ -77,6 +77,9 @@ if __name__ == "__main__":
     seed_everything(42)
 
     options = parse_args()
+    if not _LIGHTNING_GREATER_EQUAL_2_3_0:
+        print("The example requires lightning version 2.3.0 or above")
+
     if options.verbose:
         print(f"Running language model with FSDP on HPU with {options=}")
 
