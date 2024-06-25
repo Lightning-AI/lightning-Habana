@@ -115,7 +115,7 @@ class HPUParallelStrategy(DDPStrategy):
     #     return obj[0]
 
     def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
-        super().backward(tensor, module=module, args=args, kwargs=kwargs)
+        super().backward(tensor, module=module, *args, **kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after fwd+bwd
             htcore.mark_step()
@@ -140,7 +140,7 @@ class HPUParallelStrategy(DDPStrategy):
         optimizer: Optimizable,
         **kwargs: Any,
     ) -> Any:
-        optimizer_output = super().optimizer_step(optimizer=optimizer, kwargs=kwargs)
+        optimizer_output = super().optimizer_step(optimizer=optimizer,  **kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after optimizer
             htcore.mark_step()
