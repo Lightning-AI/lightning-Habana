@@ -20,8 +20,10 @@ from lightning_utilities import module_available
 from typing_extensions import get_args
 
 if module_available("lightning"):
+    from lightning.fabric.plugins.precision.utils import _DtypeContextManager
     from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
 elif module_available("pytorch_lightning"):
+    from lightning_fabric.plugins.precision.utils import _DtypeContextManager
     from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
@@ -56,11 +58,14 @@ class HPUFSDPPrecision(FSDPPrecision, HPUPrecisionPlugin):
             raise ValueError(
                 f"`precision={precision!r}` is not supported." f" `precision` must be one of: {supported_precision}."
             )
+        self.precision = precision
         super().__init__(precision)
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+        if "mixed" in self.precision:
+            return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+        return _DtypeContextManager(self._desired_input_dtype)
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:
