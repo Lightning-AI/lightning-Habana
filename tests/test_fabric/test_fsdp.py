@@ -257,9 +257,6 @@ def test_setup_with_orig_params_and_multiple_param_groups(hpus):
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("move_to_device", [True, False])
 def test_setup_module_move_to_device(hpus, move_to_device):
-    """Test that `move_to_device` does nothing, FSDP decides which device parameters get moved to which device
-    (sharding).
-    """
     if hpus != 2:
         pytest.skip(reason="Test requires 2 HPU cards")
 
