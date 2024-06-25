@@ -539,8 +539,10 @@ Here is a sample code for Scaling Gaudi with PyTorch using the Fully Sharded Dat
 Limitations of FSDP on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
    1. This is an experimental feature.
-   2. Saving/loading checkpoint using FSDP strategy is not fully enabled.
-   3. If you encounter stability issues when running your model with FSDP, set PT_HPU_EAGER_PIPELINE_ENABLE=false flag.
+   2. FSDP on HPU can only be used in eager/compile mode. To use Eager mode, set the environment variable PT_HPU_LAZY_MODE=0.
+   3. Saving/loading checkpoint using FSDP strategy is partially enabled.
+   4. If you encounter stability issues when running your model with FSDP, set PT_HPU_EAGER_PIPELINE_ENABLE=false flag.
+   5. Activation checkpointing with bf16-mixed is not supported currently.
 
 For more details on the supported FSDP features and functionalities, and limitations refer to `Using Fully Sharded Data Parallel (FSDP) with Intel Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FSDP/Pytorch_FSDP.html>`_.
 
