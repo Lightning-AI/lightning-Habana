@@ -137,6 +137,7 @@ class _TrainerManualWrapping(_Trainer):
         self.num_wrapped = 2
         return model
 
+
 @pytest.mark.standalone()
 def test_fsdp_train(hpus):
     """Test FSDP training, saving and loading with different wrapping and precision settings."""
@@ -221,9 +222,7 @@ def test_train_save_load(tmp_path, hpus, manual_wrapping):
 
 
 def test_setup_with_orig_params_and_multiple_param_groups(hpus):
-    """Test that `move_to_device` does nothing, FSDP decides which device parameters get moved to which device.
-
-    """
+    """Test that `move_to_device` does nothing, FSDP decides which device parameters get moved to which device."""
     strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * hpus,
         auto_wrap_policy=always_wrap_policy,

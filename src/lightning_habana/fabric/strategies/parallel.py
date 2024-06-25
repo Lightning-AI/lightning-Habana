@@ -140,7 +140,7 @@ class HPUParallelStrategy(DDPStrategy):
         optimizer: Optimizable,
         **kwargs: Any,
     ) -> Any:
-        optimizer_output = super().optimizer_step(optimizer=optimizer,  **kwargs)
+        optimizer_output = super().optimizer_step(optimizer=optimizer, **kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:
             # Break lazy accumulation of graph after optimizer
             htcore.mark_step()
