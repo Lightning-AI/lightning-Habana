@@ -166,10 +166,10 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             #         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
             #     )
             # if "auto_wrap_policy" in self._fsdp_kwargs:
-                rank_zero_warn(
-                    "A FSDP `auto_wrap_policy` is set, but the model is already wrapped. The policy will be ignored."
-                )
-                del self._fsdp_kwargs["auto_wrap_policy"]
+            rank_zero_warn(
+                "A FSDP `auto_wrap_policy` is set, but the model is already wrapped. The policy will be ignored."
+            )
+            del self._fsdp_kwargs["auto_wrap_policy"]
         else:
             module = FullyShardedDataParallel(
                 module=module,
