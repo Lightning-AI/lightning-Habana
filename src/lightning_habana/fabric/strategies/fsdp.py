@@ -123,7 +123,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             **kwargs,
         )
 
-    @override
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
@@ -159,9 +158,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
     @override
     def setup_module(self, module: Module) -> Module:
-        """Wraps the model into a
-        :class:`~torch.distributed.fsdp.fully_sharded_data_parallel.FullyShardedDataParallel`.
-        """
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in module.modules()):
