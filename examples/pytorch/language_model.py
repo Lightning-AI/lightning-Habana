@@ -36,6 +36,7 @@ from lightning_habana.pytorch.plugins import HPUFSDPPrecision, HPUPrecisionPlugi
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
+
 class LanguageModel(LightningModule):
     def __init__(self, vocab_size):
         super().__init__()
