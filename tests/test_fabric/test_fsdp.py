@@ -25,12 +25,12 @@ from torch.utils.data import DataLoader
 
 if module_available("lightning"):
     from lightning.fabric import Fabric
-    from lightning.fabric.wrappers import _FabricOptimizer
     from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_1
+    from lightning.fabric.wrappers import _FabricOptimizer
 elif module_available("pytorch_lightning"):
     from lightning_fabric import Fabric
-    from lightning_fabric.wrappers import _FabricOptimizer
     from lightning_fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_1
+    from lightning_fabric.wrappers import _FabricOptimizer
 
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.fsdp_precision import HPUFSDPPrecision
@@ -303,7 +303,9 @@ def test_rewrap_warnings(hpus):
     fabric.launch()
     device_hpu = torch.device("hpu")
     with fabric.init_module():
-        model = torch.nn.Sequential(torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu))
+        model = torch.nn.Sequential(
+            torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu)
+        )
     with pytest.warns(match="the model is already wrapped"):
         model = fabric.setup(model)
     assert not isinstance(model._forward_module, FullyShardedDataParallel)
@@ -313,7 +315,9 @@ def test_rewrap_warnings(hpus):
         return
 
     with fabric.init_module(empty_init=True):
-        model = torch.nn.Sequential(torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu))
+        model = torch.nn.Sequential(
+            torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu)
+        )
     assert model[0].weight.is_meta
     with pytest.warns(match="there are still parameters on the meta device"):
         fabric_model = fabric.setup(model)
