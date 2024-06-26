@@ -159,17 +159,26 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in module.modules()):
-            # TBD: Enable meta device check once we move to PTL>=2.3 which has HPU fsdp support
-            # # The user has wrapped their submodules manually, don't apply the auto wrap policy.
-            # if _has_meta_device_parameters_or_buffers(module):
-            #     rank_zero_warn(
-            #         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
-            #     )
-            # if "auto_wrap_policy" in self._fsdp_kwargs:
-            rank_zero_warn(
-                "A FSDP `auto_wrap_policy` is set, but the model is already wrapped. The policy will be ignored."
-            )
-            del self._fsdp_kwargs["auto_wrap_policy"]
+            if _LIGHTNING_GREATER_EQUAL_2_3_0:
+                from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
+                # The user has wrapped their submodules manually, don't apply the auto wrap policy.
+                if _has_meta_device_parameters_or_buffers(module):
+                    rank_zero_warn(
+                        "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
+                    )
+            else:
+                from lightning.fabric.utilities.init import _has_meta_device_parameters
+                # The user has wrapped their submodules manually, don't apply the auto wrap policy.
+                if _has_meta_device_parameters(module):
+                    rank_zero_warn(
+                        "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
+                    )
+
+            if "auto_wrap_policy" in self._fsdp_kwargs:
+                rank_zero_warn(
+                    "A FSDP `auto_wrap_policy` is set, but the model is already wrapped. The policy will be ignored."
+                )
+                del self._fsdp_kwargs["auto_wrap_policy"]
         else:
             module = FullyShardedDataParallel(
                 module=module,

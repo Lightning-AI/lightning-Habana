@@ -26,9 +26,11 @@ from torch.utils.data import DataLoader
 if module_available("lightning"):
     from lightning.fabric import Fabric
     from lightning.fabric.wrappers import _FabricOptimizer
+    from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_1
 elif module_available("pytorch_lightning"):
     from lightning_fabric import Fabric
     from lightning_fabric.wrappers import _FabricOptimizer
+    from lightning_fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_1
 
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.fsdp_precision import HPUFSDPPrecision
@@ -282,3 +284,37 @@ def test_setup_module_move_to_device(hpus, move_to_device):
     assert isinstance(next(fabric_model.parameters()), nn.Parameter)
 
     assert fabric.device == torch.device("hpu")
+
+
+def test_rewrap_warnings(hpus):
+    from torch.distributed.fsdp import FullyShardedDataParallel
+    from torch.distributed.fsdp.wrap import wrap
+
+    strategy = HPUFSDPStrategy(
+        parallel_devices=[torch.device("hpu")] * hpus,
+        auto_wrap_policy=always_wrap_policy,
+        precision=HPUFSDPPrecision(precision="bf16-mixed"),
+    )
+    fabric = Fabric(
+        accelerator=HPUAccelerator(),
+        strategy=strategy,
+        devices=hpus,
+    )
+    fabric.launch()
+    device_hpu = torch.device("hpu")
+    with fabric.init_module():
+        model = torch.nn.Sequential(torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu))
+    with pytest.warns(match="the model is already wrapped"):
+        model = fabric.setup(model)
+    assert not isinstance(model._forward_module, FullyShardedDataParallel)
+    assert isinstance(model._forward_module[2], FullyShardedDataParallel)
+
+    if not _TORCH_GREATER_EQUAL_2_1:
+        return
+
+    with fabric.init_module(empty_init=True):
+        model = torch.nn.Sequential(torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu))
+    assert model[0].weight.is_meta
+    with pytest.warns(match="there are still parameters on the meta device"):
+        fabric_model = fabric.setup(model)
+    assert next(fabric_model.parameters()).is_meta
