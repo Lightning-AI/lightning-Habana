@@ -287,9 +287,6 @@ def test_setup_module_move_to_device(hpus, move_to_device):
 
 
 def test_rewrap_warnings(hpus):
-    from torch.distributed.fsdp import FullyShardedDataParallel
-    from torch.distributed.fsdp.wrap import wrap
-
     strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * hpus,
         auto_wrap_policy=always_wrap_policy,

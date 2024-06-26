@@ -167,14 +167,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
                     rank_zero_warn(
                         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
                     )
-            else:
-                from lightning.fabric.utilities.init import _has_meta_device_parameters
-
-                # The user has wrapped their submodules manually, don't apply the auto wrap policy.
-                if _has_meta_device_parameters(module):
-                    rank_zero_warn(
-                        "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
-                    )
 
             if "auto_wrap_policy" in self._fsdp_kwargs:
                 rank_zero_warn(
