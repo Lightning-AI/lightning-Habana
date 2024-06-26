@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added support for additional dtypes ([#194](https://github.com/Lightning-AI/lightning-Habana/pull/194))
 - Added more tests of FSDP with HPU ([#197](https://github.com/Lightning-AI/lightning-Habana/pull/197))
-- Enabling FSDP strategy with fabric on HPU ([#198](https://github.com/Lightning-AI/lightning-Habana/pull/198))
+- Added FSDP strategy with fabric on HPU ([#198](https://github.com/Lightning-AI/lightning-Habana/pull/198))
 
 ### Changed
 
