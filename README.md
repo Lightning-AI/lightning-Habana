@@ -10,7 +10,7 @@
 [![Build Status](https://dev.azure.com/Lightning-AI/compatibility/_apis/build/status/Lightning-AI.lightning-Habana?branchName=main)](https://dev.azure.com/Lightning-AI/compatibility/_build/latest?definitionId=45&branchName=main)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Lightning-AI/lightning-Habana/main.svg)](https://results.pre-commit.ci/latest/github/Lightning-AI/lightning-Habana/main)
 
-[Intel Gaudi® AI Processor (HPU)](https://habana.ai/) training processors are built on a heterogeneous architecture with a cluster of fully programmable Tensor Processing Cores (TPC) along with its associated development tools and libraries, and a configurable Matrix Math engine.
+[Intel® Gaudi® AI Processor (HPU)](https://habana.ai/) training processors are built on a heterogeneous architecture with a cluster of fully programmable Tensor Processing Cores (TPC) along with its associated development tools and libraries, and a configurable Matrix Math engine.
 
 The TPC core is a VLIW SIMD processor with an instruction set and hardware tailored to serve training workloads efficiently.
 The Gaudi memory architecture includes on-die SRAM and local memories in each TPC and,
@@ -20,7 +20,7 @@ On the software side, the PyTorch Habana bridge interfaces between the framework
 
 Gaudi provides a significant cost-effective benefit, allowing you to engage in more deep learning training while minimizing expenses.
 
-For more information, check out [Gaudi Architecture](https://docs.habana.ai/en/latest/Gaudi_Overview/Gaudi_Overview.html) and [Gaudi Developer Docs](https://developer.habana.ai).
+For more information, check out [Gaudi Architecture](https://docs.habana.ai/en/latest/Gaudi_Overview/index.html) and [Gaudi Developer Docs](https://developer.habana.ai).
 
 ______________________________________________________________________
 
