@@ -160,7 +160,10 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in module.modules()):
             if _LIGHTNING_GREATER_EQUAL_2_3_0:
-                from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
+                if module_available("lightning"):
+                    from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
+                elif module_available("pytorch_lightning"):
+                    from lightning_fabric.utilities.init import _has_meta_device_parameters_or_buffers
 
                 # The user has wrapped their submodules manually, don't apply the auto wrap policy.
                 if _has_meta_device_parameters_or_buffers(module):
