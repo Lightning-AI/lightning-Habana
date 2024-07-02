@@ -96,7 +96,7 @@ class HPUAccelerator(Accelerator):
     @staticmethod
     def is_lazy() -> bool:
         """Checks if lazy is enabled or not."""
-        return (_HABANA_FRAMEWORK_AVAILABLE and htcore.is_lazy())
+        return _HABANA_FRAMEWORK_AVAILABLE and htcore.is_lazy()
 
     @classmethod
     def register_accelerators(cls, accelerator_registry: Dict) -> None:
