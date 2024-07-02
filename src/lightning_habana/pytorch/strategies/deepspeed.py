@@ -82,8 +82,8 @@ log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.2
-    RequirementCache("deepspeed==0.14.0+hpu.synapse.v1.16.2")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.1
+    RequirementCache("deepspeed==0.14.0+hpu.synapse.v1.16.1")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -298,7 +298,7 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.2`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.1`."
             )
 
         super().__init__(
