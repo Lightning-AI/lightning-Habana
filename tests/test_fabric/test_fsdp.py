@@ -132,7 +132,7 @@ class _TrainerManualWrapping(_Trainer):
 
 
 @pytest.mark.standalone()
-def test_fsdp_train(hpus):
+def test_fabric_fsdp_train(hpus):
     """Test FSDP training loop."""
     strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * hpus,
