@@ -282,7 +282,7 @@ def test_fsdp_strategy_simple_model_compile(tmpdir, hpus):
 
 
 @pytest.mark.standalone()
-def test_fsdp_modules_without_parameters(tmp_path, hpus):
+def test_fsdp_modules_without_parameters(tmpdir, hpus):
     """Test that TorchMetrics get moved to the device despite not having any parameters."""
 
     class MetricsModel(BoringModel):
@@ -302,7 +302,7 @@ def test_fsdp_modules_without_parameters(tmp_path, hpus):
 
     model = MetricsModel()
     trainer = Trainer(
-        default_root_dir=tmp_path,
+        default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * hpus,
