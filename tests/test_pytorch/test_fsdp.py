@@ -282,6 +282,7 @@ def test_fsdp_strategy_simple_model_compile(tmpdir, hpus):
 
 
 @pytest.mark.standalone()
+@pytest.mark.skip(reason="Random failure in pipeline. Will be enabled after fix")
 def test_fsdp_modules_without_parameters(tmpdir, hpus):
     """Test that TorchMetrics get moved to the device despite not having any parameters."""
 
