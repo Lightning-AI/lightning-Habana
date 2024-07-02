@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to Intel Gaudi software Release 1.16.0 ([#191](https://github.com/Lightning-AI/lightning-Habana/pull/191))
 - Updated HQT APIs to be in accordance with Intel Gaudi software Release 1.16.0 ([#192](https://github.com/Lightning-AI/lightning-Habana/pull/192))
 - Updated HPUPrecisionPlugin for fp8 based on Intel Gaudi software Release 1.16.0. ([#195](https://github.com/Lightning-AI/lightning-Habana/pull/195))
+- Updated to Intel Gaudi software Release 1.16.2 ([#205](https://github.com/Lightning-AI/lightning-Habana/pull/205))
 
 ### Fixed
 
