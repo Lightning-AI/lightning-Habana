@@ -24,9 +24,7 @@ def is_dist_avail_and_initialized() -> bool:
     """Check distributed backend is initialized or not."""
     if not dist.is_available():
         return False
-    if not dist.is_initialized():
-        return False
-    return True
+    return dist.is_initialized()
 
 
 def get_world_size() -> int:
