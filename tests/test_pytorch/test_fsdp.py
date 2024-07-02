@@ -311,6 +311,7 @@ def test_fsdp_modules_without_parameters(tmpdir, hpus):
         ),
         max_steps=1,
         enable_checkpointing=False,
+        devices=hpus,
     )
     trainer.fit(model)
 
