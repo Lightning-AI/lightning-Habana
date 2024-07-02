@@ -10,7 +10,7 @@
 [![Build Status](https://dev.azure.com/Lightning-AI/compatibility/_apis/build/status/Lightning-AI.lightning-Habana?branchName=main)](https://dev.azure.com/Lightning-AI/compatibility/_build/latest?definitionId=45&branchName=main)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/Lightning-AI/lightning-Habana/main.svg)](https://results.pre-commit.ci/latest/github/Lightning-AI/lightning-Habana/main)
 
-[Habana® Gaudi® AI Processor (HPU)](https://habana.ai/) training processors are built on a heterogeneous architecture with a cluster of fully programmable Tensor Processing Cores (TPC) along with its associated development tools and libraries, and a configurable Matrix Math engine.
+[Intel® Gaudi® AI Processor (HPU)](https://habana.ai/) training processors are built on a heterogeneous architecture with a cluster of fully programmable Tensor Processing Cores (TPC) along with its associated development tools and libraries, and a configurable Matrix Math engine.
 
 The TPC core is a VLIW SIMD processor with an instruction set and hardware tailored to serve training workloads efficiently.
 The Gaudi memory architecture includes on-die SRAM and local memories in each TPC and,
@@ -66,8 +66,8 @@ The `devices>1` parameter with HPUs enables the Habana accelerator for distribut
 | **SynapseAI**         | **1.16.2**                                          |
 | --------------------- | --------------------------------------------------- |
 | PyTorch               | 2.2.2                                               |
-| (PyTorch) Lightning\* | 2.2.x                                               |
-| **Lightning Habana**  | **1.6.2-dev0**                                      |
+| (PyTorch) Lightning\* | 2.3.x                                               |
+| **Lightning Habana**  | **1.7.0-dev0**                                      |
 | DeepSpeed\*\*         | Forked from v0.14.0 of the official DeepSpeed repo. |
 
 \* covers both packages [`lightning`](https://pypi.org/project/lightning/) and [`pytorch-lightning`](https://pypi.org/project/pytorch-lightning/)

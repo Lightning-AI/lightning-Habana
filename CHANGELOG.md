@@ -9,8 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+-
+
+### Changed
+
+- Updated to Intel Gaudi software Release 1.16.2 ([#205](https://github.com/Lightning-AI/lightning-Habana/pull/205))
+
+### Fixed
+
+-
+### Removed
+
+-
+
+### Deprecated
+
+-
+
+## [1.6.0] - 2024-06-28
+
+### Added
+
 - Added support for additional dtypes ([#194](https://github.com/Lightning-AI/lightning-Habana/pull/194))
 - Added more tests of FSDP with HPU ([#197](https://github.com/Lightning-AI/lightning-Habana/pull/197))
+- Added FSDP strategy with fabric on HPU ([#198](https://github.com/Lightning-AI/lightning-Habana/pull/198))
 
 ### Changed
 
@@ -18,7 +40,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to Intel Gaudi software Release 1.16.0 ([#191](https://github.com/Lightning-AI/lightning-Habana/pull/191))
 - Updated HQT APIs to be in accordance with Intel Gaudi software Release 1.16.0 ([#192](https://github.com/Lightning-AI/lightning-Habana/pull/192))
 - Updated HPUPrecisionPlugin for fp8 based on Intel Gaudi software Release 1.16.0. ([#195](https://github.com/Lightning-AI/lightning-Habana/pull/195))
-- Updated to Intel Gaudi software Release 1.16.2 ([#205](https://github.com/Lightning-AI/lightning-Habana/pull/205))
 
 ### Fixed
 
