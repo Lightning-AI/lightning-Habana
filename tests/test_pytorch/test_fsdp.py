@@ -709,7 +709,8 @@ def run_training(root_dir, model, dm, strategy, hpus):
 def test_hpu_parallel_precision_accuracy(tmpdir, hpus):
     parallel_hpus = [torch.device("hpu")] * hpus
     val_loss, train_loss = run_training(
-        tmpdir, AccuracyTestModel, BoringDataModule, HPUDDPStrategy(parallel_devices=parallel_hpus), hpus)
+        tmpdir, AccuracyTestModel, BoringDataModule, HPUDDPStrategy(parallel_devices=parallel_hpus), hpus
+    )
     # hpus == 1
     expected_train_loss = torch.tensor(0.9688)
     expected_val_loss = torch.tensor(0.6016)
