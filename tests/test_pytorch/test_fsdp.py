@@ -699,7 +699,7 @@ def run_training(root_dir, model, dm, strategy, hpus):
         devices=hpus,
         strategy=strategy,
         plugins=None if isinstance(strategy, HPUFSDPStrategy) else HPUPrecisionPlugin(precision="bf16-mixed"),
-        fast_dev_run=1,
+        fast_dev_run=True,
     )
     trainer.fit(model(), dm())
     return trainer.callback_metrics["val_loss"], trainer.callback_metrics["train_loss"]
@@ -707,7 +707,9 @@ def run_training(root_dir, model, dm, strategy, hpus):
 
 @pytest.mark.standalone()
 def test_hpu_parallel_precision_accuracy(tmpdir, hpus):
-    val_loss, train_loss = run_training(tmpdir, AccuracyTestModel, BoringDataModule, HPUDDPStrategy(), hpus)
+    parallel_hpus = [torch.device("hpu")] * hpus
+    val_loss, train_loss = run_training(
+        tmpdir, AccuracyTestModel, BoringDataModule, HPUDDPStrategy(parallel_devices=parallel_hpus), hpus)
     # hpus == 1
     expected_train_loss = torch.tensor(0.9688)
     expected_val_loss = torch.tensor(0.6016)
