@@ -931,6 +931,20 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
         # Override to do nothing, the deepspeed engine already loaded the states in `load_checkpoint()`
         pass
 
+    def on_test_end(self) -> None:
+        if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
+            from quantization_toolkit import habana_quantization_toolkit  # noqa
+
+            habana_quantization_toolkit.finish_measurements(self.model)
+        return super().on_test_end()
+
+    def on_predict_end(self) -> None:
+        if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
+            from quantization_toolkit import habana_quantization_toolkit  # noqa
+
+            habana_quantization_toolkit.finish_measurements(self.model)
+        return super().on_predict_end()
+
     @classmethod
     def register_strategies(cls, strategy_registry: _StrategyRegistry) -> None:
         strategy_registry.register("hpu_deepspeed", cls, description="Default DeepSpeed Strategy")

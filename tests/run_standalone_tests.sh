@@ -23,6 +23,7 @@ NC='\033[0m'
 hpus=2
 files=""
 filter=""
+marker="standalone"
 
 # Parse input args
 while [[ "$#" -gt 0 ]]; do
@@ -42,6 +43,10 @@ while [[ "$#" -gt 0 ]]; do
             filter="$2"
             shift 2
             ;;
+        -m|--marker)
+            marker="$2"
+            shift 2
+            ;;
         *)
             echo "Unknown option: $1"
             exit 1
@@ -58,12 +63,13 @@ echo "Test files: $test_files"
 
 # Get all the tests marked with standalone marker
 TEST_FILE="standalone_tests.txt"
-test_command="python -um pytest $test_files -q --collect-only -m standalone --pythonwarnings ignore"
+test_command="python -um pytest ${test_files} -q --collect-only --pythonwarnings ignore -m \"${marker}\""
+
 if [[ -n "$filter" ]]; then
   test_command+=" -k $filter"
 fi
-
-$test_command > $TEST_FILE
+echo "$test_command"
+eval "$test_command" > $TEST_FILE
 cat $TEST_FILE
 sed -i '$d' $TEST_FILE
 
@@ -73,6 +79,7 @@ declare -a results
 # Get test list and run each test individually
 tests=$(grep -oP '^tests/test_\S+' "$TEST_FILE")
 for test in $tests; do
+  echo "Executing test: $test"
   result=$(python -um pytest -sv "$test" --hpus $hpus --pythonwarnings ignore --junitxml="$test"-results.xml)
   retval=$?
   last_line=$(tail -n 1 <<< "$result")

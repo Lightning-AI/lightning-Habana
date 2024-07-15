@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import importlib
+import json
+import os
 from contextlib import nullcontext
 
 import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
@@ -35,7 +37,7 @@ import re
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
-from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
 
 supported_precision = get_args(_PRECISION_INPUT)
 
@@ -79,6 +81,12 @@ class BaseBM(BoringModel):
         """Validation step."""
         loss = super().validation_step(batch, batch_idx)
         self.log("val_loss", loss.get("x"), prog_bar=True, sync_dist=True)
+        return loss
+
+    def test_step(self, batch, batch_idx):
+        """Test step."""
+        loss = super().test_step(batch, batch_idx)
+        self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
         return loss
 
 
@@ -200,6 +208,144 @@ def test_hpu_precision_replace_layerse(replace_layers):
     )
 
 
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize(
+    ("inference", "quant", "expectation"),
+    [
+        (True, True, pytest.raises(FileNotFoundError, match=r"Failed to load file")),
+        (True, False, nullcontext()),
+        (False, True, nullcontext()),
+        (False, False, nullcontext()),
+    ],
+)
+def test_hpu_precision_convert_modules(inference, quant, expectation, tmpdir):
+    """Test HPUPrecisionPlugin.convert_modules."""
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    with expectation:
+        plugin.convert_modules(module=model, inference=inference, quant=quant, fp8_data_path=tmpdir)
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("patch_path", ["tmpdir", None])
+def test_hpu_precision_fp8_patch(patch_path, tmpdir):
+    """Tests fp8 jsons are patched correctly."""
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    patch_path = patch_path if patch_path is None else tmpdir
+    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
+
+    package_measure_json = str(
+        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
+    )
+    fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
+
+    # Check json is patched correctly
+    with open(package_measure_json, encoding="utf-8") as jfile:
+        data = json.load(jfile)
+        stats_path = data["dump_stats_path"]
+        xlsx_path = data["dump_stats_xlsx_path"]
+        assert stats_path == os.path.join(fp8_data_dump_path, "hqt")
+        assert xlsx_path == os.path.join(fp8_data_dump_path, "hqt", "fp8stats.xlsx")
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_measurement(tmpdir):
+    """Tests inference measruement dumps with fp8_inference."""
+
+    def get_fp8_measurement_files(path):
+        """Returns a list of hqt files."""
+        assert path is not None
+        assert os.path.isdir(path)
+        filenames = []
+        file_path = []
+        for file in os.listdir(path):
+            if "hqt" in file:
+                file_path.append(os.path.join(path, file))
+                filenames.append(file)
+        return file_path, filenames
+
+    # cleanup measurement files before test, if any
+    file_path, _ = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
+    if file_path:
+        for file in file_path:
+            os.remove(file)
+
+    seed_everything(42)
+
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    plugin.convert_modules(module=model, inference=True, quant=False)
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=plugin,
+        fast_dev_run=True,
+    )
+
+    trainer.test(model)
+
+    # check measurement files are dumped
+    _, filenames = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
+    expected_data_files = {"hqt_hooks_maxabs.json", "hqt_hooks_maxabs_mod_list.json", "hqt_hooks_maxabs.npz"}
+    assert set(filenames) == expected_data_files
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_quantization(tmpdir):
+    """Tests fp8_inference."""
+    test_loss = []
+    for precision in ["bf16", "fp8"]:
+        seed_everything(42)
+        model = BaseBM()
+        plugin = HPUPrecisionPlugin(device="hpu", precision=precision)
+        if precision == "fp8":
+            plugin.convert_modules(module=model, inference=True, quant=True)
+
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=HPUAccelerator(),
+            devices=1,
+            strategy=SingleHPUStrategy(),
+            plugins=plugin,
+            fast_dev_run=True,
+        )
+
+        trainer.test(model)
+        test_loss.append(trainer.callback_metrics["test_loss"])
+
+    # Compare bf16 and fp8 inference loss
+    assert torch.isclose(test_loss[0], test_loss[1], rtol=0.01, atol=0.01)
+
+
+@pytest.mark.standalone_only()
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, hpus):
+    """Negative test for fp8 inference not supported with HPUDDPStrategy."""
+    model = BoringModel()
+    dm = BoringDataModule()
+    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    plugin.convert_modules(module=model, inference=True, quant=False)
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=hpus,
+        strategy=HPUDDPStrategy(),
+        plugins=plugin,
+    )
+
+    with pytest.raises(NotImplementedError, match="FP8 inference is not supported with HPUDDPStrategy yet !!!"):
+        trainer.test(model, dm)
+
+
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_output(tmpdir):
     """Test HPUPrecisionPlugin with module containing both bf16 and fp8 operations."""
@@ -220,15 +366,6 @@ def test_hpu_precision_fp8_output(tmpdir):
     run_training(tmpdir, model, plugin)
 
 
-def test_hpu_precision_synapse_version(monkeypatch):
-    """Test precision plugin init with unsupported Synapse AI version."""
-    import lightning_habana.pytorch.plugins.precision
-
-    monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
-    with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
-        HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
-
-
 @pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
 def test_hpu_precision_fp8_on_gaudi():
     """Test fp8 with unsupported Habana device."""
@@ -236,6 +373,15 @@ def test_hpu_precision_fp8_on_gaudi():
         NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
     ):
         HPUPrecisionPlugin(device="hpu", precision="fp8")
+
+
+def test_hpu_precision_synapse_version(monkeypatch):
+    """Test precision plugin init with unsupported Synapse AI version."""
+    import lightning_habana.pytorch.plugins.precision
+
+    monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
+    with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
+        HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
 
 
 @pytest.mark.parametrize(
@@ -454,3 +600,53 @@ def test_mixed_precision_compare_accuracy(tmpdir):
     if not is_gaudi:
         # Assert loss is close between baseline and fp8
         assert torch.allclose(torch.tensor(loss_list[0]), torch.tensor(loss_list[-1]), rtol=0.1, atol=0.1)
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("precision", ["bf16-mixed", "fp8"])
+def test_hpu_precision_active_with_te_module(tmpdir, precision):
+    """Tests that fp8 precision is only active when HPUPrecision plugin is init with fp8, even if module from.
+
+    transformer engine is used.
+
+    """
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+
+        def training_step(self, batch, batch_idx):
+            """Training step."""
+            # torch.autocast is enabled for both bf16 and fp8
+            assert torch.hpu.is_autocast_hpu_enabled()
+            # fp8 training is only enabled when precision is fp8,
+            # even if module used is from transformer engine.
+            if precision == "fp8":
+                assert tengine.fp8.is_fp8_enabled()
+            else:
+                assert not tengine.fp8.is_fp8_enabled()
+            return super().training_step(batch, batch_idx)
+
+        def configure_optimizers(self):
+            """Configure optimizer."""
+            from torch.optim.adamw import AdamW
+
+            return AdamW(self.parameters())
+
+    seed_everything(42)
+    model = TestModel()
+    _plugin = HPUPrecisionPlugin(device="hpu", precision=precision)
+    # HPUPrecisionPlugin.convert_modules not reqiored as self.layer is already a transformer engine module
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        fast_dev_run=True,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=_plugin,
+    )
+    trainer.fit(model)

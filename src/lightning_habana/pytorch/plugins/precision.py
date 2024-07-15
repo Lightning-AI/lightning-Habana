@@ -11,13 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import importlib.resources
+import os
 from contextlib import contextmanager
 from typing import Any, ContextManager, Generator, Literal, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
+
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
+from lightning_habana.utils.resources import (
+    _HABANA_FRAMEWORK_AVAILABLE,
+    _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE,
+    is_fp8_available,
+    modify_fp8_json,
+)
 
 if module_available("lightning"):
     from lightning.fabric.utilities.rank_zero import rank_zero_info, rank_zero_warn
@@ -28,15 +37,24 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
-from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE, is_fp8_available
-
 _PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8"]
 
 if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
+
+    if _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE:
+        # Required for inference in fp8 using habana quantization toolkit
+        import habana_frameworks.torch.core as htcore
+
+        # Default quantization jsons
+        MAXABS_MEASURE = str(
+            importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
+        )
+        MAXABS_QUANT = str(
+            importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_quant.json")
+        )
 
 
 class HPUPrecisionPlugin(Precision):
@@ -72,6 +90,7 @@ class HPUPrecisionPlugin(Precision):
 
         self.recipe = None
         self.fp8_train_available = False
+        self.fp8_inference_available = False
 
         if self.precision == "fp8":
             fp8_available, reason_no_fp8 = is_fp8_available()
@@ -79,22 +98,90 @@ class HPUPrecisionPlugin(Precision):
                 raise NotImplementedError(f"fp8 not supported: {reason_no_fp8}.")
             self.recipe = recipe
             self.fp8_train_available = fp8_available
+            self.fp8_inference_available = fp8_available and _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE
             self.replace_layers = replace_layers
-            rank_zero_info(f"fp8 training available: {self.fp8_train_available}.")
 
-    def convert_modules(self, module: torch.nn.Module) -> torch.nn.Module:
-        """Replace layers of a module with Transformer engine equivalent layers."""
-        if self.replace_layers is True and self.fp8_train_available:
-            # In case model already contains a transformer engine modules,
-            # assume user responsibility for conversion of required layers.
-            if any(
-                "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
-            ):
-                rank_zero_info(
-                    f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
+            rank_zero_info(
+                f"fp8 training available: {self.fp8_train_available}. "
+                f"fp8 inference available: {self.fp8_inference_available}."
+            )
+
+    def _setup_fp8_quant_config(self, quant: bool = True, fp8_data_path: Optional[str] = None) -> None:
+        """Setup QUANT_CONFIG for before importing HQT."""
+        if os.environ.get("QUANT_CONFIG", None) is None:
+            # Use default jsons in case one is not provided via env variable
+            fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
+            assert fp8_data_path is not None
+            # Create a copy in fp8_dump_path to avoid modifying package jsons.
+            fp8_json = MAXABS_QUANT if quant else MAXABS_MEASURE
+            if fp8_data_path is not None:
+                modify_fp8_json(
+                    file_path=fp8_json,
+                    patch={
+                        "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
+                        "dump_stats_xlsx_path": os.path.join(fp8_data_path, "hqt", "fp8stats.xlsx"),
+                    },
                 )
-            else:
-                _replace_layers(module)
+            os.environ["QUANT_CONFIG"] = fp8_json
+
+    def _enable_fp8_inference(
+        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+    ) -> None:
+        """Convert module for fp8 inference.
+
+        This module cannot be used to run trainer.fit.
+
+        """
+        htcore.hpu_set_env()
+        module = module.to("hpu")
+        self._setup_fp8_inference_modules(module, quant, fp8_data_path)
+
+    def _setup_fp8_inference_modules(
+        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+    ) -> None:
+        """Convert module for fp8 inference."""
+        try:
+            self._setup_fp8_quant_config(quant, fp8_data_path)
+            from quantization_toolkit import habana_quantization_toolkit
+
+            habana_quantization_toolkit.prep_model(module)
+            htcore.hpu_initialize(module)
+        except FileNotFoundError as e:
+            print(
+                "Please run the fp8 measurement using a portion of data and try again. "
+                "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
+                "and run trainer.fit() to dump measurement data."
+            )
+            raise e
+        except ModuleNotFoundError as e:
+            print("quantization_toolkit not found. Please install it using `pip install habana_quantization_toolkit`.")
+            raise e
+
+    def _enable_fp8_training(self, module: torch.nn.Module) -> None:
+        """Convert module for fp8 training."""
+        # In case model already contains a transformer engine modules,
+        # assume user responsibility for conversion of required layers.
+        if any(
+            "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
+        ):
+            rank_zero_info(
+                f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
+            )
+        else:
+            _replace_layers(module)
+
+    def convert_modules(
+        self,
+        module: torch.nn.Module,
+        inference: bool = False,
+        quant: bool = True,
+        fp8_data_path: Optional[str] = None,
+    ) -> torch.nn.Module:
+        """Enable support for fp8."""
+        if inference is True and self.fp8_inference_available:
+            self._enable_fp8_inference(module, quant, fp8_data_path)
+        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
+            self._enable_fp8_training(module)
         return module
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
