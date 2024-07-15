@@ -86,7 +86,7 @@ class HPUProfiler(PyTorchProfiler):
         export_to_chrome: bool = True,
         row_limit: int = 20,
         sort_by_key: Optional[str] = None,
-        record_module_names: bool = True,
+        record_module_names: bool = False,
         **profiler_kwargs: Any,
     ) -> None:
         assert os.environ.get("HABANA_PROFILE", None) in (

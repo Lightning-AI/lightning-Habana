@@ -47,8 +47,8 @@ if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1
-    RequirementCache("deepspeed==0.12.4+hpu.synapse.v1.15.1")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.1
+    RequirementCache("deepspeed==0.14.0+hpu.synapse.v1.16.1")
 )
 if _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -58,27 +58,29 @@ warning_cache = WarningCache()
 
 
 class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
-    """Plugin that enables bfloat support on HPUs.
+    """Plugin that enables mixed precision support on HPUs.
 
     Args:
-        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
-        device: The device for ``torch.autocast``.
+        precision (_PRECISION_INPUT, optional): Precision input. Defaults to "32-true".
+
+    Raises:
+        OSError: Unsupported Synapse version.
+        ValueError: Invalid precision value.
+        NotImplementedError: fp8 / fp16 not available.
 
     """
 
     def __init__(
         self,
-        precision: _PRECISION_INPUT,
+        precision: _PRECISION_INPUT = "32-true",
         device: str = "hpu",
-        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
-        replace_layers: bool = False,
     ) -> None:
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedPrecisionPlugin`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.15.1`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.1`."
             )
-        super().__init__(device=device, precision=precision, recipe=recipe, replace_layers=replace_layers)
+        super().__init__(device=device, precision=precision)
 
     def backward(
         self,
@@ -153,7 +155,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
             ds_inference_kwargs["dtype"] = torch.bfloat16
         assert ds_inference_kwargs["dtype"] in (torch.bfloat16, torch.float)
 
-        htcore.hpu_set_env()
+        htcore.quantization.hpu_set_inference_env()
         module = module.to("hpu")
 
         module = deepspeed.init_inference(module, **ds_inference_kwargs)
@@ -163,13 +165,15 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         self,
         module: torch.nn.Module,
         inference: bool = False,
+        replace_layers: bool = False,
+        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         quant: bool = True,
         fp8_data_path: Optional[str] = None,
         ds_inference_kwargs: Optional[dict] = None,
     ) -> torch.nn.Module:
         """Enable support for fp8."""
-        if inference is True and self.fp8_inference_available:
+        if inference and self.fp8_inference_available:
             self._enable_fp8_inference(module, quant, fp8_data_path, ds_inference_kwargs)
-        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
-            self._enable_fp8_training(module)
+        if not inference and self.fp8_train_available:
+            self._enable_fp8_training(module, replace_layers, recipe)
         return module

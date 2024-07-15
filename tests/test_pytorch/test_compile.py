@@ -29,6 +29,9 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
+from contextlib import nullcontext
+
+from lightning_habana import HPUProfiler
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
@@ -190,7 +193,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
     model_to_train = BoringModel()
     model_to_eval = BoringModel()
     compiled_train_model = torch.compile(model_to_train, backend="hpu_backend")
-    compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
+    compiled_eval_model = torch.compile(model_to_eval, backend="hpu_backend")
 
     _strategy = SingleHPUStrategy()
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
@@ -239,3 +242,32 @@ def test_ddp_strategy_with_compile(tmp_path, hpus):
     assert _strategy._ddp_kwargs["gradient_as_bucket_view"] is True
     assert _strategy._ddp_kwargs["static_graph"] is True
     assert _strategy._ddp_kwargs["find_unused_parameters"] is True
+
+
+@pytest.mark.usefixtures("_is_compile_allowed")
+@pytest.mark.parametrize(
+    ("record_module_names", "expectation"),
+    [
+        (False, nullcontext()),
+        (
+            True,
+            pytest.raises(TypeError, match=r"nullcontext.__enter__\(\) missing 1 required positional argument: 'self'"),
+        ),
+    ],
+)
+def test_hpu_profiler_with_compile(tmpdir, record_module_names, expectation):
+    """Tests profilers with torch.compile."""
+    # Setting `record_module_names` to True with torch.compile raises TypeError
+    # Issue: https://github.com/Lightning-AI/pytorch-lightning/issues/19253
+    model = BoringModel()
+    compiled_model = torch.compile(model, backend="hpu_backend")
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        fast_dev_run=5,
+        profiler=HPUProfiler(dirpath=tmpdir, record_module_names=record_module_names, with_modules=True),
+    )
+    with expectation:
+        trainer.fit(compiled_model)

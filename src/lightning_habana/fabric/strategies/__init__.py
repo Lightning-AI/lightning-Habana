@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from lightning_habana.fabric.strategies.ddp import HPUDDPStrategy
+from lightning_habana.fabric.strategies.fsdp import HPUFSDPStrategy
 from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy
 
-__all__ = ["HPUDDPStrategy", "HPUParallelStrategy", "SingleHPUStrategy"]
+__all__ = ["HPUFSDPStrategy", "HPUDDPStrategy", "HPUParallelStrategy", "SingleHPUStrategy"]

@@ -24,11 +24,12 @@ _HPU_SYNAPSE_GREATER_EQUAL_1_11_0 = Version(get_hpu_synapse_version()) >= Versio
 _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 = Version(get_hpu_synapse_version()) >= Version("1.14.0")
 _TORCH_LESSER_EQUAL_1_13_1 = compare_version("torch", operator.le, "1.13.1")
 _TORCH_GREATER_EQUAL_2_0_0 = compare_version("torch", operator.ge, "2.0.0")
+_TORCH_LESSER_2_3_0 = Version(Version(torch.__version__).base_version) < Version("2.3.0")
 _LIGHTNING_GREATER_EQUAL_2_0_0 = compare_version("lightning", operator.ge, "2.0.0") or compare_version(
     "pytorch_lightning", operator.ge, "2.0.0"
 )
-_LIGHTNING_LESSER_EQUAL_2_2_3 = compare_version("lightning", operator.le, "2.2.3") or compare_version(
-    "pytorch_lightning", operator.le, "2.2.3"
+_LIGHTNING_GREATER_EQUAL_2_3_0 = compare_version("lightning", operator.ge, "2.3.0", True) or compare_version(
+    "pytorch_lightning", operator.ge, "2.3.0", True
 )
 _TORCHVISION_AVAILABLE = RequirementCache("torchvision")
 _KINETO_AVAILABLE = torch.profiler.kineto_available()

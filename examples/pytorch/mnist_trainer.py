@@ -209,7 +209,7 @@ if __name__ == "__main__":
         model, data_module = get_model(_run_type)
         plugin = get_plugins(_run_type)
         if _run_type == "fp8_training":
-            plugin.convert_modules(model)
+            plugin.convert_modules(model, replace_layers=True, inference=False)
 
         if _run_type == "fp8_inference_measure":
             plugin.convert_modules(model, inference=True, quant=False)

@@ -33,6 +33,7 @@ HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPreci
 
 In addition to the default settings, you can choose to override these defaults and provide your own BF16 (LOWER_LIST) and FP32 (FP32_LIST)
 The `LOWER_LIST` and `FP32_LIST` environment variables must be set before any instances begin.
+HPUPrecisionPlugin supports `bf16-mixed` and `16-mixed` for mixed precision training. It is advised to use `bf16-mixed` over `16-mixed` where possible.
 
 The following is an excerpt from an MNIST example implemented on a single HPU.
 
@@ -69,7 +70,7 @@ The following is an excerpt from an MNIST example implemented on a single HPU.
 For more granular control over with mixed precision training, one can use torch.autocast from native PyTorch.
 
 Instances of autocast serve as context managers or decorators that allow regions of your script to run in mixed precision.
-These also allow for fine tuning with `enabled` for enabling and disabling mixed precision training for certain parts of the code.
+
 
 .. code-block:: python
 
@@ -105,6 +106,46 @@ These also allow for fine tuning with `enabled` for enabling and disabling mixed
     # Train the model ⚡
     trainer.fit(model, datamodule=dm)
 
+
+`torch.autocast` context manager allows fine-tuning of mixed precision training with `enabled` parameter.
+It can be used alongside `HPUPrecisionPlugin`, which globally enables mixed precision, while local `torch.autocast` contexts can disable it for particular model parts.
+Alternatively, users can forgo `HPUPrecisionPlugin` and use only `torch.autocast` to control precision for every Op.
+For nested contexts, the scope of a given context and its `enabled` parameter determine whether mixed precision is enabled or disabled in that region.
+
+
+.. code::python
+
+    # Granular autocast control without HPUPrecisionPlugin
+    def forward(self, x):
+        """Forward."""
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True):
+            torch.hpu.is_autocast_hpu_enabled() # Returns True
+
+            with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
+                torch.hpu.is_autocast_hpu_enabled() # Returns False
+
+            # Re-entering autocast enabled region
+            torch.hpu.is_autocast_hpu_enabled() # Returns True
+        return super().forward(x)
+
+    # Granular autocast control with HPUPrecisionPlugin
+    def forward(self, x):
+        """Forward."""
+        # HPUPrecisionPlugin wraps a forward_context on train / val / predict / test _steps.
+        # This makes torch.autocast(enabled=True) as used in previous example redundant.
+        torch.hpu.is_autocast_hpu_enabled() # Returns True
+
+        with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=False):
+            torch.hpu.is_autocast_hpu_enabled() # Returns False
+            with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True):
+                torch.hpu.is_autocast_hpu_enabled() # Returns True
+            torch.hpu.is_autocast_hpu_enabled() # Returns False
+
+        # Re-entering autocast enabled region
+        torch.hpu.is_autocast_hpu_enabled() # Returns True
+        return super().forward(x)
+
+
 For more details, please refer to
 `Native PyTorch Autocast <https://docs.habana.ai/en/latest/PyTorch/PyTorch_Mixed_Precision/Autocast.html>`__.
 and `Automatic Mixed Precision Package: torch.autocast <https://pytorch.org/docs/stable/amp.html#autocasting>`__.
@@ -118,10 +159,9 @@ Lightning supports fp8 training using HPUPrecisionPlugin, :class:`~lightning_hab
 
 fp8 training is only available on Gaudi2 and above. Output from fp8 supported modules is in `torch.bfloat16`.
 
-The plugin accepts following args for the fp8 training:
+For fp8 training, call plugin.convert_modules(). The function accepts following args for the fp8 training:
 
 1. `replace_layers` : Set `True` to let the plugin replace `torch.nn.Modules` with `transformer_engine` equivalent modules. You can directly import and use modules from `transformer_engine` as well.
-
 2. `recipe` : fp8 recipe used in training.
 
 .. code-block:: python
@@ -134,10 +174,10 @@ The plugin accepts following args for the fp8 training:
     model = BoringModel()
 
     # init the precision plugin for fp8 training.
-    plugin = HPUPrecisionPlugin(precision="fp8", replace_layers=True, recipe=recipe.DelayedScaling())
+    plugin = HPUPrecisionPlugin(precision="fp8")
 
     # Replace torch.nn.Modules with transformer engine equivalent modules
-    plugin.convert_modules(model)
+    plugin.convert_modules(model, replace_layers=True, recipe=recipe.DelayedScaling())
 
     # Initialize a trainer with HPUPrecisionPlugin
     trainer = Trainer(
@@ -156,7 +196,7 @@ The plugin accepts following args for the fp8 training:
     1. Import `transformer_engine` and replace your modules with `transformer_engine` modules in the model.
     2. Wrap the forward pass of the training with `fp8_autocast`.
 
-    Users may still use `HPUPrecisionPlugin` to train in `bf16-mixed` precision for modules not supported by `transformer_engine`.
+    Users may still use `HPUPrecisionPlugin` to train in mixed precision for modules not supported by `transformer_engine`.
 
 
 .. note::
@@ -254,9 +294,9 @@ Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/P
 **Limitations**
 
 1. Measurement mode and Quantization mode cannot be run in single process. Please run in measurement mode first, followed by quantization mode. Measurement data may be re-used for inference in quantiztion mode for the given model.
-2. Only single card inference is currently supported. Support for multiple cards will be enabled in a future release.
 
 For more details, refer to `Inference Using FP8 <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html>`__.
+For a list of data types supported with HPU, refer to `PyTorch Support Matrix <https://docs.habana.ai/en/v1.15.1/PyTorch/Reference/PyTorch_Support_Matrix.html>`__.
 
 ----
 

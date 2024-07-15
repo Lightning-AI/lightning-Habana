@@ -13,22 +13,20 @@
 # limitations under the License.
 
 from contextlib import contextmanager
-from typing import Any, ContextManager, Generator, Mapping, Optional, Union
+from typing import Any, Generator, Mapping, Optional, Union
 
 import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
 
 if module_available("lightning"):
-    from lightning.fabric.plugins.precision.utils import _DtypeContextManager
-    from lightning.pytorch.plugins.precision.fsdp import FSDPPrecision
+    from lightning.fabric.plugins.precision.fsdp import FSDPPrecision
 elif module_available("pytorch_lightning"):
-    from lightning_fabric.plugins.precision.utils import _DtypeContextManager
-    from pytorch_lightning.plugins.precision.fsdp import FSDPPrecision
+    from lightning_fabric.plugins.precision.fsdp import FSDPPrecision
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
+from lightning_habana.fabric.plugins.precision import _PRECISION_INPUT, HPUPrecision
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
 
@@ -37,11 +35,12 @@ if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
 
-class HPUFSDPPrecision(FSDPPrecision, HPUPrecisionPlugin):
+class HPUFSDPPrecision(FSDPPrecision, HPUPrecision):
     """Plugin that enables mixed precision support on HPUs.
 
     Args:
-        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
+        precision: to enable full precision (``'32-true'``), half precision (``'bf16'``) or
+            mixed precision (``'bf16-mixed``').
         device: The device for ``torch.autocast``.
 
     """
@@ -58,14 +57,11 @@ class HPUFSDPPrecision(FSDPPrecision, HPUPrecisionPlugin):
             raise ValueError(
                 f"`precision={precision!r}` is not supported." f" `precision` must be one of: {supported_precision}."
             )
-        self.precision = precision
         super().__init__(precision)
 
-    def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
+    def autocast_context_manager(self) -> torch.autocast:
         """Return Autocast context manager."""
-        if "mixed" in self.precision:
-            return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
-        return _DtypeContextManager(self._desired_input_dtype)
+        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:

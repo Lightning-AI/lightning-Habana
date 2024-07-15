@@ -126,16 +126,18 @@ class SingleHPUStrategy(SingleDeviceStrategy):
 
     def on_test_end(self) -> None:
         if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
-            from quantization_toolkit import habana_quantization_toolkit  # noqa
+            import habana_quantization_toolkit
 
             habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
         return super().on_test_end()
 
     def on_predict_end(self) -> None:
         if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
-            from quantization_toolkit import habana_quantization_toolkit  # noqa
+            import habana_quantization_toolkit
 
             habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
         return super().on_predict_end()
 
     @classmethod

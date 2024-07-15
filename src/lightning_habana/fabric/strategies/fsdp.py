@@ -23,39 +23,40 @@ from typing_extensions import override
 
 if module_available("lightning"):
     import lightning.pytorch as pl
-    from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
+    from lightning.fabric.plugins import ClusterEnvironment
     from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
+    from lightning.fabric.plugins.precision import Precision
     from lightning.fabric.strategies import _StrategyRegistry
     from lightning.fabric.strategies.fsdp import (
+        FSDPStrategy,
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning.fabric.utilities.distributed import group as _group
-    from lightning.fabric.utilities.types import ReduceOp
-    from lightning.pytorch.plugins.precision import Precision
-    from lightning.pytorch.strategies.fsdp import FSDPStrategy
-    from lightning.pytorch.utilities.rank_zero import rank_zero_warn
+    from lightning.fabric.utilities.distributed import (
+        ReduceOp,
+    )
+    from lightning.fabric.utilities.rank_zero import rank_zero_warn
 elif module_available("pytorch_lightning"):
     import pytorch_lightning as pl
-    from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
+    from lightning_fabric.plugins import ClusterEnvironment
     from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
+    from lightning_fabric.plugins.precision import Precision
     from lightning_fabric.strategies import _StrategyRegistry
     from lightning_fabric.strategies.fsdp import (
+        FSDPStrategy,
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning_fabric.utilities.distributed import group as _group
-    from lightning_fabric.utilities.types import ReduceOp
-    from pytorch_lightning.plugins.precision import Precision
-    from pytorch_lightning.strategies.fsdp import FSDPStrategy
-    from pytorch_lightning.utilities.rank_zero import rank_zero_warn
+    from lightning_fabric.utilities.distributed import (
+        ReduceOp,
+    )
+    from lightning_fabric.utilities.rank_zero import rank_zero_warn
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.pytorch.accelerator import HPUAccelerator
-from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
-from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
+from lightning_habana.fabric.accelerator import HPUAccelerator
+from lightning_habana.fabric.plugins.fsdp_precision import HPUFSDPPrecision
+from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_3_0
 
@@ -89,8 +90,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         accelerator: Optional["pl.accelerators.Accelerator"] = None,
         parallel_devices: Optional[List[torch.device]] = [torch.device("hpu")] * HPUAccelerator.auto_device_count(),
         cluster_environment: Optional[ClusterEnvironment] = None,
-        checkpoint_io: Optional[CheckpointIO] = HPUCheckpointIO(),
-        precision_plugin: Optional[Precision] = HPUFSDPPrecision("bf16-mixed"),
+        precision: Optional[Precision] = HPUFSDPPrecision("bf16-mixed"),
         process_group_backend: Optional[str] = "hccl",
         timeout: Optional[timedelta] = default_pg_timeout,
         cpu_offload: Union[bool, "CPUOffload", None] = None,
@@ -99,7 +99,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         activation_checkpointing: Optional[Union[Type[Module], List[Type[Module]]]] = None,
         activation_checkpointing_policy: Optional["_POLICY"] = None,
         sharding_strategy: "_SHARDING_STRATEGY" = "FULL_SHARD",
-        state_dict_type: Literal["full", "sharded"] = "full",
+        state_dict_type: Literal["full", "sharded"] = "sharded",
         **kwargs: Any,
     ) -> None:
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
@@ -108,8 +108,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             accelerator=accelerator,
             parallel_devices=parallel_devices,
             cluster_environment=cluster_environment,
-            checkpoint_io=checkpoint_io,
-            precision_plugin=precision_plugin,
+            precision=precision,
             process_group_backend=process_group_backend,
             timeout=timeout,
             cpu_offload=cpu_offload,
@@ -122,33 +121,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             **kwargs,
         )
 
-    @property
-    def mixed_precision_config(self) -> Optional["MixedPrecision"]:
-        if self.mixed_precision:
-            return self.mixed_precision
-        plugin = self.precision_plugin
-        if isinstance(plugin, HPUFSDPPrecision):
-            return plugin.mixed_precision_config
-        return None
-
-    @property
-    @override
-    def precision_plugin(self) -> HPUFSDPPrecision:
-        plugin = self._precision_plugin
-        if plugin is not None:
-            return plugin
-        return HPUFSDPPrecision("bf16-mixed")
-
-    @precision_plugin.setter
-    @override
-    def precision_plugin(self, precision_plugin: Optional[HPUFSDPPrecision]) -> None:
-        if precision_plugin is not None and not isinstance(precision_plugin, HPUFSDPPrecision):
-            raise TypeError(
-                f"The FSDP strategy can only work with the `HPUFSDPPrecision` plugin, found {precision_plugin}"
-            )
-        self._precision_plugin = precision_plugin
-
-    @override
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
             # this env is used in overrides to check the backend initiated
@@ -158,38 +130,68 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
         super().setup_environment()
 
-    def _setup_model(self, model: Module) -> Module:
+    @property
+    def mixed_precision_config(self) -> Optional["MixedPrecision"]:
+        if self.mixed_precision:
+            return self.mixed_precision
+        plugin = self.precision
+        if isinstance(plugin, HPUFSDPPrecision):
+            return plugin.mixed_precision_config
+        return None
 
+    @property
+    @override
+    def precision(self) -> HPUFSDPPrecision:
+        plugin = self._precision
+        if plugin is not None:
+            return plugin
+        return HPUFSDPPrecision("bf16-mixed")
+
+    @precision.setter
+    @override
+    def precision(self, precision: Optional[HPUFSDPPrecision]) -> None:
+        if precision is not None and not isinstance(precision, HPUFSDPPrecision):
+            raise TypeError(f"The FSDP strategy can only work with the `HPUFSDPPrecision` plugin, found {precision}")
+        self._precision = precision
+
+    @override
+    def setup_module(self, module: Module) -> Module:
         from torch.distributed.fsdp import FullyShardedDataParallel
 
-        if any(isinstance(mod, FullyShardedDataParallel) for mod in model.modules()):
-            # TBD: Enable meta device check once we move to PTL>=2.3 which has HPU fsdo support
-            # if _has_meta_device_parameters_or_buffers(model):
-            #     rank_zero_warn(
-            #         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
-            #     )
-            if "auto_wrap_policy" in self.kwargs:
+        if any(isinstance(mod, FullyShardedDataParallel) for mod in module.modules()):
+            if _LIGHTNING_GREATER_EQUAL_2_3_0:
+                if module_available("lightning"):
+                    from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
+                elif module_available("pytorch_lightning"):
+                    from lightning_fabric.utilities.init import _has_meta_device_parameters_or_buffers
+
                 # The user has wrapped their submodules manually, don't apply the auto wrap policy.
+                if _has_meta_device_parameters_or_buffers(module):
+                    rank_zero_warn(
+                        "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
+                    )
+
+            if "auto_wrap_policy" in self._fsdp_kwargs:
                 rank_zero_warn(
                     "A FSDP `auto_wrap_policy` is set, but the model is already wrapped. The policy will be ignored."
                 )
-                del self.kwargs["auto_wrap_policy"]
+                del self._fsdp_kwargs["auto_wrap_policy"]
         else:
-            model = FullyShardedDataParallel(
-                module=model,
+            module = FullyShardedDataParallel(
+                module=module,
                 cpu_offload=self.cpu_offload,
                 mixed_precision=self.mixed_precision_config,
                 sharding_strategy=self.sharding_strategy,
-                device_id=self.root_device,  # Index based device selection is not supported on HPU
-                **self.kwargs,
+                device_id=self.root_device,
+                **self._fsdp_kwargs,
             )
 
-        _move_torchmetrics_to_device(model, self.root_device)
+        _move_torchmetrics_to_device(module, self.root_device)
 
         # activation checkpointing needs to be set up after wrapping the model
-        _setup_activation_checkpointing(model, self._activation_checkpointing_kwargs)
+        _setup_activation_checkpointing(module, self._activation_checkpointing_kwargs)
 
-        return model
+        return module
 
     def setup(self, trainer: "pl.Trainer") -> None:
         self.model_to_device()
@@ -213,18 +215,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             **self.kwargs,
         ):
             yield
-
-    @override
-    def broadcast(self, obj: object, src: int = 0) -> object:
-        if not torch.distributed.is_available():
-            return obj
-
-        obj = [obj]
-        if self.global_rank != src:
-            obj = [None]
-
-        _hpu_broadcast_object_list(obj, src, group=_group.WORLD)
-        return obj[0]
 
     def reduce(
         self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"

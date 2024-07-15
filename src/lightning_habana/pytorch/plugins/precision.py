@@ -25,19 +25,28 @@ from lightning_habana.utils.resources import (
     _HABANA_FRAMEWORK_AVAILABLE,
     _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE,
     is_fp8_available,
+    is_fp16_available,
     modify_fp8_json,
 )
 
 if module_available("lightning"):
-    from lightning.fabric.utilities.rank_zero import rank_zero_info, rank_zero_warn
+    from lightning.fabric.utilities.rank_zero import rank_zero_info
     from lightning.pytorch.plugins.precision import Precision
 elif module_available("pytorch_lightning"):
     from pytorch_lightning.plugins.precision import Precision
-    from pytorch_lightning.utilities.rank_zero import rank_zero_info, rank_zero_warn
+    from pytorch_lightning.utilities.rank_zero import rank_zero_info
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8"]
+_PRECISION_INPUT = Literal["32", "32-true", "bf16", "bf16-mixed", "fp8", "16-mixed"]
+
+_AMP_DICT = {
+    "32": torch.float32,
+    "32-true": torch.float32,
+    "bf16": torch.bfloat16,
+    "bf16-mixed": torch.bfloat16,
+    "16-mixed": torch.float16,
+}
 
 if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
@@ -61,17 +70,19 @@ class HPUPrecisionPlugin(Precision):
     """Plugin that enables mixed precision support on HPUs.
 
     Args:
-        precision: to enable ``torch.bfloat16`` (``'bf16-mixed'``).
-        device: The device for ``torch.autocast``.
+        precision (_PRECISION_INPUT, optional): Precision input. Defaults to "32-true".
+
+    Raises:
+        OSError: Unsupported Synapse version.
+        ValueError: Invalid precision value(s).
+        NotImplementedError: fp8 / fp16 not available.
 
     """
 
     def __init__(
         self,
-        precision: _PRECISION_INPUT,
+        precision: _PRECISION_INPUT = "32-true",
         device: str = "hpu",
-        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
-        replace_layers: bool = False,
     ) -> None:
         if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
             raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
@@ -81,28 +92,28 @@ class HPUPrecisionPlugin(Precision):
                 f"`Trainer(accelerator='hpu', precision={precision!r})` is not supported."
                 f" `precision` must be one of: {supported_precision}."
             )
-        self.precision = precision
-        self.replace_layers = False
         self.device = device
+        self.precision = precision
 
-        if any([recipe, replace_layers]) and precision != "fp8":
-            rank_zero_warn(f"Precision is not 'fp8'. Params {recipe=} and {replace_layers=} will not be set.")
-
-        self.recipe = None
+        self.recipe: Union[Mapping[str, Any], "DelayedScaling"] = None
+        self.replace_layers = False
         self.fp8_train_available = False
         self.fp8_inference_available = False
+
+        if self.precision == "16-mixed":
+            fp16_available, reason_no_fp16 = is_fp16_available()
+            if not fp16_available:
+                raise NotImplementedError(f"fp16 not supported: {reason_no_fp16}.")
 
         if self.precision == "fp8":
             fp8_available, reason_no_fp8 = is_fp8_available()
             if not fp8_available:
                 raise NotImplementedError(f"fp8 not supported: {reason_no_fp8}.")
-            self.recipe = recipe
             self.fp8_train_available = fp8_available
             self.fp8_inference_available = fp8_available and _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE
-            self.replace_layers = replace_layers
 
             rank_zero_info(
-                f"fp8 training available: {self.fp8_train_available}. "
+                f"fp8 training available: {self.fp8_train_available}."
                 f"fp8 inference available: {self.fp8_inference_available}."
             )
 
@@ -119,7 +130,6 @@ class HPUPrecisionPlugin(Precision):
                     file_path=fp8_json,
                     patch={
                         "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
-                        "dump_stats_xlsx_path": os.path.join(fp8_data_path, "hqt", "fp8stats.xlsx"),
                     },
                 )
             os.environ["QUANT_CONFIG"] = fp8_json
@@ -132,7 +142,7 @@ class HPUPrecisionPlugin(Precision):
         This module cannot be used to run trainer.fit.
 
         """
-        htcore.hpu_set_env()
+        htcore.quantization.hpu_set_inference_env()
         module = module.to("hpu")
         self._setup_fp8_inference_modules(module, quant, fp8_data_path)
 
@@ -142,10 +152,10 @@ class HPUPrecisionPlugin(Precision):
         """Convert module for fp8 inference."""
         try:
             self._setup_fp8_quant_config(quant, fp8_data_path)
-            from quantization_toolkit import habana_quantization_toolkit
+            import habana_quantization_toolkit
 
             habana_quantization_toolkit.prep_model(module)
-            htcore.hpu_initialize(module)
+            htcore.quantization.hpu_inference_initialize(module)
         except FileNotFoundError as e:
             print(
                 "Please run the fp8 measurement using a portion of data and try again. "
@@ -157,38 +167,70 @@ class HPUPrecisionPlugin(Precision):
             print("quantization_toolkit not found. Please install it using `pip install habana_quantization_toolkit`.")
             raise e
 
-    def _enable_fp8_training(self, module: torch.nn.Module) -> None:
+    def _enable_fp8_training(
+        self,
+        module: torch.nn.Module,
+        replace_layers: bool = False,
+        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
+    ) -> None:
         """Convert module for fp8 training."""
-        # In case model already contains a transformer engine modules,
-        # assume user responsibility for conversion of required layers.
-        if any(
-            "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
-        ):
-            rank_zero_info(
-                f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
-            )
-        else:
-            _replace_layers(module)
+        self.recipe = recipe
+        if replace_layers:
+            # In case model already contains a transformer engine modules,
+            # assume user responsibility for conversion of required layers.
+            if any(
+                "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in module.modules()
+            ):
+                rank_zero_info(
+                    f"Module {module} already contains transformer engine equivalent modules. Skipping conversion"
+                )
+            else:
+                _replace_layers(module)
 
     def convert_modules(
         self,
         module: torch.nn.Module,
         inference: bool = False,
+        replace_layers: bool = False,
+        recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
         quant: bool = True,
         fp8_data_path: Optional[str] = None,
     ) -> torch.nn.Module:
-        """Enable support for fp8."""
-        if inference is True and self.fp8_inference_available:
-            self._enable_fp8_inference(module, quant, fp8_data_path)
-        if self.fp8_train_available is True and self.replace_layers is True and inference is False:
-            self._enable_fp8_training(module)
+        """Convert modules for fp8 precision.
+
+        Args:
+            module (torch.nn.Module): module to convert
+            inference (bool, optional): prepare modules for inference (True) / training (False). Defaults to False.
+            replace_layers (bool, optional): Replace layers with transformer engine equivalent layers for fp8 training.
+                Defaults to False.
+            recipe (Optional[Union[Mapping[str, Any], &quot;DelayedScaling&quot;]], optional): Recipe for fp8 training.
+                Defaults to None.
+            quant (bool, optional): Run fp8 inference in measurement (False) or Quant (True) mode. Defaults to True.
+            fp8_data_path (Optional[str], optional): path to dump fp8 inference data in measurement mode.
+                Defaults to None.
+
+        Returns:
+            torch.nn.Module: fp8 enabled module
+
+        """
+        assert self.precision == "fp8", "HPUPrecisionPlugin.convert_modules() should only be used with precision=`fp8`."
+        if inference:
+            if self.fp8_inference_available:
+                self._enable_fp8_inference(module, quant, fp8_data_path)
+            else:
+                raise ModuleNotFoundError(
+                    "habana_quantization_toolkit not found. "
+                    "Install it using `pip install habana_quantization_toolkit`"
+                )
+        if not inference and self.fp8_train_available:
+            self._enable_fp8_training(module, replace_layers, recipe)
         return module
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
         if self.fp8_train_available:
-            return _nested_precision_cm(fp8_enabled=(self.precision == "fp8"), recipe=self.recipe)
-        return torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True)
+            return tengine.fp8_autocast(enabled=True, fp8_recipe=self.recipe)
+        return torch.autocast(device_type="hpu", dtype=_AMP_DICT[self.precision], enabled=True)
 
     @contextmanager
     def forward_context(self) -> Generator[None, None, None]:
@@ -215,18 +257,3 @@ def _replace_layers(module: torch.nn.Module) -> None:
             module.__setattr__(name, replacement)
         else:
             _replace_layers(child)
-
-
-@contextmanager
-def _nested_precision_cm(
-    fp8_enabled: bool, recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]]
-) -> Generator[Any, Any, Any]:
-    """CM to nest fp8 precision with torch.autocast.
-
-    This enables the ops that do not support fp8 to run with torch autocast.
-
-    """
-    with torch.autocast(device_type="hpu", dtype=torch.bfloat16, enabled=True), tengine.fp8_autocast(
-        enabled=fp8_enabled, fp8_recipe=recipe
-    ):
-        yield

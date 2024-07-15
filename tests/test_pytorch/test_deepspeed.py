@@ -19,7 +19,6 @@ from typing import Any, Dict
 import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 import pytest
 import torch
-from habana_frameworks.torch.hpex.experimental.transformer_engine import recipe
 from lightning_utilities import module_available
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
@@ -496,12 +495,6 @@ def test_lightning_model(
         checkpoint_in_cpu,
     )
 
-    if zero_config == 0 and cpu_offload is True:  # todo: move out of the test body
-        pytest.skip("Zero stage 0 and cpu_offload is an invalid configuration")
-
-    if zero_config == "infinity" and cpu_offload is False:  # todo: move out of the test body
-        pytest.skip("Not running zero_infinity without cpu_offload")
-
     model = SampleModel()
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     _accumulate_grad_batches = config["train_micro_batch_size_per_gpu"]
@@ -812,15 +805,15 @@ def test_lightning_deepspeed_inference_config(get_device_count, dtype):
 
 
 @pytest.mark.parametrize("stage", [1, 2, 3])
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 / fp16 supported on Gaudi2 and above.")
+def test_hpu_deepspeed_training_accuracy(tmpdir, get_device_count, stage):
     """Test compare training accuracy between bf16 and fp8 precision for deepspeed."""
 
     class TestModel(BoringModel):
         """Test model."""
 
         def __init__(self):
-            """init."""
+            """Init."""
             super().__init__()
             self.layer = tengine.Linear(32, 2)
 
@@ -855,17 +848,21 @@ def test_hpu_deepspeed_fp8_training_accuracy(tmpdir, get_device_count, stage):
         trainer.fit(model)
         return trainer.callback_metrics["val_loss"], trainer.callback_metrics["train_loss"]
 
-    precision_plugin_params_list = [
-        ({"device": "hpu", "precision": "bf16-mixed"}),
-        ({"device": "hpu", "precision": "fp8", "replace_layers": True, "recipe": recipe.DelayedScaling()}),
+    precision_list = [
+        "32-true",
+        "bf16-mixed",
+        "16-mixed",
+        "fp8",
     ]
 
     loss_list = []
 
-    for params in precision_plugin_params_list:
+    for precision in precision_list:
         seed_everything(42)
         model = TestModel()
-        _plugin = HPUDeepSpeedPrecisionPlugin(**params)
+        _plugin = HPUDeepSpeedPrecisionPlugin(precision=precision)
+        if precision == "fp8":
+            _plugin.convert_modules(model)
         _strategy = HPUDeepSpeedStrategy(stage=stage)
         loss_list.append(run_training(tmpdir, model, _plugin, _strategy))
 
@@ -881,7 +878,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
         """Test model."""
 
         def __init__(self):
-            """init."""
+            """Init."""
             super().__init__()
             self.layer = torch.nn.Linear(32, 2)
 
@@ -926,7 +923,7 @@ def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, get_device_count, quant):
         """Test model."""
 
         def __init__(self):
-            """init."""
+            """Init."""
             super().__init__()
             self.layer = torch.nn.Linear(32, 2)
 
