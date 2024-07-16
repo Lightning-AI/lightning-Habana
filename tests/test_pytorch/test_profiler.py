@@ -50,8 +50,8 @@ if _KINETO_AVAILABLE:
 
 
 @pytest.fixture()
-def _check_distributed(get_device_count):
-    if get_device_count <= 1:
+def _check_distributed(device_count):
+    if device_count <= 1:
         pytest.skip("Distributed test does not run on single HPU")
 
 
@@ -115,14 +115,14 @@ def test_hpu_profiler_trainer_stages(tmpdir, profiler):
 @pytest.mark.usefixtures("_check_distributed")
 @pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler)])
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count):
+def test_profiler_trainer_stages_distributed(tmpdir, profiler, device_count):
     """Ensure the proper files are saved in distributed."""
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         strategy=HPUDDPStrategy(),
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         profiler=profiler(dirpath=tmpdir, filename="profiler"),
         fast_dev_run=True,
     )

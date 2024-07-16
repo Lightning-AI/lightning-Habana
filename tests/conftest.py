@@ -28,12 +28,15 @@ def pytest_addoption(parser):
     parser.addoption("--hpus", action="store", type=int, default=1, help="Number of hpus 1-8")
 
 
-@pytest.fixture()
-def arg_hpus(request):
+def get_arg_hpus(request):
     return request.config.getoption("--hpus")
 
 
 @pytest.fixture()
+def arg_hpus(request):
+    return get_arg_hpus(request)
+
+
 def get_device_count(pytestconfig):
     arg_hpus = int(pytestconfig.getoption("hpus"))
     if not arg_hpus:
@@ -41,3 +44,8 @@ def get_device_count(pytestconfig):
         return 1
     assert arg_hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
     return arg_hpus
+
+
+@pytest.fixture()
+def device_count(pytestconfig):
+    return get_device_count(pytestconfig)

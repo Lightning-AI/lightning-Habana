@@ -23,6 +23,8 @@ from lightning_habana.utils.hpu_distributed import supported_reduce_ops
 from lightning_habana.utils.resources import device_count
 from lightning_utilities import module_available
 
+from tests.conftest import get_arg_hpus, get_device_count
+
 if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch import Callback, Trainer, seed_everything
@@ -188,8 +190,8 @@ def test_accelerator_with_single_device():
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-@pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
+@pytest.mark.skipif(get_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(get_arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
 def test_accelerator_with_multiple_devices(arg_hpus):
     trainer = Trainer(accelerator="hpu", devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
@@ -202,7 +204,7 @@ def test_accelerator_with_multiple_devices(arg_hpus):
 
 
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-@pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
+@pytest.mark.skipif(get_arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
 def test_accelerator_auto_with_devices_hpu(arg_hpus):
     trainer = Trainer(accelerator="auto", devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
@@ -218,8 +220,8 @@ def test_strategy_choice_single_strategy():
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
 
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-@pytest.mark.skipif(arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
+@pytest.mark.skipif(get_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.skipif(get_arg_hpus() <= 1, reason="Test requires set nb HPUs 1+")
 def test_strategy_choice_ddp_strategy(arg_hpus):
     trainer = Trainer(
         strategy=HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus),
@@ -482,7 +484,9 @@ def test_reduce_op_logging(tmpdir, arg_hpus, reduce_op, logged_value_epoch, logg
 
     seed_everything(42)
     _model = BaseBM(reduce_op=reduce_op)
-    _strategy = HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * hpus) if hpus > 1 else SingleHPUStrategy()
+    _strategy = (
+        HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus) if arg_hpus > 1 else SingleHPUStrategy()
+    )
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
