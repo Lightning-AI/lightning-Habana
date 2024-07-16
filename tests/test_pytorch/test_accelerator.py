@@ -241,15 +241,15 @@ def test_devices_auto_choice_hpu():
 
 
 @pytest.mark.parametrize("hpus", [1])
-def test_inference_only(tmpdir, arg_hpus):
+def test_inference_only(tmpdir, hpus):
     model = BoringModel()
 
     _strategy = SingleHPUStrategy()
-    if arg_hpus > 1:
-        parallel_hpus = [torch.device("hpu")] * arg_hpus
+    if hpus > 1:
+        parallel_hpus = [torch.device("hpu")] * hpus
         _strategy = HPUDDPStrategy(parallel_devices=parallel_hpus)
     trainer = Trainer(
-        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=arg_hpus, strategy=_strategy
+        default_root_dir=tmpdir, fast_dev_run=True, accelerator=HPUAccelerator(), devices=hpus, strategy=_strategy
     )
     trainer.validate(model)
     trainer.test(model)
