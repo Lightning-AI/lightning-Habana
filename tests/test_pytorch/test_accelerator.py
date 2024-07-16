@@ -38,7 +38,6 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUParallelStrategy, SingleHPUStrategy
 
-from tests.conftest import arg_hpus
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
