@@ -34,7 +34,7 @@ def arg_hpus(request):
 
 
 @pytest.fixture()
-def get_device_count(pytestconfig):
+def device_count(pytestconfig):
     arg_hpus = int(pytestconfig.getoption("hpus"))
     if not arg_hpus:
         assert HPUAccelerator.auto_device_count() >= 1
