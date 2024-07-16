@@ -23,7 +23,6 @@ import pytest
 import torch
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
-from lightning_habana.utils.resources import device_count
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -114,7 +113,6 @@ def test_hpu_profiler_trainer_stages(tmpdir, profiler):
 @pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 @pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler)])
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_profiler_trainer_stages_distributed(tmpdir, profiler, device_count):
     """Ensure the proper files are saved in distributed."""
     model = BoringModel()
@@ -143,7 +141,6 @@ def test_profiler_trainer_stages_distributed(tmpdir, profiler, device_count):
     "event_name",
     ["cpu_op", "Runtime", "Kernel"],
 )
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.xfail(strict=False, reason="TBF: Could not find event kernel in trace")
 def test_hpu_trace_event(tmpdir, event_name):
     # Run model and prep json
