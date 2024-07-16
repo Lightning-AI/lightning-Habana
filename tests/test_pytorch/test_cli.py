@@ -101,13 +101,13 @@ elif module_available("pytorch_lightning"):
         ),
     ],
 )
-def test_cli_from_cmdline(param, value, is_class, init_kwargs, hpus):
+def test_cli_from_cmdline(param, value, is_class, init_kwargs, arg_hpus):
     """Test LightningCLI with HPU from cmdline."""
     cli_args = [
         "fit",
         "--trainer.fast_dev_run=True",
         f"--trainer.{param}={value}",
-        f"--trainer.devices={hpus}",
+        f"--trainer.devices={arg_hpus}",
     ]
 
     if is_class is True and init_kwargs is not None:
@@ -211,9 +211,9 @@ def test_cli_from_cmdline(param, value, is_class, init_kwargs, hpus):
         ),
     ],
 )
-def test_cli_from_env(monkeypatch, env, param, value, is_class, hpus):
+def test_cli_from_env(monkeypatch, env, param, value, is_class, arg_hpus):
     """Test LightningCLI with HPU with env."""
-    cli_args = ["fit", "--trainer.fast_dev_run=True", f"--trainer.devices={hpus}"]
+    cli_args = ["fit", "--trainer.fast_dev_run=True", f"--trainer.devices={arg_hpus}"]
 
     monkeypatch.setenv(env, value)
     with mock.patch("sys.argv", ["any.py"] + cli_args):
@@ -302,7 +302,7 @@ def test_cli_from_env(monkeypatch, env, param, value, is_class, hpus):
         ),
     ],
 )
-def test_cli_save_and_load_config(tmpdir, param, value, is_class, init_kwargs, hpus):
+def test_cli_save_and_load_config(tmpdir, param, value, is_class, init_kwargs, arg_hpus):
     """Save and load a LightningCLI config on HPU."""
     # Config is saved automatically in logdir
     cli_args_config_save = [
@@ -310,7 +310,7 @@ def test_cli_save_and_load_config(tmpdir, param, value, is_class, init_kwargs, h
         "--trainer.limit_train_batches=2",
         "--trainer.limit_val_batches=0",
         "--trainer.max_epochs=1",
-        f"--trainer.devices={hpus}",
+        f"--trainer.devices={arg_hpus}",
         f"--trainer.{param}={value}",
         "--trainer.log_every_n_steps=1",
         f"--trainer.default_root_dir={tmpdir}",

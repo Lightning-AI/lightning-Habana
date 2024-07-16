@@ -59,22 +59,22 @@ def run_training(tmpdir, hpus, model, data_module):
     return gc_metric.stats()
 
 
-def test_dynamic_shapes_recompilations_recipe_caching(tmpdir, hpus, monkeypatch):
+def test_dynamic_shapes_recompilations_recipe_caching(tmpdir, arg_hpus, monkeypatch):
     """Tests number of recompilations between cached and non-cached runs."""
-    default_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    default_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     monkeypatch.setenv("PT_HPU_RECIPE_CACHE_CONFIG", f"{tmpdir}/recipes,True,1024")
-    cached_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    cached_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     assert cached_compiles[0] <= default_compiles[0]
 
 
-def test_dynamic_shapes_graph_compiler(tmpdir, hpus, monkeypatch):
+def test_dynamic_shapes_graph_compiler(tmpdir, arg_hpus, monkeypatch):
     """Test number of recompilations with GC support for dynamic shapes."""
-    default_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    default_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     monkeypatch.setenv("PT_HPU_ENABLE_REFINE_DYNAMIC_SHAPES", "1")
-    cached_compiles = run_training(tmpdir, hpus=hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
+    cached_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     assert cached_compiles[0] <= default_compiles[0]
 

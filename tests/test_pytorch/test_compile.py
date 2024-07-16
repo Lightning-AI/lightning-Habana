@@ -214,13 +214,13 @@ def test_all_stages_with_compile(tmpdir, hpus):
 @pytest.mark.standalone()
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.usefixtures("_is_compile_allowed")
-def test_ddp_strategy_with_compile(tmp_path, hpus):
+def test_ddp_strategy_with_compile(tmp_path, arg_hpus):
     """Tests compiled BoringModel on HPU."""
     model = BoringModel()
     compiled_model = torch.compile(model, backend="hpu_backend")
 
     _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
-    parallel_hpus = [torch.device("hpu")] * hpus
+    parallel_hpus = [torch.device("hpu")] * arg_hpus
     _strategy = HPUDDPStrategy(
         parallel_devices=parallel_hpus,
         bucket_cap_mb=100,
@@ -234,7 +234,7 @@ def test_ddp_strategy_with_compile(tmp_path, hpus):
         accelerator=HPUAccelerator(),
         strategy=_strategy,
         plugins=_plugins,
-        devices=hpus,
+        devices=arg_hpus,
         fast_dev_run=True,
     )
     trainer.fit(compiled_model)

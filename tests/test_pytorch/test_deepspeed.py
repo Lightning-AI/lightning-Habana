@@ -452,7 +452,16 @@ def test_multi_optimizer_with_hpu_deepspeed(tmpdir):
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
-@pytest.mark.parametrize("zero_config", [0, 1, 2, 3, "infinity"])
+@pytest.mark.parametrize(
+    "zero_config",
+    [
+        0,
+        1,
+        2,
+        pytest.param(3, marks=pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI2", reason="Not supported")),
+        "infinity",
+    ],
+)
 @pytest.mark.parametrize("cpu_offload", [True, False])
 @pytest.mark.parametrize(
     ("activation_checkpoints", "partition_activations", "contiguous_checkpointing", "checkpoint_in_cpu"),
@@ -473,7 +482,7 @@ def test_lightning_model(
     partition_activations,
     contiguous_checkpointing,
     checkpoint_in_cpu,
-    get_device_count,
+    device_count,
 ):
     """Test that DeepSpeed works with a simple LightningModule and LightningDataModule."""
     config = config_generator(
@@ -490,9 +499,9 @@ def test_lightning_model(
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     _accumulate_grad_batches = config["train_micro_batch_size_per_gpu"]
     _batch_size = 2
-    _parallel_hpus = [torch.device("hpu")] * get_device_count
+    _parallel_hpus = [torch.device("hpu")] * device_count
 
-    config["train_batch_size"] = get_device_count * _accumulate_grad_batches * _batch_size
+    config["train_batch_size"] = device_count * _accumulate_grad_batches * _batch_size
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
@@ -516,11 +525,11 @@ def test_lightning_model(
 @pytest.mark.parametrize("zero_stage", [1, 2, 3])
 @pytest.mark.parametrize("offload", [False])
 # @pytest.mark.parametrize("offload", [True, False]) #TBD : Fix custom optim offload support
-def test_lightning_deepspeed_stages(get_device_count, zero_stage, offload):
+def test_lightning_deepspeed_stages(device_count, zero_stage, offload):
     model = SampleModel()
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         strategy=HPUDeepSpeedStrategy(zero_optimization=True, stage=zero_stage, offload_optimizer=offload),
         plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         fast_dev_run=2,
@@ -589,7 +598,7 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_deepspeed_resume_training(tmpdir, deepspeed_base_config, get_device_count):
+def test_deepspeed_resume_training(tmpdir, deepspeed_base_config, device_count):
     """Test to ensure with Stage 3 and single GPU that we can resume training."""
     initial_model = SampleModel()
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
@@ -605,9 +614,9 @@ def test_deepspeed_resume_training(tmpdir, deepspeed_base_config, get_device_cou
     )
     _accumulate_grad_batches = config["train_micro_batch_size_per_gpu"]
     _batch_size = 2
-    _parallel_hpus = [torch.device("hpu")] * get_device_count
+    _parallel_hpus = [torch.device("hpu")] * device_count
 
-    config["train_batch_size"] = get_device_count * _accumulate_grad_batches * _batch_size
+    config["train_batch_size"] = device_count * _accumulate_grad_batches * _batch_size
     config_copy = config.copy()
     ck = ModelCheckpoint(monitor="train_loss", mode="max", save_last=True, save_top_k=-1)
     initial_trainer = Trainer(
@@ -696,19 +705,19 @@ class InferenceModel(LightningModule):
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("enable_cuda_graph", [False, True])
-def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_count):
+def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, device_count):
     model = InferenceModel()
     kwargs = {"dtype": torch.float}
-    kwargs["tensor_parallel"] = {"tp_size": get_device_count}
+    kwargs["tensor_parallel"] = {"tp_size": device_count}
     kwargs["enable_cuda_graph"] = enable_cuda_graph
     kwargs["replace_method"] = "auto"
     kwargs["replace_with_kernel_inject"] = False
     kwargs["injection_policy"] = {InferenceModel: ("l1")}
-    _parallel_hpus = [torch.device("hpu")] * get_device_count
+    _parallel_hpus = [torch.device("hpu")] * device_count
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         strategy=HPUDeepSpeedStrategy(parallel_devices=_parallel_hpus, **kwargs),
         plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         use_distributed_sampler=False,
@@ -720,20 +729,28 @@ def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, get_device_coun
     ), f"incorrect result value {preds}, expected {expected}"
 
 
-@pytest.mark.parametrize("dtype", [torch.float, torch.float16])
-def test_lightning_deepspeed_inference_params(get_device_count, dtype):
-    if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
-        pytest.skip(reason="FP16 is not supported by Gaudi1")
-
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.float,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="FP16 is not supported by Gaudi1"
+            ),
+        ),
+    ],
+)
+def test_lightning_deepspeed_inference_params(device_count, dtype):
     model = InferenceModel()
-    _parallel_hpus = [torch.device("hpu")] * get_device_count
+    _parallel_hpus = [torch.device("hpu")] * device_count
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         strategy=HPUDeepSpeedStrategy(
             parallel_devices=_parallel_hpus,
-            tensor_parallel={"tp_size": get_device_count},
+            tensor_parallel={"tp_size": device_count},
             dtype=dtype,
             replace_with_kernel_inject=False,
         ),
@@ -747,24 +764,32 @@ def test_lightning_deepspeed_inference_params(get_device_count, dtype):
     ), f"incorrect result value {preds}, expected {expected}"
 
 
-@pytest.mark.parametrize("dtype", [torch.float, torch.float16])
-def test_lightning_deepspeed_inference_config(get_device_count, dtype):
-    if dtype == torch.float16 and HPUAccelerator.get_device_name() == "GAUDI":
-        pytest.skip(reason="FP16 is not supported by Gaudi1")
-
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.float,
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="FP16 is not supported by Gaudi1"
+            ),
+        ),
+    ],
+)
+def test_lightning_deepspeed_inference_config(device_count, dtype):
     model = InferenceModel()
-    _parallel_hpus = [torch.device("hpu")] * get_device_count
+    _parallel_hpus = [torch.device("hpu")] * device_count
 
     _config = {
         "replace_with_kernel_inject": False,
-        "tensor_parallel": {"tp_size": get_device_count},
+        "tensor_parallel": {"tp_size": device_count},
         "dtype": dtype,
         "enable_cuda_graph": False,
     }
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         strategy=HPUDeepSpeedStrategy(
             parallel_devices=_parallel_hpus,
             config=_config,
@@ -781,7 +806,7 @@ def test_lightning_deepspeed_inference_config(get_device_count, dtype):
 
 @pytest.mark.parametrize("stage", [1, 2, 3])
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 / fp16 supported on Gaudi2 and above.")
-def test_hpu_deepspeed_training_accuracy(tmpdir, get_device_count, stage):
+def test_hpu_deepspeed_training_accuracy(tmpdir, device_count, stage):
     """Test compare training accuracy between bf16 and fp8 precision for deepspeed."""
 
     class TestModel(BoringModel):
@@ -816,7 +841,7 @@ def test_hpu_deepspeed_training_accuracy(tmpdir, get_device_count, stage):
             default_root_dir=tmpdir,
             fast_dev_run=True,
             accelerator=HPUAccelerator(),
-            devices=get_device_count,
+            devices=device_count,
             strategy=strategy,
             plugins=plugin,
         )
@@ -846,7 +871,7 @@ def test_hpu_deepspeed_training_accuracy(tmpdir, get_device_count, stage):
 
 @pytest.mark.standalone_only()
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="Accessory test for fp8 inference.")
-def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
+def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, device_count):
     """Test maintain bf16 test loss used in fp8 inference accuracy test using deepspeed."""
 
     class TestModel(BoringModel):
@@ -868,7 +893,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
         trainer = Trainer(
             default_root_dir=tmpdir,
             accelerator=HPUAccelerator(),
-            devices=get_device_count,
+            devices=device_count,
             strategy=strategy,
             plugins=plugin,
             fast_dev_run=True,
@@ -883,7 +908,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
 
     bf16_test_loss = run_training(tmpdir, model, _plugin, _strategy)
     bf16_loss = torch.tensor(0.414062)
-    if get_device_count == 2:
+    if device_count == 2:
         bf16_loss = torch.tensor(1.253906)
     assert torch.allclose(bf16_test_loss, bf16_loss, rtol=1e-5, atol=1e-5)
 
@@ -891,7 +916,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, get_device_count):
 @pytest.mark.standalone_only()  # HQT cannot be reconfigured in same process
 @pytest.mark.parametrize("quant", [False, True])
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, get_device_count, quant):
+def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, device_count, quant):
     """Test compare inference accuracy between bf16 and fp8 precision for deepspeed."""
 
     class TestModel(BoringModel):
@@ -913,7 +938,7 @@ def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, get_device_count, quant):
         trainer = Trainer(
             default_root_dir=tmpdir,
             accelerator=HPUAccelerator(),
-            devices=get_device_count,
+            devices=device_count,
             strategy=strategy,
             plugins=plugin,
             fast_dev_run=True,
@@ -930,6 +955,6 @@ def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, get_device_count, quant):
     fp8_test_loss = run_training(tmpdir, model, _plugin, _strategy)
     if quant is True:
         bf16_loss = torch.tensor(0.4141)
-        if get_device_count == 2:
+        if device_count == 2:
             bf16_loss = torch.tensor(1.253906)
         assert torch.allclose(fp8_test_loss, bf16_loss, rtol=1e-2, atol=1e-2)

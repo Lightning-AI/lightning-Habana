@@ -49,8 +49,8 @@ if _KINETO_AVAILABLE:
 
 
 @pytest.fixture()
-def _check_distributed(get_device_count):
-    if get_device_count <= 1:
+def _check_distributed(device_count):
+    if device_count <= 1:
         pytest.skip("Distributed test does not run on single HPU")
 
 
@@ -113,14 +113,14 @@ def test_hpu_profiler_trainer_stages(tmpdir, profiler):
 @pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 @pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler)])
-def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count):
+def test_profiler_trainer_stages_distributed(tmpdir, profiler, device_count):
     """Ensure the proper files are saved in distributed."""
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         strategy=HPUDDPStrategy(),
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         profiler=profiler(dirpath=tmpdir, filename="profiler"),
         fast_dev_run=True,
     )
@@ -138,12 +138,8 @@ def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count)
 
 
 @pytest.mark.parametrize(
-    ("event_name"),
-    [
-        ("cpu_op"),
-        ("Runtime"),
-        ("Kernel"),
-    ],
+    "event_name",
+    ["cpu_op", "Runtime", "Kernel"],
 )
 @pytest.mark.xfail(strict=False, reason="TBF: Could not find event kernel in trace")
 def test_hpu_trace_event(tmpdir, event_name):
