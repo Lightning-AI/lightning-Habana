@@ -12,14 +12,13 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 import glob
-import inspect
 import os
 import re
-import shutil
 import sys
 from importlib.util import module_from_spec, spec_from_file_location
 
 import pt_lightning_sphinx_theme
+from lightning_utilities.docs.formatting import _linkcode_resolve
 
 _PATH_HERE = os.path.abspath(os.path.dirname(__file__))
 _PATH_ROOT = os.path.realpath(os.path.join(_PATH_HERE, "..", ".."))
@@ -328,39 +327,14 @@ autodoc_mock_imports = MOCK_PACKAGES
 # Resolve function
 # This function is used to populate the (source) links in the API
 def linkcode_resolve(domain, info):
-    def find_source():
-        # try to find the file and line number, based on code from numpy:
-        # https://github.com/numpy/numpy/blob/master/doc/source/conf.py#L286
-        obj = sys.modules[info["module"]]
-        for part in info["fullname"].split("."):
-            obj = getattr(obj, part)
-        fname = inspect.getsourcefile(obj)
-        # https://github.com/rtfd/readthedocs.org/issues/5735
-        if any(s in fname for s in ("readthedocs", "rtfd", "checkouts")):
-            # /home/docs/checkouts/readthedocs.org/user_builds/pytorch_lightning/checkouts/
-            #  devel/pytorch_lightning/utilities/cls_experiment.py#L26-L176
-            path_top = os.path.abspath(os.path.join("..", "..", ".."))
-            fname = os.path.relpath(fname, start=path_top)
-        else:
-            # Local build, imitate master
-            fname = "master/" + os.path.relpath(fname, start=os.path.abspath(".."))
-        source, lineno = inspect.getsourcelines(obj)
-        return fname, lineno, lineno + len(source) - 1
-
-    if domain != "py" or not info["module"]:
-        return None
-    try:
-        filename = "%s#L%d-L%d" % find_source()
-    except Exception:
-        filename = info["module"].replace(".", "/") + ".py"
-    # import subprocess
-    # tag = subprocess.Popen(['git', 'rev-parse', 'HEAD'], stdout=subprocess.PIPE,
-    #                        universal_newlines=True).communicate()[0][:-1]
-    branch = filename.split("/")[0]
-    # do mapping from latest tags to master
-    branch = {"latest": "main", "stable": "main"}.get(branch, branch)
-    filename = "/".join([branch] + filename.split("/")[1:])
-    return f"https://github.com/{github_user}/{github_repo}/blob/{filename}"
+    return _linkcode_resolve(
+        domain,
+        info=info,
+        github_user="Lightning-AI",
+        github_repo="lightning-Habana",
+        main_branch="main",
+        stable_branch="release/stable",
+    )
 
 
 autosummary_generate = True

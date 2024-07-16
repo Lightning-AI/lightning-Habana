@@ -330,7 +330,7 @@ def test_hpu_precision_fp8_inference_quantization(tmpdir):
 
 @pytest.mark.standalone_only()
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, hpus):
+def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, arg_hpus):
     """Negative test for fp8 inference not supported with HPUDDPStrategy."""
     model = BoringModel()
     dm = BoringDataModule()
@@ -340,7 +340,7 @@ def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
-        devices=hpus,
+        devices=arg_hpus,
         strategy=HPUDDPStrategy(),
         plugins=plugin,
     )
