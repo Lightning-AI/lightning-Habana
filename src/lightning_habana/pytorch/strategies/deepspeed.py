@@ -34,7 +34,7 @@ if module_available("lightning"):
     )
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
-    from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning.fabric.utilities.types import _PATH
     from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
@@ -54,7 +54,7 @@ elif module_available("pytorch_lightning"):
     )
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
-    from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning_fabric.utilities.types import _PATH
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
@@ -69,6 +69,7 @@ elif module_available("pytorch_lightning"):
 import torch
 from torch.nn import Module
 from torch.optim import Optimizer
+from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
