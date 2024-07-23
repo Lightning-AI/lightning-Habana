@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, List, Mapping, Optional,
 
 from lightning_utilities import module_available
 from lightning_utilities.core.imports import RequirementCache
+from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 
 if module_available("lightning"):
     from lightning.fabric.plugins import ClusterEnvironment
@@ -34,7 +35,7 @@ if module_available("lightning"):
     )
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
-    from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning.fabric.utilities.types import _PATH
     from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
@@ -54,7 +55,7 @@ elif module_available("pytorch_lightning"):
     )
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
-    from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning_fabric.utilities.types import _PATH
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
