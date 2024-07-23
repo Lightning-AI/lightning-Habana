@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, List, Mapping, Optional,
 
 from lightning_utilities import module_available
 from lightning_utilities.core.imports import RequirementCache
-from pytorch_lightning.utilities.types import LRSchedulerConfig
 from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 
 if module_available("lightning"):
@@ -46,6 +45,7 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
     from lightning.pytorch.utilities.model_helpers import is_overridden
     from lightning.pytorch.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_warn
+    from lightning.pytorch.utilities.types import LRSchedulerConfig
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import ClusterEnvironment
     from lightning_fabric.strategies import _StrategyRegistry
@@ -65,6 +65,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
     from pytorch_lightning.utilities.model_helpers import is_overridden
     from pytorch_lightning.utilities.rank_zero import WarningCache, rank_zero_info, rank_zero_warn
+    from pytorch_lightning.utilities.types import LRSchedulerConfig
 
 import torch
 from torch.nn import Module
