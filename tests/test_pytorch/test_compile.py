@@ -260,7 +260,7 @@ def test_hpu_profiler_with_compile(tmpdir, record_module_names, expectation):
             "fit",
             None,
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
             ),
         ),
         pytest.param(
@@ -271,7 +271,7 @@ def test_hpu_profiler_with_compile(tmpdir, record_module_names, expectation):
             },
             marks=[
                 pytest.mark.skipif(
-                    HPUAccelerator.get_device_name == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+                    HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
                 ),
                 pytest.mark.xfail(reason="TBD: Fix included in release 1.17.0", strict=False),
             ],
