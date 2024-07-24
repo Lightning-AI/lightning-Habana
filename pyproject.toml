@@ -122,13 +122,13 @@ exclude = [
 "examples/**" = ["D100", "D101", "D102", "D104", "D107"]  # TODO: fix all of these
 "tests/**" = ["D100", "D101", "D102", "D103", "D104", "D107"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 # Use Google-style docstrings.
 convention = "google"
 
 #[tool.ruff.pycodestyle]
 #ignore-overlong-task-comments = true
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 # Unlike Flake8, default to a complexity level of 10.
 max-complexity = 10
