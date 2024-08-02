@@ -187,7 +187,7 @@ def test_accelerator_with_single_device():
     assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
-
+@pytest.mark.standalone()
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices(arg_hpus):
     if arg_hpus <= 1:
@@ -460,6 +460,8 @@ def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
         trainer.fit(_model)
 
 
+@pytest.mark.standalone()
+@pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
     [
