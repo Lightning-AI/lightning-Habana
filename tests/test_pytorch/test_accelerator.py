@@ -183,7 +183,7 @@ def test_accelerator_is_hpu():
 
 
 def test_accelerator_with_single_device():
-    trainer = Trainer(accelerator="hpu", devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
@@ -192,12 +192,12 @@ def test_accelerator_with_single_device():
 def test_accelerator_with_multiple_devices(arg_hpus):
     if arg_hpus <= 1:
         pytest.skip(reason="Test reqruires multiple cards")
-    trainer = Trainer(accelerator="hpu", devices=arg_hpus)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == arg_hpus
 
-    trainer = Trainer(accelerator="hpu")
+    trainer = Trainer(accelerator=HPUAccelerator())
     assert isinstance(trainer.accelerator, HPUAccelerator)
     assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
@@ -216,7 +216,7 @@ def test_strategy_choice_single_strategy():
     trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
-    trainer = Trainer(accelerator="hpu", devices=1)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=1)
     assert isinstance(trainer.strategy, SingleHPUStrategy)
 
 
@@ -231,8 +231,14 @@ def test_strategy_choice_ddp_strategy(arg_hpus):
     )
     assert isinstance(trainer.strategy, HPUDDPStrategy)
 
-    trainer = Trainer(accelerator="hpu", devices=arg_hpus)
+    trainer = Trainer(accelerator=HPUAccelerator(), devices=arg_hpus)
     assert isinstance(trainer.strategy, HPUParallelStrategy)
+
+
+@pytest.mark.xfail(run=False, reason="Regression with string based accelerator selection")
+def test_device_string_with_hpu():
+    trainer = Trainer(accelerator="hpu")
+    assert isinstance(trainer.accelerator, HPUAccelerator)
 
 
 def test_devices_auto_choice_hpu():

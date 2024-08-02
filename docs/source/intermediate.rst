@@ -76,6 +76,7 @@ Instances of autocast serve as context managers or decorators that allow regions
 
     import torch
     from lightning import Trainer
+    from lightning_habana.pytorch.accelerator import HPUAccelerator
 
     class AutocastModelCM(nn.Module):
         # Autocast can be used as a context manager to the required code block.
@@ -94,7 +95,7 @@ Instances of autocast serve as context managers or decorators that allow regions
     # Initialize a trainer with HPU accelerator for HPU strategy for single device,
     # with mixed precision using overridden HMP settings
     trainer = Trainer(
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         devices=1,
     )
 

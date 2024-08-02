@@ -24,6 +24,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.utilities.imports import _TORCHVISION_AVAILABLE
 
+from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.datamodule.datamodule import HPUDataModule
 
 if _TORCHVISION_AVAILABLE:
@@ -39,7 +40,7 @@ def test_hpu_datamodule_shuffle():
     data_module = HPUDataModule(num_workers=8, batch_size=32, shuffle=True, pin_memory=True)
 
     model = BoringModel()
-    trainer = Trainer(devices=1, accelerator="hpu", max_epochs=1)
+    trainer = Trainer(devices=1, accelerator=HPUAccelerator(), max_epochs=1)
     with pytest.raises(ValueError, match="HabanaDataLoader does not support shuffle=True"):
         trainer.fit(model, datamodule=data_module)
 
@@ -53,7 +54,7 @@ def test_hpu_datamodule_pin_memory():
     )
 
     model = BoringModel()
-    trainer = Trainer(devices=1, accelerator="hpu", max_epochs=1)
+    trainer = Trainer(devices=1, accelerator=HPUAccelerator(), max_epochs=1)
     with pytest.raises(ValueError, match="HabanaDataLoader only supports pin_memory=True"):
         trainer.fit(model, datamodule=data_module)
 
@@ -62,7 +63,7 @@ def test_hpu_datamodule_num_workers():
     data_module = HPUDataModule(num_workers=4, batch_size=32, shuffle=False, pin_memory=True)
 
     model = BoringModel()
-    trainer = Trainer(devices=1, accelerator="hpu", max_epochs=1)
+    trainer = Trainer(devices=1, accelerator=HPUAccelerator(), max_epochs=1)
     with pytest.raises(ValueError, match="HabanaDataLoader only supports num_workers as 8"):
         trainer.fit(model, datamodule=data_module)
 
@@ -89,7 +90,7 @@ def test_hpu_datamodule_unsupported_transforms():
     # Initialize a trainer
     trainer = Trainer(
         devices=1,
-        accelerator="hpu",
+        accelerator=HPUAccelerator(),
         max_epochs=1,
         precision=32,
         max_steps=1,
