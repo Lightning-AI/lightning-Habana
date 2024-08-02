@@ -237,9 +237,9 @@ def test_strategy_choice_ddp_strategy(arg_hpus):
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
-#@pytest.mark.xfail(run=False, reason="Regression with string based accelerator selection")
+# @pytest.mark.xfail(run=False, reason="Regression with string based accelerator selection")
 def test_device_string_with_hpu():
-    if(_habana_available_and_importable):
+    if _habana_available_and_importable:
         print("LIGHTNING HABANA PACKAGE AVAILABLE")
         print("_LIGHTNING_HABANA_AVAILABLE : ", bool(_LIGHTNING_HABANA_AVAILABLE))
     else:
