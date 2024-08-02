@@ -187,6 +187,7 @@ def test_accelerator_with_single_device():
     assert isinstance(trainer.strategy, SingleHPUStrategy)
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
+
 @pytest.mark.standalone()
 @pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_accelerator_with_multiple_devices(arg_hpus):
