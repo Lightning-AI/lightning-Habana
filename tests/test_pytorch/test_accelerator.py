@@ -28,11 +28,13 @@ if module_available("lightning"):
     from lightning.pytorch import Callback, Trainer, seed_everything
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
+    from lightning.pytorch.utilities.imports import _LIGHTNING_HABANA_AVAILABLE, _habana_available_and_importable
 elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning import Callback, Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
+    from pytorch_lightning.utilities.imports import _LIGHTNING_HABANA_AVAILABLE, _habana_available_and_importable
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
@@ -235,8 +237,15 @@ def test_strategy_choice_ddp_strategy(arg_hpus):
     assert isinstance(trainer.strategy, HPUParallelStrategy)
 
 
-@pytest.mark.xfail(run=False, reason="Regression with string based accelerator selection")
+#@pytest.mark.xfail(run=False, reason="Regression with string based accelerator selection")
 def test_device_string_with_hpu():
+    if(_habana_available_and_importable):
+        print("LIGHTNING HABANA PACKAGE AVAILABLE")
+        print("_LIGHTNING_HABANA_AVAILABLE : ", bool(_LIGHTNING_HABANA_AVAILABLE))
+    else:
+        print("Please install LIGHTNING HABANA PACKAGE ")
+        print("_LIGHTNING_HABANA_AVAILABLE : ", bool(_LIGHTNING_HABANA_AVAILABLE))
+
     trainer = Trainer(accelerator="hpu")
     assert isinstance(trainer.accelerator, HPUAccelerator)
 
