@@ -1,2 +1,2 @@
-mypy ==1.8.0
-pytorch-lightning ==2.2.0.post0
+mypy ==1.11.0
+pytorch-lightning ==2.3.3

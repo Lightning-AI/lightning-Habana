@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import importlib
+import json
+import os
+import re
 from contextlib import nullcontext
 
 import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
@@ -30,12 +33,11 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
     from pytorch_lightning.plugins import MixedPrecision
 
-import re
 
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
-from lightning_habana.pytorch.strategies.single import SingleHPUStrategy
+from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
 
 supported_precision = get_args(_PRECISION_INPUT)
 
@@ -81,6 +83,12 @@ class BaseBM(BoringModel):
         self.log("val_loss", loss.get("x"), prog_bar=True, sync_dist=True)
         return loss
 
+    def test_step(self, batch, batch_idx):
+        """Test step."""
+        loss = super().test_step(batch, batch_idx)
+        self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
+        return loss
+
 
 class BMAutocastCM(BaseBM):
     """Model for torch.autocast context manager."""
@@ -108,17 +116,17 @@ class BMPluginActive(BaseBM):
     def forward(self, x):
         """Forward."""
         if self.trainer.precision == "fp8":
-            # Tests fp8 is enabled for supported modules.
             assert tengine.fp8.is_fp8_enabled()
+            assert not torch.hpu.is_autocast_hpu_enabled()
         else:
             assert not tengine.fp8.is_fp8_enabled()
-        # Test bf16 enabled.
-        assert torch.hpu.is_autocast_hpu_enabled()
+            assert torch.hpu.is_autocast_hpu_enabled()
         return super().forward(x)
 
 
-def test_autocast_enable_disable(tmpdir):
-    """Tests autocast control with enabled arg."""
+@pytest.mark.parametrize("precision_plugin", [False, True])
+def test_autocast_enable_disable(tmpdir, precision_plugin):
+    """Tests autocast granular control with HPUPrecisionPlugin."""
 
     class BMAutocastGranularControl(BaseBM):
         """Tests autocast control with enabled arg."""
@@ -149,7 +157,8 @@ def test_autocast_enable_disable(tmpdir):
                 assert x.dtype == torch.bfloat16
             return self.layer(x)
 
-    assert run_training(tmpdir, BMAutocastGranularControl(), None) is not None
+    precision_plugin = HPUPrecisionPlugin(precision="bf16-mixed") if precision_plugin else None
+    assert run_training(tmpdir, BMAutocastGranularControl(), precision_plugin) is not None
 
 
 @pytest.mark.xfail(strict=False, reason="Env needs to be set")
@@ -185,7 +194,7 @@ def test_hpu_precision_fp8_synapse_version(monkeypatch):
 
     monkeypatch.setattr(lightning_habana.utils.imports, "_HPU_SYNAPSE_GREATER_EQUAL_1_14_0", False)
     with pytest.raises(OSError, match="fp8 training requires `Synapse AI release >= 1.14.0`."):
-        HPUPrecisionPlugin(device="hpu", precision="fp8")
+        HPUPrecisionPlugin(precision="fp8")
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
@@ -193,11 +202,151 @@ def test_hpu_precision_fp8_synapse_version(monkeypatch):
 def test_hpu_precision_replace_layerse(replace_layers):
     """Tests plugin init with replcae_layers."""
     model = BaseBM()
-    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8", replace_layers=replace_layers)
-    plugin.convert_modules(model)
-    assert replace_layers == any(
-        "habana_frameworks.torch.hpex.experimental.transformer_engine" in m.__module__ for m in model.modules()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    plugin.convert_modules(model, replace_layers=replace_layers)
+    assert isinstance(model.layer, tengine.Linear) == replace_layers
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize(
+    ("params", "expectation"),
+    [
+        pytest.param(
+            {"inference": True, "quant": True},
+            pytest.raises(FileNotFoundError, match=r"Failed to load file"),
+            marks=pytest.mark.standalone_only(),
+        ),  # HQT cannot be reloaded in same process
+        pytest.param(
+            {"inference": True, "quant": False}, nullcontext(), marks=pytest.mark.standalone_only()
+        ),  # HQT cannot be reloaded in same process
+        ({"inference": False}, nullcontext()),
+        ({"inference": False, "replace_layers": True}, nullcontext()),
+        ({"inference": False, "replace_layers": True, "recipe": tengine.recipe.DelayedScaling}, nullcontext()),
+    ],
+)
+def test_hpu_precision_convert_modules(params, expectation, tmpdir):
+    """Test HPUPrecisionPlugin.convert_modules."""
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    with expectation:
+        plugin.convert_modules(module=model, fp8_data_path=tmpdir, **params)
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("patch_path", ["tmpdir", None])
+def test_hpu_precision_fp8_patch(patch_path, tmpdir):
+    """Tests fp8 jsons are patched correctly."""
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    patch_path = patch_path if patch_path is None else tmpdir
+    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
+
+    package_measure_json = str(
+        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
     )
+    fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
+
+    # Check json is patched correctly
+    with open(package_measure_json, encoding="utf-8") as jfile:
+        data = json.load(jfile)
+        stats_path = data["dump_stats_path"]
+        assert stats_path == os.path.join(fp8_data_dump_path, "hqt")
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_measurement(tmpdir):
+    """Tests inference measruement dumps with fp8_inference."""
+
+    def get_fp8_measurement_files(path):
+        """Returns a list of hqt files."""
+        assert path is not None
+        assert os.path.isdir(path)
+        filenames = []
+        file_path = []
+        for file in os.listdir(path):
+            if "hqt" in file:
+                file_path.append(os.path.join(path, file))
+                filenames.append(file)
+        return file_path, filenames
+
+    # cleanup measurement files before test, if any
+    file_path, _ = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
+    if file_path:
+        for file in file_path:
+            os.remove(file)
+
+    seed_everything(42)
+
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    plugin.convert_modules(module=model, inference=True, quant=False)
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=plugin,
+        fast_dev_run=True,
+    )
+
+    trainer.test(model)
+
+    # check measurement files are dumped
+    _, filenames = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
+    expected_data_files = {"hqt_hooks_maxabs.json", "hqt_hooks_maxabs_mod_list.json", "hqt_hooks_maxabs.npz"}
+    assert set(filenames) == expected_data_files
+
+
+@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_quantization(tmpdir):
+    """Tests fp8_inference."""
+    test_loss = []
+    for precision in ["bf16", "fp8"]:
+        seed_everything(42)
+        model = BaseBM()
+        plugin = HPUPrecisionPlugin(precision=precision)
+        if precision == "fp8":
+            plugin.convert_modules(module=model, inference=True, quant=True)
+
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=HPUAccelerator(),
+            devices=1,
+            strategy=SingleHPUStrategy(),
+            plugins=plugin,
+            fast_dev_run=True,
+        )
+
+        trainer.test(model)
+        test_loss.append(trainer.callback_metrics["test_loss"])
+
+    # Compare bf16 and fp8 inference loss
+    assert torch.isclose(test_loss[0], test_loss[1], rtol=0.01, atol=0.01)
+
+
+@pytest.mark.standalone_only()
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, arg_hpus):
+    """Negative test for fp8 inference not supported with HPUDDPStrategy."""
+    model = BoringModel()
+    dm = BoringDataModule()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    plugin.convert_modules(module=model, inference=True, quant=False)
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=arg_hpus,
+        strategy=HPUDDPStrategy(),
+        plugins=plugin,
+    )
+
+    with pytest.raises(NotImplementedError, match="FP8 inference is not supported with HPUDDPStrategy yet !!!"):
+        trainer.test(model, dm)
 
 
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
@@ -206,18 +355,39 @@ def test_hpu_precision_fp8_output(tmpdir):
 
     class FP8InOutDtype(BaseBM):
         def forward(self, x):
-            # for a module that supports fp8,
-            # input is downcasted internally to bf16
-            # output is in bf16
             x = self.layer(x)
-            assert x.dtype == torch.bfloat16
+            assert x.dtype == torch.float32
             return x
 
-    plugin = HPUPrecisionPlugin(device="hpu", precision="fp8")
+    plugin = HPUPrecisionPlugin(precision="fp8")
     model = FP8InOutDtype()
-    model = plugin.convert_modules(model)
+    plugin.convert_modules(model, replace_layers=True)
 
     run_training(tmpdir, model, plugin)
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
+@pytest.mark.parametrize(
+    ("precision", "expectation"),
+    [
+        (
+            "fp8",
+            pytest.raises(
+                NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
+            ),
+        ),
+        (
+            "16-mixed",
+            pytest.raises(
+                NotImplementedError, match="fp16 not supported: FP16 not supported on Gaudi, Gaudi2 or higher required."
+            ),
+        ),
+    ],
+)
+def test_hpu_precision_not_supported_on_gaudi(precision, expectation):
+    """Test fp8 with unsupported Habana device."""
+    with expectation:
+        HPUPrecisionPlugin(precision=precision)
 
 
 def test_hpu_precision_synapse_version(monkeypatch):
@@ -226,61 +396,46 @@ def test_hpu_precision_synapse_version(monkeypatch):
 
     monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
     with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
-        HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
-
-
-@pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
-def test_hpu_precision_fp8_on_gaudi():
-    """Test fp8 with unsupported Habana device."""
-    with pytest.raises(
-        NotImplementedError, match="fp8 not supported: FP8 not supported on Gaudi, Gaudi2 or higher required."
-    ):
-        HPUPrecisionPlugin(device="hpu", precision="fp8")
+        HPUPrecisionPlugin(precision="bf16-mixed")
 
 
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
-        (MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
-        (HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16"}),
-        (HPUPrecisionPlugin, {"device": "hpu", "precision": "32-true"}),
-        (HPUPrecisionPlugin, {"device": "hpu", "precision": "32"}),
+        (
+            MixedPrecision,
+            {"device": "hpu", "precision": "bf16-mixed"},
+        ),
         (
             HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "bf16-mixed", "replace_layers": "True", "recipe": "DelayedScaling"},
+            {},
+        ),
+        (
+            HPUPrecisionPlugin,
+            {"precision": "bf16-mixed"},
+        ),
+        (
+            HPUPrecisionPlugin,
+            {"precision": "bf16"},
+        ),
+        (
+            HPUPrecisionPlugin,
+            {"precision": "32-true"},
+        ),
+        (
+            HPUPrecisionPlugin,
+            {"precision": "32"},
         ),
         pytest.param(
             HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8"},
+            {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
             HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "False"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "True"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "recipe": "DelayedScaling"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
+            {"precision": "fp8"},
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
@@ -293,74 +448,78 @@ def test_precision_plugin_init(plugin, params):
 
     # Common params
     assert _plugin.device == "hpu"
-    assert _plugin.precision == params.get("precision")
+    assert _plugin.precision == params.get("precision", "32-true")
 
     # HPUPrecision specific params
     if isinstance(_plugin, HPUPrecisionPlugin):
         if _plugin.precision == "fp8":
             assert _plugin.fp8_train_available
-            assert _plugin.replace_layers == params.get("replace_layers", False)
-            assert _plugin.recipe == params.get("recipe", None)
+            assert _plugin.fp8_inference_available
         else:
             assert not _plugin.fp8_train_available
-            assert not _plugin.replace_layers
-            assert _plugin.recipe is None
+            assert not _plugin.fp8_inference_available
+
+
+def test_precision_plugin_invalid_precision_init():
+    """Tests precision plugins are instantiated correctly."""
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "`Trainer(accelerator='hpu', precision='f16-mixed')` is not supported. "
+            f"`precision` must be one of: {supported_precision}."
+        ),
+    ):
+        HPUPrecisionPlugin(precision="f16-mixed")
 
 
 @pytest.mark.parametrize(
-    ("precision", "expectation"),
+    ("precision"),
     [
-        ("32", nullcontext()),
-        ("32-true", nullcontext()),
-        ("bf16", nullcontext()),
-        ("bf16-mixed", nullcontext()),
+        "32",
+        "32-true",
+        "bf16",
+        "bf16-mixed",
+        pytest.param(
+            "16-mixed",
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+            ),
+        ),
         pytest.param(
             "fp8",
-            nullcontext(),
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
         ),
-        (
-            "fp16",
-            pytest.raises(
-                ValueError,
-                match=re.escape(
-                    f"`Trainer(accelerator='hpu', precision='fp16')` is not supported. "
-                    f"`precision` must be one of: {supported_precision}."
-                ),
-            ),
-        ),
     ],
 )
-def test_hpu_precision_supported_precision(precision, expectation):
+def test_hpu_precision_supported_precision(precision):
     """Tests supported precisions with HPU Precision Plugin."""
-    with expectation:
-        HPUPrecisionPlugin(device="hpu", precision=precision)
+    with nullcontext():
+        HPUPrecisionPlugin(precision=precision)
 
 
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
-        (MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
+        (
+            MixedPrecision,
+            {"device": "hpu", "precision": "bf16-mixed"},
+        ),
+        (
+            HPUPrecisionPlugin,
+            {"precision": "bf16-mixed"},
+        ),
         pytest.param(
             HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8"},
+            {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
             HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "False"},
-            marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
-            ),
-        ),
-        pytest.param(
-            HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
+            {"precision": "fp8"},
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
@@ -372,14 +531,14 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
 
     class TestCallback(Callback):
         def setup(self, trainer: Trainer, pl_module: LightningModule, stage: str) -> None:
-            assert trainer.precision == params.get("precision")
+            assert trainer.precision == params.get("precision", "32-true")
             raise SystemExit
 
     seed_everything(42)
     _model = BoringModel()
     _plugin = plugin(**params)
     if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-        _plugin.convert_modules(_model)
+        _plugin.convert_modules(_model, replace_layers=True)
 
     with pytest.raises(SystemExit):
         run_training(tmpdir, _model, _plugin, TestCallback())
@@ -391,11 +550,19 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
         (BMAutocastCM, None, None),
         (BMAutocastDecorator, None, None),
         (BMPluginActive, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (BMPluginActive, HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
+        (BMPluginActive, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
         pytest.param(
             BMPluginActive,
             HPUPrecisionPlugin,
-            {"device": "hpu", "precision": "fp8"},
+            {"precision": "16-mixed"},
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+            ),
+        ),
+        pytest.param(
+            BMPluginActive,
+            HPUPrecisionPlugin,
+            {"precision": "fp8"},
             marks=pytest.mark.skipif(
                 HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
@@ -406,6 +573,7 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
         "TorchAutocast_Decorator",
         "MixedPrecision",
         "HPUPrecisionPlugin_bf16",
+        "HPUPrecisionPlugin_fp16",
         "HPUPrecisionPlugin_fp8",
     ],
 )
@@ -425,32 +593,326 @@ def test_mixed_precision_compare_accuracy(tmpdir):
         (BMAutocastCM, None, None),
         (BMAutocastDecorator, None, None),
         (BaseBM, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
-        (BaseBM, HPUPrecisionPlugin, {"device": "hpu", "precision": "bf16-mixed"}),
+        (BaseBM, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
     ]
-    is_gaudi = HPUAccelerator().get_device_name() == "GAUDI"
-    if not is_gaudi:
+    if HPUAccelerator().get_device_name() != "GAUDI":
         model_plugin_list.append(
-            (
-                BaseBM,
-                HPUPrecisionPlugin,
-                {"device": "hpu", "precision": "fp8", "replace_layers": "True", "recipe": "DelayedScaling"},
-            )
+            (BaseBM, HPUPrecisionPlugin, {"precision": "16-mixed"}),
         )
 
     loss_list = []
     for item in model_plugin_list:
         seed_everything(42)
         model, plugin, params = item
+        model = model()
         _plugin = plugin(**params) if plugin and params else None
-        BoringDataModule()
-        if isinstance(_plugin, HPUPrecisionPlugin) and params.get("precision") == "fp8":
-            model = _plugin.convert_modules(model())
-        else:
-            model = model()
+        loss_list.append(torch.tensor(run_training(tmpdir, model, _plugin)))
+
+    assert all(torch.allclose(loss_list[0], loss_tensor, rtol=1e-2, atol=1e-2) for loss_tensor in loss_list[1:])
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_plugin_fp8_training_accuracy(tmpdir):
+    """Test compare training accuracy between fp32 and fp8 precision."""
+
+    class TestModel(BaseBM):
+        """Test model."""
+
+        def __init__(self):
+            """Init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+
+    precision_list = ["32-true", "fp8"]
+
+    loss_list = []
+
+    for precision in precision_list:
+        seed_everything(42)
+        model = TestModel()
+        _plugin = HPUPrecisionPlugin(precision=precision)
+        if precision == "fp8":
+            _plugin.convert_modules(model)
         loss_list.append(run_training(tmpdir, model, _plugin))
 
-    # Assert loss is same for all instances except fp8
-    assert all(x == loss_list[0] for x in loss_list[:-1]), list(zip(model_plugin_list, loss_list))
-    if not is_gaudi:
-        # Assert loss is close between baseline and fp8
-        assert torch.allclose(torch.tensor(loss_list[0]), torch.tensor(loss_list[-1]), rtol=0.1, atol=0.1)
+    assert torch.allclose(torch.tensor(loss_list[0][1]), torch.tensor(loss_list[1][1]), rtol=1e-2, atol=1e-2)
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("precision", ["32-true", "fp8"])
+def test_hpu_precision_active_with_te_module(tmpdir, precision):
+    """Tests that fp8 precision is only active when HPUPrecision plugin is init with fp8, even if module from.
+
+    transformer engine is used.
+
+    """
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """Init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+
+        def training_step(self, batch, batch_idx):
+            """Training step."""
+            # fp8 training is only enabled when precision is fp8,
+            # even if module used is from transformer engine.
+            if precision == "fp8":
+                assert tengine.fp8.is_fp8_enabled()
+            else:
+                assert not tengine.fp8.is_fp8_enabled()
+            return super().training_step(batch, batch_idx)
+
+        def configure_optimizers(self):
+            """Configure optimizer."""
+            from torch.optim.adamw import AdamW
+
+            return AdamW(self.parameters())
+
+    seed_everything(42)
+    model = TestModel()
+    _plugin = HPUPrecisionPlugin(precision=precision)
+    if precision == "fp8":
+        _plugin.convert_modules(model, replace_layers=True)
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        fast_dev_run=True,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=_plugin,
+    )
+    trainer.fit(model)
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="Native int64 supported on Gaudi2 and above.")
+@pytest.mark.standalone_only()
+@pytest.mark.parametrize(
+    ("int64_support", "expectation"),
+    [
+        ("False", pytest.raises(RuntimeError, match="Error when trying to cast Long to Int")),
+        ("True", nullcontext()),
+    ],
+)
+def test_hpu_precision_long_type(int64_support, expectation):
+    """Tests native support for long tensor on G2."""
+    os.environ["PT_HPU_LAZY_MODE"] = "0"
+    os.environ["PT_ENABLE_INT64_SUPPORT"] = int64_support
+    with expectation:
+        torch.tensor(torch.iinfo(torch.int64).max, dtype=torch.int64, device=torch.device("hpu"))
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        torch.int8,
+        torch.int16,
+        torch.int32,
+        torch.int64,
+        pytest.param(
+            torch.float8_e5m2,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+            ),
+        ),
+        pytest.param(
+            torch.float8_e4m3fn,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+            ),
+        ),
+        pytest.param(
+            torch.float16,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+            ),
+        ),
+        torch.float32,
+        torch.bfloat16,
+        torch.bool,
+    ],
+)
+def test_hpu_supported_dtypes_tensor_creation(dtype):
+    """Tests tensors with supported dtypes can be created on hpu."""
+    with nullcontext():
+        torch.tensor(42, dtype=dtype, device=torch.device("hpu"))
+
+
+@pytest.mark.parametrize("intype", [torch.int8, torch.int16, torch.int32, torch.int64, torch.bfloat16, torch.float32])
+def test_hpu_dtypes_op_output_dtype(intype):
+    """Test dtypes type promotion."""
+    t1 = torch.tensor([[1, 2], [2, 1]], dtype=intype, device=torch.device("hpu"))
+    t2 = torch.tensor([[2, 1], [1, 2]], dtype=intype, device=torch.device("hpu"))
+
+    # Operands are promoted as per torch.promote_types
+    t3 = t1.mm(t2)
+    t4 = t1.add(t2)
+    t5 = t1.div(t2)
+    assert t3.dtype == torch.promote_types(t1.dtype, t2.dtype)
+    assert t4.dtype == torch.promote_types(t1.dtype, t2.dtype)
+    # integer div always promoted to float32.
+    assert (
+        t5.dtype == torch.promote_types(t1.dtype, t2.dtype)
+        if t1.is_floating_point() or t2.is_floating_point()
+        else torch.float32
+    )
+
+    # torch.autocast only affects torch.float16, torch.bfloat16, torch.float32
+    with torch.autocast(device_type="hpu", dtype=torch.bfloat16):
+        # Computes in lower precision if operands in (bf16, fp32) else operand dtype
+        t3 = t1.mm(t2)
+        # Promoted to highest dtype between operands
+        t4 = t1.add(t2)
+        # Runs in fp32
+        t5 = t1.div(t2)
+
+    assert t3.dtype == intype if intype not in (torch.bfloat16, torch.float32) else torch.bfloat16
+    assert t4.dtype == intype
+    assert t5.dtype == torch.float32
+
+
+@pytest.mark.parametrize("intype", [torch.int8, torch.int16, torch.int32, torch.int64])
+def test_hpu_dtypes_compare_cpu_accuracy(intype, tmpdir):
+    """Test dtypes type promotion."""
+
+    class TestModel(BaseBM):
+        def forward(self, x):
+            # Perform some operations in given dtype
+            x = x.to(intype)
+            identity = torch.eye(x.shape[1], device=x.device, dtype=intype)
+            x = torch.addmm(x, x, identity)
+
+            return super().forward(x.to(torch.float32))
+
+    metrics = []
+    for accelerator in [HPUAccelerator(), "cpu"]:
+        seed_everything(42)
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=accelerator,
+            devices=1,
+            strategy=SingleHPUStrategy() if isinstance(accelerator, HPUAccelerator) else "auto",
+            fast_dev_run=1,
+        )
+
+        trainer.fit(TestModel())
+        metrics.append(trainer.logged_metrics)
+
+    # Compare metrics between cpu and hpu
+    assert torch.isclose(metrics[0].get("train_loss"), metrics[1].get("train_loss"), atol=1e-5, rtol=1e-5)
+    assert torch.isclose(metrics[0].get("val_loss"), metrics[1].get("val_loss"), atol=1e-5, rtol=1e-5)
+
+
+def test_hpu_precision_plugin_grads_dtype(tmpdir):
+    """Tests dtype of gradients on hpu match with those on cpu with HPUPrecisionPlugin."""
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """Init."""
+            super().__init__()
+            self.linear_hook_handle = self.layer.register_full_backward_hook(self.layer_backward_hook)
+            self.grad_dict: dict = {}
+
+        def back_hook(self, layer_name, grad_input, grad_output):
+            """Back hook."""
+            if layer_name not in self.grad_dict:
+                self.grad_dict[layer_name] = {}
+                self.grad_dict[layer_name]["grad_input"] = []
+                self.grad_dict[layer_name]["grad_output"] = []
+            self.grad_dict[layer_name]["grad_input"].append(grad_input)
+            self.grad_dict[layer_name]["grad_output"].append(grad_output)
+
+        def layer_backward_hook(self, module, grad_input, grad_output):
+            """Layer backward hook."""
+            assert isinstance(module, torch.nn.Linear)
+            self.back_hook("Linear", grad_input, grad_output)
+
+        def forward(self, x):
+            """Forward."""
+            x.requires_grad_(True)
+            return super().forward(x)
+
+    grad_dict = {}
+    for accelerator, strategy, precision_plugin in [
+        ("cpu", "auto", MixedPrecision(device="cpu", precision="bf16-mixed")),
+        (HPUAccelerator(), SingleHPUStrategy(), HPUPrecisionPlugin(precision="bf16-mixed")),
+    ]:
+        seed_everything(42)
+        model = TestModel()
+        dm = BoringDataModule()
+        trainer = Trainer(
+            default_root_dir=tmpdir,
+            accelerator=accelerator,
+            devices=1,
+            strategy=strategy,
+            plugins=precision_plugin,
+            fast_dev_run=1,
+        )
+
+        trainer.fit(model, dm)
+        accelerator_str = "hpu" if isinstance(accelerator, HPUAccelerator) else accelerator
+        grad_dict[accelerator_str] = model.grad_dict
+
+    for (kcpu, vcpu), (khpu, vhpu) in zip(grad_dict["cpu"]["Linear"].items(), grad_dict["hpu"]["Linear"].items()):
+        # Ensure comparing same grad_type grad_input / grad_output for both devices
+        assert kcpu == khpu
+        for (grad_cpu,), (grad_hpu,) in zip(vcpu, vhpu):
+            # Check grad dtype
+            assert grad_cpu.dtype == grad_hpu.dtype
+
+
+@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_plugin_grads_dtype_fp8(tmpdir):
+    """Test dtype of gradients when using fp8 training."""
+
+    class TestModel(BoringModel):
+        """Test model."""
+
+        def __init__(self):
+            """Init."""
+            super().__init__()
+            self.layer = tengine.Linear(32, 2)
+            self.linear_hook_handle = self.layer.register_full_backward_hook(self.layer_backward_hook)
+            self.grad_dict: dict = {}
+
+        def back_hook(self, layer_name, grad_input, grad_output):
+            """Back hook."""
+            if layer_name not in self.grad_dict:
+                self.grad_dict[layer_name] = {}
+                self.grad_dict[layer_name]["grad_input"] = []
+                self.grad_dict[layer_name]["grad_output"] = []
+            self.grad_dict[layer_name]["grad_input"].append(grad_input)
+            self.grad_dict[layer_name]["grad_output"].append(grad_output)
+
+        def layer_backward_hook(self, module, grad_input, grad_output):
+            """Layer backward hook."""
+            assert isinstance(module, tengine.Linear)
+            self.back_hook("Linear", grad_input, grad_output)
+
+        def forward(self, x):
+            """Forward."""
+            x.requires_grad_(True)
+            return super().forward(x)
+
+    seed_everything(42)
+    model = TestModel()
+    dm = BoringDataModule()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    plugin.convert_modules(model, replace_layers=True)
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=1,
+        strategy=SingleHPUStrategy(),
+        plugins=plugin,
+        fast_dev_run=1,
+    )
+
+    trainer.fit(model, dm)
+    for _, v_grad in model.grad_dict["Linear"].items():
+        for (grad_tensor,) in v_grad:
+            assert grad_tensor.dtype == torch.float32

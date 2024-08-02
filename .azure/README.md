@@ -2,7 +2,7 @@
 
 ## Upgrade machine
 
-In general follow instructions in [Bare Metal Fresh OS Installation](https://docs.habana.ai/en/v1.10.0/Installation_Guide/Bare_Metal_Fresh_OS.html#) and in particular [Habana Driver Unattended Upgrade](https://docs.habana.ai/en/v1.10.0/Installation_Guide/Bare_Metal_Fresh_OS.html#habana-driver-unattended-upgrade).
+In general follow instructions in [Bare Metal Fresh OS Installation](https://docs.habana.ai/en/v1.15.0/Installation_Guide/Bare_Metal_Fresh_OS.html#) and in particular [Habana Driver Unattended Upgrade](https://docs.habana.ai/en/v1.15.0/Installation_Guide/Bare_Metal_Fresh_OS.html#habana-driver-unattended-upgrade).
 
 1. check what is the actual state and version of HW - `hl-smi`
 1. check the actual OS version - `lsb_release -a`
@@ -45,6 +45,21 @@ In some cases you may get stack with hanged libs linked to past kernel (for exam
    ```
 
 Overall if you touch kernel version, follow with reboot before any eventual other updates.
+
+## Try running a docker container
+
+This si simple validation that all is working as expected and via Docker we can correctly access the HW.
+
+```bash
+sudo docker run \
+   --runtime=habana \
+   -e HABANA_VISIBLE_DEVICES=all \
+   -e OMPI_MCA_btl_vader_single_copy_mechanism=none \
+   --cap-add=sys_nice \
+   --ipc=host \
+   vault.habana.ai/gaudi-docker/1.15.0/ubuntu22.04/habanalabs/pytorch-installer-2.2.0:latest \
+   hl-smi
+```
 
 ## Prepare the machine
 

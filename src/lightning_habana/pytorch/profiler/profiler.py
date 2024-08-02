@@ -86,7 +86,7 @@ class HPUProfiler(PyTorchProfiler):
         export_to_chrome: bool = True,
         row_limit: int = 20,
         sort_by_key: Optional[str] = None,
-        record_module_names: bool = True,
+        record_module_names: bool = False,
         **profiler_kwargs: Any,
     ) -> None:
         assert os.environ.get("HABANA_PROFILE", None) in (
@@ -103,9 +103,15 @@ class HPUProfiler(PyTorchProfiler):
             record_module_names=record_module_names,
             **profiler_kwargs,
         )
-
         self.profiler: Optional[_PROFILER] = None
         self._profiler_kwargs["activities"] = self.profile_hpu_activities(self._profiler_kwargs.get("activities", None))
+        assert self._activities_patched(
+            self._profiler_kwargs["activities"]
+        ), "lightning_habana should be imported before lightning to use HPUProfiler."
+
+    def _activities_patched(self, activities: List["ProfilerActivity"]) -> bool:
+        """Checks ProfilerActivity is patched by habana_frameworks."""
+        return all(not isinstance(activity, torch._C._profiler.ProfilerActivity) for activity in activities)
 
     def profile_hpu_activities(self, activities) -> List["ProfilerActivity"]:  # type: ignore
         if not _KINETO_AVAILABLE:

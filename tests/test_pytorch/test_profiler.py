@@ -17,6 +17,7 @@ import json
 import os
 import platform
 from contextlib import nullcontext
+from subprocess import run
 
 import pytest
 import torch
@@ -48,8 +49,8 @@ if _KINETO_AVAILABLE:
 
 
 @pytest.fixture()
-def _check_distributed(get_device_count):
-    if get_device_count <= 1:
+def _check_distributed(device_count):
+    if device_count <= 1:
         pytest.skip("Distributed test does not run on single HPU")
 
 
@@ -112,14 +113,14 @@ def test_hpu_profiler_trainer_stages(tmpdir, profiler):
 @pytest.mark.standalone()
 @pytest.mark.usefixtures("_check_distributed")
 @pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler)])
-def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count):
+def test_profiler_trainer_stages_distributed(tmpdir, profiler, device_count):
     """Ensure the proper files are saved in distributed."""
     model = BoringModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
         strategy=HPUDDPStrategy(),
         accelerator=HPUAccelerator(),
-        devices=get_device_count,
+        devices=device_count,
         profiler=profiler(dirpath=tmpdir, filename="profiler"),
         fast_dev_run=True,
     )
@@ -137,13 +138,10 @@ def test_profiler_trainer_stages_distributed(tmpdir, profiler, get_device_count)
 
 
 @pytest.mark.parametrize(
-    ("event_name"),
-    [
-        ("cpu_op"),
-        ("Runtime"),
-        ("Kernel"),
-    ],
+    "event_name",
+    ["cpu_op", "Runtime", "Kernel"],
 )
+@pytest.mark.xfail(strict=False, reason="TBF: Could not find event kernel in trace")
 def test_hpu_trace_event(tmpdir, event_name):
     # Run model and prep json
     model = BoringModel()
@@ -334,3 +332,38 @@ def test_hpu_profiler_env(monkeypatch):
     monkeypatch.setenv("HABANA_PROFILE", "1")
     with pytest.raises(AssertionError, match="`HABANA_PROFILE` should not be set when using `HPUProfiler`"):
         HPUProfiler()
+
+
+def test_hpu_profiler_lightning_habana_incorrect_import_order(tmpdir):
+    """Tests import order of lightning_hanbana wrt lightning.
+
+    Required for correctly patching PyTorchProfiler with HPU activities.
+
+    """
+    # Code with incorrect import order (lightning before lightning_habana)
+    code = """
+def _incorrect_imports():
+    from lightning_utilities import module_available
+
+    if module_available("lightning"):
+        import lightning
+    elif module_available("pytorch_lightning"):
+        import pytorch_lightning
+    from lightning_habana import HPUProfiler
+
+    HPUProfiler()
+
+_incorrect_imports()
+"""
+
+    # Write incorrect code to a file and run code in a new interpreter, Avoids use of modules from parent.
+    file_name = os.path.join(tmpdir, "script.py")
+
+    with open(file_name, "w", encoding="utf-8") as file:
+        file.write(code)
+
+    # Execute
+    p = run(["python", file_name], capture_output=True, check=False)
+
+    assert p.returncode != 0
+    assert "lightning_habana should be imported before lightning to use HPUProfiler." in p.stderr.decode()

@@ -9,17 +9,74 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added support for Intel Gaudi Profiler. Deprecate `HABANA_PROFILE` environment variable from HPUProfiler. ([#158](https://github.com/Lightning-AI/lightning-Habana/pull/158))
 -
 
 ### Changed
 
-- Changed HPUParallelStrategy to HPUDDPStrategy ([#160](https://github.com/Lightning-AI/lightning-Habana/pull/160))
--
+- Updated to Intel Gaudi software Release 1.16.2 ([#205](https://github.com/Lightning-AI/lightning-Habana/pull/205))
 
 ### Fixed
 
 -
+### Removed
+
+-
+
+### Deprecated
+
+-
+
+## [1.6.0] - 2024-06-28
+
+### Added
+
+- Added support for additional dtypes ([#194](https://github.com/Lightning-AI/lightning-Habana/pull/194))
+- Added more tests of FSDP with HPU ([#197](https://github.com/Lightning-AI/lightning-Habana/pull/197))
+- Added FSDP strategy with fabric on HPU ([#198](https://github.com/Lightning-AI/lightning-Habana/pull/198))
+
+### Changed
+
+- Updated to common `hpu_backend` interface for compile support. ([#183](https://github.com/Lightning-AI/lightning-Habana/pull/183))
+- Updated to Intel Gaudi software Release 1.16.0 ([#191](https://github.com/Lightning-AI/lightning-Habana/pull/191))
+- Updated HQT APIs to be in accordance with Intel Gaudi software Release 1.16.0 ([#192](https://github.com/Lightning-AI/lightning-Habana/pull/192))
+- Updated HPUPrecisionPlugin for fp8 based on Intel Gaudi software Release 1.16.0. ([#195](https://github.com/Lightning-AI/lightning-Habana/pull/195))
+
+### Fixed
+
+- Fixed deepspeed documentation & tests based on synapse AI release 1.15.1 and latest PTL fabric. ([#184](https://github.com/Lightning-AI/lightning-Habana/pull/184))
+- Workaround to resolve label name issue in HPUProfiler with torch.compile. ([#185](https://github.com/Lightning-AI/lightning-Habana/pull/185))
+- Fixed incompatibility issue for PyTorch>=2.3.0 ([#193](https://github.com/Lightning-AI/lightning-Habana/pull/193))
+-
+### Removed
+
+-
+
+### Deprecated
+
+-
+
+
+## [1.5.0] - 2024-05-03
+
+### Added
+
+- Added support for Intel Gaudi Profiler. Deprecate `HABANA_PROFILE` environment variable from HPUProfiler. ([#158](https://github.com/Lightning-AI/lightning-Habana/pull/158))
+- Added support for FP8 inference. ([#162](https://github.com/Lightning-AI/lightning-Habana/pull/162))
+- Added support for LightningCLI. ([#173](https://github.com/Lightning-AI/lightning-Habana/pull/173))
+- Added experimental support for FSDP on HPU. ([#174](https://github.com/Lightning-AI/lightning-Habana/pull/174))
+- Added support for FP8 inference with DeepSpeed. ([#176](https://github.com/Lightning-AI/lightning-Habana/pull/176))
+- Updated the lightning version check for using FSDP. ([#182](https://github.com/Lightning-AI/lightning-Habana/pull/182))
+
+
+### Changed
+
+- Changed HPUParallelStrategy to HPUDDPStrategy ([#160](https://github.com/Lightning-AI/lightning-Habana/pull/160))
+- Changed HPU docker image based on Synapse AI release 1.15.0 ([#166](https://github.com/Lightning-AI/lightning-Habana/pull/166))
+- Updated to Intel Gaudi software Release 1.15.1 ([#171](https://github.com/Lightning-AI/lightning-Habana/pull/171))
+
+### Fixed
+
+- Fixed "No profiler activity found" error with HPUProfiler. ([#172](https://github.com/Lightning-AI/lightning-Habana/pull/172))
 
 ### Removed
 

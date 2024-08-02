@@ -4,7 +4,7 @@
 
 Accelerator: HPU Training
 =========================
-This document offers instructions to Gaudi chip users who want to use advanced strategies and profiling HPUs.
+This document offers instructions to Intel Gaudi users who want to use advanced strategies and profiling HPUs.
 
 ----
 
@@ -15,7 +15,7 @@ HPUProfiler is a Lightning implementation of PyTorch profiler for HPU. It aids i
 It subclasses PyTorch Lightning's `PyTorch profiler <https://lightning.ai/docs/pytorch/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html>`_.
 
 .. note::
-    It is recommended to import lightning_habana before lightning to initialize the environment of custom habana profiler
+    It is recommended to import `lightning_habana` before `lightning` to initialize the environment of custom Intel Gaudi Profiler.
 
 Default Profiling
 ^^^^^^^^^^^^^^^^^^
@@ -94,13 +94,13 @@ Using PyTorch TensorBoard Profiler
 
 For further instructions see, https://github.com/pytorch/kineto/tree/master/tb_plugin.
 
-1. Install tensorboard
+1. Install TensorBoard:
 
 .. code-block:: bash
 
     python -um pip install tensorboard torch-tb-profiler
 
-2. Start the TensorBoard server (default at port 6006)
+2. Start the TensorBoard server (default at port 6006):
 
 .. code-block:: bash
 
@@ -118,7 +118,7 @@ Using Chrome
     :alt: HPUProfiler trace on tensorboard
     :width: 600
 
-    HPUProfiler trace for torch.nn.Linear on tensorboard
+    HPUProfiler trace for torch.nn.Linear on TensorBoard
 
 
 Limitations
@@ -139,7 +139,7 @@ Using Intel Gaudi Profiler
 The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler. To use Intel Gaudi Profiler, set `HABANA_PROFILE`, and run the lightning script as usual. This will dump a hltv trace file in the working directly. This can be viewed by loading it at https://perfetto.habana.ai/.
 
 Intel Gaudi Profiler profiles the whole process as compared to HPUProfiler that profiles events only when the trainer is active, and therefore is useful for getting additional information in host trace.
-It however does not provide traces for Lightning Python code. Use HPUProfiler to obtain those traces. The device traces on habana devices are identical for both profilers.
+It however does not provide traces for Lightning Python code. Use HPUProfiler to obtain those traces. The device traces on Gaudi devices are identical for both profilers.
 
 
 Please refer to `Getting Started with Intel Gaudi Profiler <https://docs.habana.ai/en/latest/Profiling/Intel_Gaudi_Profiling/Getting_Started_with_Profiler.html>`_ for more information.
@@ -160,13 +160,13 @@ Please refer to `Getting Started with Intel Gaudi Profiler <https://docs.habana.
 Using DeepSpeed
 ------------------------
 
-HPU supports advanced optimization libraries like ``deepspeed``. The HabanaAI GitHub has a fork of the DeepSpeed library that includes changes to add support for SynapseAI.
+HPU supports advanced optimization libraries like ``deepspeed``. The Intel Gaudi GitHub has a fork of the DeepSpeed library that includes changes to support the Intel Gaudi software.
 
 
 Installing DeepSpeed for HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To use DeepSpeed with Lightning on Gaudi, you must install Habana's fork for DeepSpeed.
+To use DeepSpeed with Lightning on Gaudi, you must install Intel Gaudi's fork for DeepSpeed.
 To install the latest supported version of DeepSpeed, follow the instructions at https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html#installing-deepspeed-library
 
 
@@ -274,7 +274,7 @@ ZeRO-Infinity
 
     trainer = Trainer(devices=8, accelerator=HPUAccelerator(), strategy=HPUDeepSpeedStrategy(zero_optimization=True, stage=2, offload_optimizer=True), plugins=[DeepSpeedPrecisionPlugin(precision="bf16-mixed")])
 
-BF16 precision
+BF16 Precision
 """"""""""""""
 
 .. code-block:: python
@@ -347,7 +347,7 @@ This example demonstrates how the HPUDeepSpeedStrategy can be configured using a
 
 .. note::
 
-   1. When the optimizer and/or scheduler configuration is specified in both LightningModule and DeepSpeed json configuration file, preference will be given to the optimizer/scheduler returned by LightningModule::configure_optimizers().
+   When the optimizer and/or scheduler configuration is specified in both LightningModule and DeepSpeed json configuration file, preference will be given to the optimizer/scheduler returned by LightningModule::configure_optimizers().
 
 
 Activation Checkpointing
@@ -380,7 +380,7 @@ Activation Checkpointing
                     )
 
 
-DeepSpeed inference on HPU
+DeepSpeed Inference on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 HPUDeepSpeedStrategy can be used for inference with DeepSpeed on HPU.
@@ -465,12 +465,90 @@ Using Configuration
 
 Limitations of DeepSpeed on HPU
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-   1. DeepSpeed Zero Stage 3 is not yet supported by Gaudi2.
-   2. Offloading to Nvme is not yet verified on HPU with DeepSpeed Zero Stage 3 Offload configuration.
-   3. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
-   4. DeepSpeed inference with float16 is not supported on Gaudi1.
+   1. Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.
+   2. DeepSpeed inference with float16 is not supported on First-gen Gaudi.
 
 For further details on the supported DeepSpeed features and functionalities, refer to `Using DeepSpeed with HPU <https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html>`_.
+
+
+----
+
+Using FSDP on HPU
+-------------------------
+
+Fully Sharded Data Parallel (FSDP) is supported by Gaudi 2 for running distributed training on large-scale models.
+
+To enable FSDP training on HPU, use ``HPUFSDPStrategy``:
+
+.. code-block:: python
+
+    from lightning_habana.pytorch.strategies import HPUFSDPStrategy
+    from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecisionPlugin
+
+    strategy=HPUFSDPStrategy(parallel_devices=[torch.device("hpu")] * 8,
+                                sharding_strategy="FULL_SHARD",
+                                precision_plugin=HPUFSDPPrecisionPlugin("bf16-mixed")
+                            )
+    trainer = Trainer(accelerator=HPUAccelerator(), strategy=strategy, fast_dev_run=10, enable_model_summary=True)
+
+
+Choosing Sharding Strategy
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sharding stragey can be configured to control the way model parameters, gradients, and optimizer states are sharded. Sharding strategy can be one of the four values shown below:
+
+#. "FULL_SHARD"     -   Default: Shard weights, gradients, optimizer state (1 + 2 + 3)
+#. "SHARD_GRAD_OP"  -   Shard gradients, optimizer state (2 + 3)
+#. "HYBRID_SHARD"   -   Full-shard within a machine, replicate across machines
+#. "NO_SHARD"       -   Don't shard anything (similar to DDP)
+
+.. code-block:: python
+
+    strategy = HPUFSDPStrategy(
+        sharding_strategy="FULL_SHARD",
+        ...,
+    )
+    trainer = Trainer(..., strategy=strategy)
+
+
+The below example shows Gaudi scaling with PyTorch using Fully Sharded Data Parallelism (FSDP) approach:
+
+.. code-block:: python
+
+    class MyModel(BoringModel):
+        def configure_model(self):
+            self.layer = torch.nn.Linear(32, 2)
+
+        def configure_optimizers(self):
+            return torch.optim.AdamW(self.layer.parameters(), lr=0.1)
+
+    _strategy=HPUFSDPStrategy(
+        parallel_devices=[torch.device("hpu")] * 8,
+        sharding_strategy="SHARD_GRAD_OP",
+        precision_plugin=HPUFSDPPrecision("bf16-mixed"))
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=hpus,
+        strategy=_strategy,
+        max_epochs=1,
+    )
+
+
+Limitations of FSDP on HPU
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   1. This is an experimental feature.
+   2. FSDP on HPU can only be used in Eager/compile mode. To use Eager mode, set the environment variable `PT_HPU_LAZY_MODE=0`.
+   3. Saving/loading checkpoint using FSDP strategy is partially enabled.
+   4. If you encounter stability issues when running your model with FSDP, set `PT_HPU_EAGER_PIPELINE_ENABLE=false`` flag.
+   5. Activation checkpointing with bf16-mixed is not supported currently.
+
+For more details on the supported FSDP features and limitations, refer to `Using Fully Sharded Data Parallel (FSDP) with Intel Gaudi <https://docs.habana.ai/en/latest/PyTorch/PyTorch_FSDP/Pytorch_FSDP.html>`_.
+
+.. note::
+
+    This feature requires lightning/pytorch-lightning >= 2.3.0 or installing nightly from the source.
 
 ----
 
@@ -724,7 +802,7 @@ Thus, both the static modules are placed into separate ModuleCacher and the dyna
 Limitations of HPU Graphs
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* Using HPU Graphs with `torch.compile` is not supported.
+Using HPU Graphs with `torch.compile` is not supported.
 
 Please refer to `Limitations of HPU Graphs <https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis>`_
 
@@ -735,27 +813,22 @@ Using ``torch.compile``
 ------------------------
 
 PyTorch Eager mode and Eager mode with `torch.compile` are available for early preview.
-The following compile backends are now available to support HPU: `hpu_backend` for training and `aot_hpu_training_backend` for inference.
+The following compile backend is now available to support training & inference on HPU: `hpu_backend` .
 
 .. code-block:: python
 
     compiled_train_model = torch.compile(model_to_train, backend="hpu_backend")
-    compiled_eval_model = torch.compile(model_to_eval, backend="aot_hpu_inference_backend")
+    compiled_eval_model = torch.compile(model_to_eval, backend="hpu_backend")
 
 Please refer to `GAUDI Release Notes <https://docs.habana.ai/en/latest/Release_Notes/GAUDI_Release_Notes.html>`_
-
-.. note::
-
-    For models using torch.compile, `aot_hpu_training_backend` is now deprecated and will be removed in a future release.
-    Replace `aot_hpu_training_backend` with `hpu_backend`.
 
 
 ----
 
-Support for Multiple tenants
+Support for Multiple Tenants
 ------------------------------
 
-Running a workload with partial Gaudi processors can be enabled with a simple environment variable setting `HABANA_VISIBLE_MODULES`.
+Running a workload with partial Gaudi processors can be enabled with a simple environment variable `HABANA_VISIBLE_MODULES`.
 In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.
 
 To run a 4-Gaudi workload, set this in environment before running the workload:
@@ -772,4 +845,13 @@ To run another 4-Gaudi workload in parallel, set the modules as follows before r
 
 In addition to setting `HABANA_VISIBLE_MODULES`, also set a unique `MASTER_PORT` as environment variable for each tenant instance.
 
-Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/v1.14.0/PyTorch/Reference/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
+Please refer to `Multiple Workloads on a Single Docker <https://docs.habana.ai/en/latest/PyTorch/Reference/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html>`_
+
+
+----
+
+Metric APIs
+--------------
+
+The Metric APIs provide various performance-related metrics, such as the number of graph compilations, the total time of graph compilations, and more.
+Please refer to `Metric APIs <https://docs.habana.ai/en/latest/PyTorch/Reference/Python_Packages.html#metric-apis>`_ for more information.

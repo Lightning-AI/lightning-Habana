@@ -41,7 +41,13 @@ DEFAULT_RUN_TYPE = [
     "fp8_training",
 ]
 
+# For fp8 inference,
+# 1. First run `fp8_inference_measure` on a portion of data.
+# 2. Followed by actual inference using `fp8_inference_quantize`.
+# The two modes cannot be run in same process due to HQT limitation.
 OPTIONAL_RUN_TYPE = [
+    "fp8_inference_measure",
+    "fp8_inference_quantize",
     "multi_tenancy",
 ]
 
@@ -84,7 +90,7 @@ def set_env_vars(env_dict):
             del os.environ[key]
 
 
-def run_trainer(model, data_module, plugin, devices=1, strategy=None):
+def run_trainer(model, data_module, plugin, devices=1, strategy=None, run_type="fit"):
     """Run trainer.fit with given parameters."""
     if strategy is None:
         strategy = HPUDDPStrategy() if devices > 1 else SingleHPUStrategy()
@@ -95,7 +101,11 @@ def run_trainer(model, data_module, plugin, devices=1, strategy=None):
         plugins=plugin,
         fast_dev_run=True,
     )
-    trainer.fit(model, data_module)
+    if hasattr(trainer, run_type) and callable(getattr(trainer, run_type)):
+        func = getattr(trainer, run_type)
+        func(model, data_module)
+    else:
+        trainer.fit(model, data_module)
 
 
 def spawn_tenants(model, data_module, devices, num_tenants):
@@ -152,7 +162,7 @@ def get_plugins(run_type):
         return HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
     if run_type == "MixedPrecisionPlugin":
         return MixedPrecision(device="hpu", precision="bf16-mixed")
-    if run_type == "fp8_training":
+    if "fp8" in run_type:
         return HPUPrecisionPlugin(device="hpu", precision="fp8")
     return None
 
@@ -178,9 +188,10 @@ def run_training(run_type, options, model, data_module, plugin):
             print(f"Running with {num_tenants} tenants, using {devices_per_tenant} cards per tenant")
         spawn_tenants(model, data_module, devices_per_tenant, num_tenants)
     else:
+        run_type = "test" if "inference" in run_type else "fit"
         env_dict = {"PT_HPU_RECIPE_CACHE_CONFIG": "tmp/recipes,True,1024"} if run_type == "recipe_caching" else None
         with set_env_vars(env_dict):
-            run_trainer(model, data_module, plugin, options.devices)
+            run_trainer(model, data_module, plugin, options.devices, run_type=run_type)
 
 
 if __name__ == "__main__":
@@ -190,7 +201,7 @@ if __name__ == "__main__":
         print(f"Running MNIST mixed precision training with {options=}")
     # Run model and print accuracy
     for _run_type in options.run_types:
-        if HPUAccelerator.get_device_name() == "GAUDI" and _run_type == "fp8_training":
+        if HPUAccelerator.get_device_name() == "GAUDI" and "fp8" in _run_type:
             print("fp8 training not supported on GAUDI. Skipping.")
             continue
 
@@ -198,7 +209,13 @@ if __name__ == "__main__":
         model, data_module = get_model(_run_type)
         plugin = get_plugins(_run_type)
         if _run_type == "fp8_training":
-            plugin.convert_modules(model)
+            plugin.convert_modules(model, replace_layers=True, inference=False)
+
+        if _run_type == "fp8_inference_measure":
+            plugin.convert_modules(model, inference=True, quant=False)
+
+        if _run_type == "fp8_inference_quantize":
+            plugin.convert_modules(model, inference=True, quant=True)
 
         if options.verbose:
             print(f"Running {_run_type=} with {model=}, and {plugin=}")

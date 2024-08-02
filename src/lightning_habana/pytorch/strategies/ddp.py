@@ -22,21 +22,23 @@ if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.types import ReduceOp
-    from lightning.pytorch import LightningModule
+    from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
+    from lightning.pytorch.trainer.states import TrainerFn
     from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.types import ReduceOp
-    from pytorch_lightning import LightningModule
+    from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
+    from pytorch_lightning.trainer.states import TrainerFn
     from pytorch_lightning.utilities.types import STEP_OUTPUT
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
@@ -47,7 +49,7 @@ from torch.optim.optimizer import Optimizer
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_2_3_0
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
@@ -101,6 +103,14 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
         self._checkpoint_io = io  # type: ignore
+
+    def setup(self, trainer: "Trainer") -> None:
+        if (
+            trainer.state.fn in (TrainerFn.PREDICTING, TrainerFn.TESTING)
+            and trainer.precision_plugin.precision == "fp8"
+        ):
+            raise NotImplementedError("FP8 inference is not supported with HPUDDPStrategy yet !!!")
+        return super().setup(trainer)
 
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
@@ -186,7 +196,12 @@ def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # 
     my_rank = get_rank()
     # Serialize object_list elements to tensors on src rank.
     if my_rank == src:
-        tensor_list, size_list = zip(*[_object_to_tensor(obj, device) for obj in object_list])
+        tensor_list = []
+        size_list = []
+        if _TORCH_LESSER_2_3_0:
+            tensor_list, size_list = zip(*[_object_to_tensor(obj, device) for obj in object_list])
+        else:
+            tensor_list, size_list = zip(*[_object_to_tensor(obj, device, group) for obj in object_list])
         object_sizes_tensor = torch.cat(size_list)
     else:
         object_sizes_tensor = torch.empty(len(object_list), dtype=torch.long)
@@ -248,4 +263,7 @@ def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # 
             if obj_view.device != torch.device("cpu"):
                 obj_view = obj_view.cpu()
             offset += obj_size
-            object_list[i] = _tensor_to_object(obj_view, obj_size)
+            if _TORCH_LESSER_2_3_0:
+                object_list[i] = _tensor_to_object(obj_view, obj_size)
+            else:
+                object_list[i] = _tensor_to_object(obj_view, obj_size, group)

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import re
 import subprocess
 from functools import lru_cache
@@ -21,6 +22,7 @@ from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
+_HABANA_QUANTIZATION_TOOLKIT_AVAILABLE = package_available("habana_quantization_toolkit")
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
@@ -138,3 +140,37 @@ def is_fp8_available() -> Tuple[bool, str]:
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 
     return tengine.fp8.is_fp8_available()
+
+
+@lru_cache
+def is_fp16_available() -> Tuple[bool, str]:
+    """Returns a bool indicating if fp16 is available."""
+    if not _HABANA_FRAMEWORK_AVAILABLE:
+        raise OSError("Habana Frameworks required for training on Habana devices.")
+    if torch_hpu.get_device_name() == "GAUDI":
+        return False, "FP16 not supported on Gaudi, Gaudi2 or higher required."
+    return True, ""
+
+
+def modify_fp8_json(file_path: str, patch: dict) -> None:
+    """Edit a specific entry in a JSON file.
+
+    Parameters:
+        file_path (str): The path to the JSON file.
+        patch (dict): Entries to patch in json
+
+    Returns:
+        None
+
+    """
+    # Load the JSON file
+    with open(file_path, encoding="utf-8") as file:
+        data = json.load(file)
+
+    # Edit the specified entries
+    for key, value in patch.items():
+        data[key] = value
+
+    # Update json
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(data, file)

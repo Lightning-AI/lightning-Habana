@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING, Any, Dict, Generator, List, Mapping, Optional,
 
 from lightning_utilities import module_available
 from lightning_utilities.core.imports import RequirementCache
+from torch.optim.lr_scheduler import LRScheduler, ReduceLROnPlateau
 
 if module_available("lightning"):
     from lightning.fabric.plugins import ClusterEnvironment
@@ -34,7 +35,7 @@ if module_available("lightning"):
     )
     from lightning.fabric.utilities.optimizer import _optimizers_to_device
     from lightning.fabric.utilities.seed import reset_seed
-    from lightning.fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning.fabric.utilities.types import _PATH
     from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
     from lightning.pytorch.core.optimizer import _init_optimizers_and_lr_schedulers
@@ -54,7 +55,7 @@ elif module_available("pytorch_lightning"):
     )
     from lightning_fabric.utilities.optimizer import _optimizers_to_device
     from lightning_fabric.utilities.seed import reset_seed
-    from lightning_fabric.utilities.types import _PATH, LRScheduler, ReduceLROnPlateau
+    from lightning_fabric.utilities.types import _PATH
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
     from pytorch_lightning.core.optimizer import _init_optimizers_and_lr_schedulers
@@ -75,15 +76,15 @@ from lightning_habana.pytorch.strategies.ddp import HPUDDPStrategy
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.core as htcore  # noqa: F401
+    import habana_frameworks.torch.core as htcore
     import habana_frameworks.torch.distributed.hccl  # noqa: F401
 
 log = logging.getLogger(__name__)
 warning_cache = WarningCache()
 
 _HPU_DEEPSPEED_AVAILABLE = (
-    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.14.0
-    RequirementCache("deepspeed==0.12.4+hpu.synapse.v1.14.0")
+    # HPU deep speed is supported only through this pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.1
+    RequirementCache("deepspeed==0.14.0+hpu.synapse.v1.16.1")
 )
 if TYPE_CHECKING and _HPU_DEEPSPEED_AVAILABLE:
     import deepspeed
@@ -298,7 +299,7 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
         if not _HPU_DEEPSPEED_AVAILABLE:
             raise MisconfigurationException(
                 "To use the `HPUDeepSpeedStrategy`, you must have hpu DeepSpeed installed."
-                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.14.0`."
+                " Install it by running `pip install git+https://github.com/HabanaAI/DeepSpeed.git@1.16.1`."
             )
 
         super().__init__(
@@ -933,6 +934,22 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
     def load_optimizer_state_dict(self, checkpoint: Mapping[str, Any]) -> None:
         # Override to do nothing, the deepspeed engine already loaded the states in `load_checkpoint()`
         pass
+
+    def on_test_end(self) -> None:
+        if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
+            import habana_quantization_toolkit
+
+            habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
+        return super().on_test_end()
+
+    def on_predict_end(self) -> None:
+        if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
+            import habana_quantization_toolkit
+
+            habana_quantization_toolkit.finish_measurements(self.model)
+            htcore.quantization.hpu_teardown_inference_env()
+        return super().on_predict_end()
 
     @classmethod
     def register_strategies(cls, strategy_registry: _StrategyRegistry) -> None:
