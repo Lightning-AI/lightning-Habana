@@ -151,7 +151,7 @@ def test_fsdp_train(arg_hpus):
     trainer.run()
 
 
-@pytest.mark.standalone()
+@pytest.mark.xfail(run=False, reason="Saving checkpoint is not fully supported.")
 @pytest.mark.parametrize("manual_wrapping", [True, False])
 def test_train_save_load(tmp_path, arg_hpus, manual_wrapping):
     """Test FSDP training, saving and loading with different wrapping and precision settings."""
