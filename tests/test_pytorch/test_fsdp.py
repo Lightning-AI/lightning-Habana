@@ -320,7 +320,6 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
 @pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
     """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
-
     model = TestFSDPModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
