@@ -687,15 +687,15 @@ class AccuracyTestModel(BoringModel):
         return loss
 
 
-def run_training(root_dir, model, dm, strategy, arg_hpus):
+def run_training(root_dir, model, dm, strategy, hpus):
     seed_everything(42)
     trainer = Trainer(
         default_root_dir=root_dir,
         accelerator=HPUAccelerator(),
-        devices=arg_hpus,
+        devices=hpus,
         strategy=strategy,
         plugins=None if isinstance(strategy, HPUFSDPStrategy) else HPUPrecisionPlugin(precision="bf16-mixed"),
-        fast_dev_run=1,
+        fast_dev_run=True,
     )
     trainer.fit(model(), dm())
     return trainer.callback_metrics["val_loss"], trainer.callback_metrics["train_loss"]
