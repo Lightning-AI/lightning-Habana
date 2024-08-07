@@ -173,6 +173,7 @@ def test_fsdp_custom_mixed_precision():
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
+@pytest.mark.standalone()
 def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP on HPU."""
     if arg_hpus <= 1:
@@ -216,6 +217,7 @@ def test_fsdp_simple_model(strategy, arg_hpus):
 
 
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
+@pytest.mark.standalone()
 def test_fsdp_simple_model_activation_cp(strategy, arg_hpus):
     model = BoringModel()
 
@@ -237,6 +239,7 @@ def test_fsdp_simple_model_activation_cp(strategy, arg_hpus):
 
 @pytest.mark.xfail(run=False, reason="Failure in applying autocast during recompute.")
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
+@pytest.mark.standalone()
 def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
     model = BoringModel()
 
@@ -257,6 +260,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
+@pytest.mark.standalone()
 def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if arg_hpus <= 1:
@@ -410,6 +414,7 @@ def test_fsdp_strategy_cpu_offload():
     ],
 )
 @pytest.mark.xfail(run=False, reason="Failure in rank validation of layer weights.")
+@pytest.mark.standalone()
 def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
     """Test that the module under configure_model gets moved to the right device and dtype."""
     trainer = Trainer(
