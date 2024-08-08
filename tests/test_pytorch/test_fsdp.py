@@ -412,7 +412,6 @@ def test_fsdp_strategy_cpu_offload():
         ("32-true", torch.float32),
     ],
 )
-
 @pytest.mark.standalone()
 def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
     """Test that the module under configure_model gets moved to the right device and dtype."""
