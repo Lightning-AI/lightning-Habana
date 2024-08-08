@@ -36,6 +36,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
+from lightning_habana.utils.resources import is_hpu_initialized
 
 
 class LanguageModel(LightningModule):
@@ -105,7 +106,7 @@ if __name__ == "__main__":
 
     if options.strategy == "DDP":
         model = LanguageModel(vocab_size=dataset.vocab_size)
-        strategy = HPUDDPStrategy()
+        strategy = HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * options.devices)
         plugin = HPUPrecisionPlugin(device="hpu", precision="bf16-mixed")
         trainer = Trainer(
             accelerator=HPUAccelerator(),
@@ -120,7 +121,8 @@ if __name__ == "__main__":
             f"Peak Memory alloc using DDP strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
         )
     else:
-        htorch.hpu.reset_peak_memory_stats()
+        if is_hpu_initialized():
+            htorch.hpu.reset_peak_memory_stats()
         model = LanguageModel(vocab_size=dataset.vocab_size)
         _strategy = HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * options.devices,
