@@ -311,7 +311,6 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
         ),
         max_steps=1,
         enable_checkpointing=False,
-        devices=arg_hpus,
     )
     trainer.fit(model)
 
@@ -409,7 +408,6 @@ def test_fsdp_strategy_cpu_offload():
         ("32-true", torch.float32),
     ],
 )
-@pytest.mark.xfail(run=False, reason="Failure in rank validation of layer weights.")
 def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
     """Test that the module under configure_model gets moved to the right device and dtype."""
     trainer = Trainer(
@@ -437,7 +435,7 @@ def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
             return torch.optim.AdamW(self.layer.parameters(), lr=0.1)
 
         def on_fit_start(self):
-            assert self.layer.weight.device == torch.device("hpu", self.local_rank)
+            assert self.layer.weight.device == torch.device("hpu", torch.hpu.current_device())
             assert self.layer.weight.dtype == expected_dtype
 
     model = MyModel()
