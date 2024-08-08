@@ -126,13 +126,14 @@ class _TrainerManualWrapping(_Trainer):
         model = super().get_model()
         for i, layer in enumerate(model):
             if i % 2 == 0:
-                model[i] = wrap(layer)
+                device_hpu = torch.device("hpu", torch.hpu.current_device())
+                model[i] = wrap(layer, device_id=device_hpu)
         self.num_wrapped = 2
         return model
 
 
 @pytest.mark.standalone()
-def test_fabric_fsdp_train(arg_hpus):
+def test_fsdp_train(arg_hpus):
     """Test FSDP training loop."""
     strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * arg_hpus,
@@ -152,11 +153,14 @@ def test_fabric_fsdp_train(arg_hpus):
 
 @pytest.mark.xfail(run=False, reason="Saving checkpoint is not fully supported.")
 @pytest.mark.parametrize("manual_wrapping", [True, False])
-def test_train_save_load(tmp_path, hpus, manual_wrapping):
+def test_train_save_load(tmp_path, arg_hpus, manual_wrapping):
     """Test FSDP training, saving and loading with different wrapping and precision settings."""
+    if arg_hpus != 2:
+        pytest.skip(reason="Test requires 2 HPU cards")
+
     trainer_cls = _TrainerManualWrapping if manual_wrapping else _Trainer
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * hpus,
+        parallel_devices=[torch.device("hpu")] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -164,7 +168,7 @@ def test_train_save_load(tmp_path, hpus, manual_wrapping):
     fabric = Fabric(
         accelerator=HPUAccelerator(),
         strategy=strategy,
-        devices=hpus,
+        devices=arg_hpus,
     )
     fabric.launch()
     trainer = trainer_cls(fabric)
@@ -179,7 +183,7 @@ def test_train_save_load(tmp_path, hpus, manual_wrapping):
 
     # re-init all objects and resume
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * hpus,
+        parallel_devices=[torch.device("hpu")] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -187,7 +191,7 @@ def test_train_save_load(tmp_path, hpus, manual_wrapping):
     fabric = Fabric(
         accelerator=HPUAccelerator(),
         strategy=strategy,
-        devices=hpus,
+        devices=arg_hpus,
     )
     fabric.launch()
     trainer = trainer_cls(fabric)
@@ -279,11 +283,11 @@ def test_setup_module_move_to_device(arg_hpus, move_to_device):
 
     assert len(list(fabric_model.parameters())) == 1
 
-    assert next(fabric_model.parameters()).device == torch.device("hpu", 0)
+    assert next(fabric_model.parameters()).device == torch.device("hpu", torch.hpu.current_device())
     assert next(fabric_model.parameters()).numel() == 50
     assert isinstance(next(fabric_model.parameters()), nn.Parameter)
 
-    assert fabric.device == torch.device("hpu")
+    assert fabric.device == torch.device("hpu", torch.hpu.current_device())
 
 
 def test_rewrap_warnings(arg_hpus):
@@ -298,7 +302,7 @@ def test_rewrap_warnings(arg_hpus):
         devices=arg_hpus,
     )
     fabric.launch()
-    device_hpu = torch.device("hpu")
+    device_hpu = torch.device("hpu", torch.hpu.current_device())
     with fabric.init_module():
         model = torch.nn.Sequential(
             torch.nn.Linear(1, 1), torch.nn.ReLU(), wrap(torch.nn.Linear(1, 1), device_id=device_hpu)
