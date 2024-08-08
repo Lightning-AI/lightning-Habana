@@ -110,6 +110,8 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         elif torch.device("hpu") in parallel_devices:
             parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
 
+        print("------hpu parallel devices ---------------------: ", parallel_devices)
+
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
