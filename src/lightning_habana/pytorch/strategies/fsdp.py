@@ -60,7 +60,6 @@ from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch as htorch
     import habana_frameworks.torch.distributed.hccl as hpu_dist
 
 if TYPE_CHECKING:
@@ -106,12 +105,11 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
-        print("------current device ---------------------: ", torch.hpu.current_device())
-
+        #[FixMe] Device index of 0 is used by HPU for all devices irrespective of tenancy
         if parallel_devices is None:
-            parallel_devices = [torch.device("hpu", htorch.hpu.current_device())] * HPUAccelerator.auto_device_count()
+            parallel_devices = [torch.device("hpu", 0)] * HPUAccelerator.auto_device_count()
         elif torch.device("hpu") in parallel_devices:
-            parallel_devices = [torch.device("hpu", htorch.hpu.current_device())] * len(parallel_devices)
+            parallel_devices = [torch.device("hpu", 0)] * len(parallel_devices)
 
         super().__init__(
             accelerator=accelerator,
