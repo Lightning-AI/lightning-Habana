@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated to Intel Gaudi software Release 1.16.2 ([#205](https://github.com/Lightning-AI/lightning-Habana/pull/205))
+- Updated to Intel Gaudi software Release 1.16.2 ([#207](https://github.com/Lightning-AI/lightning-Habana/pull/207))
+- Updated to Intel Gaudi software Release 1.17.0 ([#221](https://github.com/Lightning-AI/lightning-Habana/pull/221))
+- Modified torch device specification for FSDP on HPU ([#222](https://github.com/Lightning-AI/lightning-Habana/pull/222))
 
 ### Fixed
 

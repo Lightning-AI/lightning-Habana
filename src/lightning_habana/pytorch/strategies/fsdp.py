@@ -87,7 +87,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     def __init__(
         self,
         accelerator: Optional["pl.accelerators.Accelerator"] = None,
-        parallel_devices: Optional[List[torch.device]] = [torch.device("hpu")] * HPUAccelerator.auto_device_count(),
+        parallel_devices: Optional[List[torch.device]] = None,
         cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = HPUCheckpointIO(),
         precision_plugin: Optional[Precision] = HPUFSDPPrecision("bf16-mixed"),
@@ -104,6 +104,12 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     ) -> None:
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
+
+        if parallel_devices is None:
+            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
+        elif torch.device("hpu") in parallel_devices:
+            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
+
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,

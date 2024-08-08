@@ -148,26 +148,6 @@ def test_compiled_model_with_datamodule_and_log_metric(tmp_path):
     trainer.fit(compiled_model, datamodule=dm)
 
 
-@pytest.mark.usefixtures("_is_compile_allowed")
-def test_trainer_fit_with_compiled_model(tmp_path):
-    """Tests compiled BoringModel on HPU."""
-    model = BoringModel()
-    compiled_model = torch.compile(model, backend="hpu_backend")
-
-    _strategy = SingleHPUStrategy()
-    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
-
-    trainer = Trainer(
-        default_root_dir=tmp_path,
-        accelerator=HPUAccelerator(),
-        strategy=_strategy,
-        plugins=_plugins,
-        devices=1,
-        fast_dev_run=True,
-    )
-    trainer.fit(compiled_model)
-
-
 class Net(nn.Module):
     def __init__(self):
         super().__init__()
@@ -196,14 +176,12 @@ def test_all_stages_with_compile(tmpdir, hpus):
     compiled_eval_model = torch.compile(model_to_eval, backend="hpu_backend")
 
     _strategy = SingleHPUStrategy()
-    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         default_root_dir=tmpdir,
         fast_dev_run=True,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
         devices=hpus,
-        plugins=_plugins,
     )
     trainer.fit(compiled_train_model)
     trainer.validate(compiled_eval_model)
@@ -219,7 +197,6 @@ def test_ddp_strategy_with_compile(tmp_path, arg_hpus):
     model = BoringModel()
     compiled_model = torch.compile(model, backend="hpu_backend")
 
-    _plugins = [HPUPrecisionPlugin(precision="bf16-mixed")]
     parallel_hpus = [torch.device("hpu")] * arg_hpus
     _strategy = HPUDDPStrategy(
         parallel_devices=parallel_hpus,
@@ -233,7 +210,6 @@ def test_ddp_strategy_with_compile(tmp_path, arg_hpus):
         default_root_dir=tmp_path,
         accelerator=HPUAccelerator(),
         strategy=_strategy,
-        plugins=_plugins,
         devices=arg_hpus,
         fast_dev_run=True,
     )
@@ -271,3 +247,51 @@ def test_hpu_profiler_with_compile(tmpdir, record_module_names, expectation):
     )
     with expectation:
         trainer.fit(compiled_model)
+
+
+@pytest.mark.usefixtures("_is_compile_allowed")
+@pytest.mark.parametrize(
+    ("precision", "trainer_fn", "params"),
+    [
+        ("32-true", "fit", None),
+        ("bf16-mixed", "fit", None),
+        pytest.param(
+            "16-mixed",
+            "fit",
+            None,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+            ),
+        ),
+        pytest.param(
+            "fp8",
+            "fit",
+            {
+                "replace_layers": True,
+            },
+            marks=[
+                pytest.mark.skipif(
+                    HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+                ),
+                pytest.mark.xfail(reason="TBD: Fix included in release 1.17.0", strict=False),
+            ],
+        ),
+    ],
+)
+def test_hpu_compile_precision_plugin(tmpdir, precision, trainer_fn, params):
+    model = BoringModel()
+    precision_plugin = HPUPrecisionPlugin(precision=precision)
+    if precision == "fp8":
+        precision_plugin.convert_modules(model, **params)
+    compiled_model = torch.compile(model, backend="hpu_backend")
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=SingleHPUStrategy(),
+        devices=1,
+        fast_dev_run=True,
+        plugins=precision_plugin,
+    )
+    fn = getattr(trainer, trainer_fn)
+    fn(compiled_model)
