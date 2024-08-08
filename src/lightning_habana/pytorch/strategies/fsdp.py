@@ -105,7 +105,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
-        #[FixMe] Device index of 0 is used by HPU for all devices irrespective of tenancy
+        # [FixMe] Device index of 0 is used by HPU for all devices irrespective of tenancy
         if parallel_devices is None:
             parallel_devices = [torch.device("hpu", 0)] * HPUAccelerator.auto_device_count()
         elif torch.device("hpu") in parallel_devices:
