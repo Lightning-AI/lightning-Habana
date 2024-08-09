@@ -152,6 +152,14 @@ def is_fp16_available() -> Tuple[bool, str]:
     return True, ""
 
 
+@lru_cache
+def is_hpu_initialized() -> Tuple[bool, str]:
+    """Returns a bool indicating if hpu backend is initialized."""
+    if not _HABANA_FRAMEWORK_AVAILABLE:
+        raise OSError("Habana Frameworks required for training on Habana devices.")
+    return torch_hpu.is_initialized()
+
+
 def modify_fp8_json(file_path: str, patch: dict) -> None:
     """Edit a specific entry in a JSON file.
 
