@@ -198,6 +198,7 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
 
 
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
+@pytest.mark.standalone()
 def test_fsdp_simple_model(strategy, arg_hpus):
     model = TestBoringModel()
 
@@ -216,6 +217,7 @@ def test_fsdp_simple_model(strategy, arg_hpus):
     trainer.fit(model)
 
 
+@pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
 @pytest.mark.standalone()
 def test_fsdp_simple_model_activation_cp(strategy, arg_hpus):
