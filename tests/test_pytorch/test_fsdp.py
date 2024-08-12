@@ -668,8 +668,10 @@ def test_dummy_fsdp_string_init(tmpdir, arg_hpus):
 
     model = BoringModel()
     dm = BoringDataModule()
-    _strategy = DummyFSDPStrategy(precision_plugin=HPUFSDPPrecision("bf16-mixed"),
-                                  parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus)
+    _strategy = DummyFSDPStrategy(
+        precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+        parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
+    )
 
     # Check strategy string init name
     assert _strategy.strategy_name == "dummy_hpu_fsdp"
