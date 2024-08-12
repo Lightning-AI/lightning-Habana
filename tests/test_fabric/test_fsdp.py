@@ -136,7 +136,7 @@ class _TrainerManualWrapping(_Trainer):
 def test_fsdp_train(arg_hpus):
     """Test FSDP training loop."""
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -160,7 +160,7 @@ def test_train_save_load(tmp_path, arg_hpus, manual_wrapping):
 
     trainer_cls = _TrainerManualWrapping if manual_wrapping else _Trainer
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -183,7 +183,7 @@ def test_train_save_load(tmp_path, arg_hpus, manual_wrapping):
 
     # re-init all objects and resume
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -221,7 +221,7 @@ def test_train_save_load(tmp_path, arg_hpus, manual_wrapping):
 def test_setup_with_orig_params_and_multiple_param_groups(arg_hpus):
     """Test that `move_to_device` does nothing, FSDP decides which device parameters get moved to which device."""
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -267,7 +267,7 @@ def test_setup_module_move_to_device(arg_hpus, move_to_device):
         pytest.skip(reason="Test requires 2 HPU cards")
 
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )
@@ -292,7 +292,7 @@ def test_setup_module_move_to_device(arg_hpus, move_to_device):
 
 def test_rewrap_warnings(arg_hpus):
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * arg_hpus,
         auto_wrap_policy=always_wrap_policy,
         precision=HPUFSDPPrecision(precision="bf16-mixed"),
     )

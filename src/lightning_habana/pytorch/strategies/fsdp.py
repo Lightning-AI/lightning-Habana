@@ -31,6 +31,7 @@ if module_available("lightning"):
         _setup_activation_checkpointing,
     )
     from lightning.fabric.utilities.distributed import group as _group
+    from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.precision import Precision
     from lightning.pytorch.strategies.fsdp import FSDPStrategy
@@ -45,6 +46,7 @@ elif module_available("pytorch_lightning"):
         _setup_activation_checkpointing,
     )
     from lightning_fabric.utilities.distributed import group as _group
+    from lightning_fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.precision import Precision
     from pytorch_lightning.strategies.fsdp import FSDPStrategy
@@ -105,11 +107,10 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
-        # [FixMe] Using device index of 0 for now to mitigate torch initialization issue
-        if parallel_devices is None:
-            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
-        elif torch.device("hpu") in parallel_devices:
-            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
+        # if parallel_devices is None:
+        #     parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
+        # elif torch.device("hpu") in parallel_devices:
+        #     parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
 
         super().__init__(
             accelerator=accelerator,
@@ -170,11 +171,10 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in model.modules()):
-            # TBD: Enable meta device check once we move to PTL>=2.3 which has HPU fsdo support
-            # if _has_meta_device_parameters_or_buffers(model):
-            #     rank_zero_warn(
-            #         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
-            #     )
+            if _has_meta_device_parameters_or_buffers(model):
+                rank_zero_warn(
+                    "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
+                )
             if "auto_wrap_policy" in self.kwargs:
                 # The user has wrapped their submodules manually, don't apply the auto wrap policy.
                 rank_zero_warn(
