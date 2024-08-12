@@ -495,7 +495,7 @@ def test_fsdp_activation_checkpointing():
     assert isinstance(strategy._activation_checkpointing_kwargs["auto_wrap_policy"], ModuleWrapPolicy)
 
     model = Model()
-    strategy._parallel_devices = [torch.device("hpu", 0)]
+    strategy._parallel_devices = [torch.device("hpu", torch.hpu.current_device())]
     strategy._lightning_module = model
     strategy._process_group = Mock()
     with mock.patch("torch.distributed.fsdp.FullyShardedDataParallel", new=MagicMock), mock.patch(
@@ -660,7 +660,7 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     trainer.strategy.barrier()
 
 
-def test_dummy_fsdp_string_init(tmpdir):
+def test_dummy_fsdp_string_init(tmpdir, arg_hpus):
     """Test that TorchMetrics get moved to the device despite not having any parameters."""
 
     class DummyFSDPStrategy(HPUFSDPStrategy):
@@ -668,7 +668,8 @@ def test_dummy_fsdp_string_init(tmpdir):
 
     model = BoringModel()
     dm = BoringDataModule()
-    _strategy = DummyFSDPStrategy(precision_plugin=HPUFSDPPrecision("bf16-mixed"))
+    _strategy = DummyFSDPStrategy(precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+                                  parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus)
 
     # Check strategy string init name
     assert _strategy.strategy_name == "dummy_hpu_fsdp"
