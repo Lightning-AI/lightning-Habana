@@ -185,7 +185,7 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             cpu_offload=config,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         ),
@@ -205,7 +205,7 @@ def test_fsdp_simple_model(strategy, arg_hpus):
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             sharding_strategy=strategy,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         ),
@@ -227,7 +227,7 @@ def test_fsdp_simple_model_activation_cp(strategy, arg_hpus):
         accelerator=HPUAccelerator(),
         num_sanity_val_steps=0,
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             sharding_strategy=strategy,
             precision_plugin=HPUFSDPPrecision("32-true"),
             activation_checkpointing_policy={torch.nn.Linear},
@@ -249,7 +249,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
         accelerator=HPUAccelerator(),
         num_sanity_val_steps=0,
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             sharding_strategy=strategy,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
             activation_checkpointing_policy={torch.nn.Linear},
@@ -276,7 +276,7 @@ def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             cpu_offload=config,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         ),
@@ -311,7 +311,7 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             cpu_offload=True,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         ),
@@ -334,7 +334,7 @@ def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
             state_dict_type=state_dict_type,
         ),
@@ -348,7 +348,7 @@ def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
             state_dict_type=state_dict_type,
         ),
@@ -371,7 +371,7 @@ def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, arg_hpus):
     correct_state_dict = model.state_dict()  # State dict before wrapping
 
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
         auto_wrap_policy=partial(size_based_auto_wrap_policy, min_num_params=wrap_min_params),
         precision_plugin=HPUFSDPPrecision("bf16-mixed"),
     )
@@ -422,7 +422,7 @@ def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
         accelerator=HPUAccelerator(),
         devices=arg_hpus,
         strategy=HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu")] * arg_hpus,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
             sharding_strategy="SHARD_GRAD_OP",
             precision_plugin=HPUFSDPPrecision(precision),
         ),
@@ -542,7 +542,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
 
     model = TestFSDPModelAutoWrapped(wrap_min_params=wrap_min_params)
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
         auto_wrap_policy=partial(size_based_auto_wrap_policy, min_num_params=wrap_min_params),
         precision_plugin=HPUFSDPPrecision("bf16-mixed"),
     )
@@ -628,7 +628,7 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     model = TestFSDPModelAutoWrapped(wrap_min_params=wrap_min_params)
 
     strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
         auto_wrap_policy=partial(size_based_auto_wrap_policy, min_num_params=wrap_min_params),
         precision_plugin=HPUFSDPPrecision("bf16-mixed"),
     )
@@ -729,7 +729,7 @@ def test_hpu_parallel_precision_accuracy(tmpdir, arg_hpus):
 @pytest.mark.standalone()
 def test_hpu_fsdp_precision_accuracy(tmpdir, arg_hpus):
     fsdp_strategy = HPUFSDPStrategy(
-        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * arg_hpus,
         sharding_strategy="FULL_SHARD",
         precision_plugin=HPUFSDPPrecision("bf16-mixed"),
     )
