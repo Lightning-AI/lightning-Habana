@@ -52,7 +52,6 @@ from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_L
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl as hpu_dist
 
 log = logging.getLogger(__name__)
 
