@@ -131,8 +131,13 @@ if __name__ == "__main__":
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         )
 
-        trainer = Trainer(accelerator=HPUAccelerator(), devices=options.devices, strategy=_strategy, fast_dev_run=1,
-                          enable_model_summary=True)
+        trainer = Trainer(
+            accelerator=HPUAccelerator(),
+            devices=options.devices,
+            strategy=_strategy,
+            fast_dev_run=1,
+            enable_model_summary=True,
+        )
         trainer.fit(model, train_dataloader)
         rank_zero_info(
             f"Peak Memory alloc using FSDP {options.strategy} strategy "
