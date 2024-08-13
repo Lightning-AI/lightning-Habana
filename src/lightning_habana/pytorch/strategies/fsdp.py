@@ -155,15 +155,15 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             )
         self._precision_plugin = precision_plugin
 
-    @override
-    def setup_environment(self) -> None:
-        if self._process_group_backend == "hccl":
-            # this env is used in overrides to check the backend initiated
-            _ws = self.cluster_environment.world_size()
-            _grank = self.cluster_environment.global_rank()
-            _lrank = self.cluster_environment.local_rank()
-            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
-        super().setup_environment()
+    # @override
+    # def setup_environment(self) -> None:
+    #     if self._process_group_backend == "hccl":
+    #         # this env is used in overrides to check the backend initiated
+    #         _ws = self.cluster_environment.world_size()
+    #         _grank = self.cluster_environment.global_rank()
+    #         _lrank = self.cluster_environment.local_rank()
+    #         hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
+    #     super().setup_environment()
 
     def _setup_model(self, model: Module) -> Module:
 
