@@ -125,7 +125,7 @@ if __name__ == "__main__":
             htorch.hpu.reset_peak_memory_stats()
         model = LanguageModel(vocab_size=dataset.vocab_size)
         _strategy = HPUFSDPStrategy(
-            parallel_devices=[torch.device("hpu"), torch.hpu.current_device()] * options.devices,
+            parallel_devices=[torch.device("hpu", torch.hpu.current_device())] * options.devices,
             sharding_strategy=options.strategy,
             auto_wrap_policy=policy,
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
