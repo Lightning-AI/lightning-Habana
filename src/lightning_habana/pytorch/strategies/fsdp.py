@@ -58,10 +58,7 @@ from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_3_0
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    pass
+from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if TYPE_CHECKING:
     from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload, MixedPrecision, ShardingStrategy
@@ -106,11 +103,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
-        # if parallel_devices is None:
-        #     parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
-        # elif torch.device("hpu") in parallel_devices:
-        #     parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
-
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -154,16 +146,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
                 f"The FSDP strategy can only work with the `HPUFSDPPrecision` plugin, found {precision_plugin}"
             )
         self._precision_plugin = precision_plugin
-
-    # @override
-    # def setup_environment(self) -> None:
-    #     if self._process_group_backend == "hccl":
-    #         # this env is used in overrides to check the backend initiated
-    #         _ws = self.cluster_environment.world_size()
-    #         _grank = self.cluster_environment.global_rank()
-    #         _lrank = self.cluster_environment.local_rank()
-    #         hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
-    #     super().setup_environment()
 
     def _setup_model(self, model: Module) -> Module:
 
