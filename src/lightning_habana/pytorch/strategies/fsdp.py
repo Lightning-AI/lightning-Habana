@@ -62,7 +62,7 @@ from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.distributed.hccl as hpu_dist
+    pass
 
 if TYPE_CHECKING:
     from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload, MixedPrecision, ShardingStrategy
