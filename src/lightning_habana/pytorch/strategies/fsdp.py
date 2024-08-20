@@ -31,6 +31,7 @@ if module_available("lightning"):
         _setup_activation_checkpointing,
     )
     from lightning.fabric.utilities.distributed import group as _group
+    from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.precision import Precision
     from lightning.pytorch.strategies.fsdp import FSDPStrategy
@@ -45,6 +46,7 @@ elif module_available("pytorch_lightning"):
         _setup_activation_checkpointing,
     )
     from lightning_fabric.utilities.distributed import group as _group
+    from lightning_fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.precision import Precision
     from pytorch_lightning.strategies.fsdp import FSDPStrategy
@@ -154,26 +156,15 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             )
         self._precision_plugin = precision_plugin
 
-    @override
-    def setup_environment(self) -> None:
-        if self._process_group_backend == "hccl":
-            # this env is used in overrides to check the backend initiated
-            _ws = self.cluster_environment.world_size()
-            _grank = self.cluster_environment.global_rank()
-            _lrank = self.cluster_environment.local_rank()
-            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
-        super().setup_environment()
-
     def _setup_model(self, model: Module) -> Module:
 
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in model.modules()):
-            # TBD: Enable meta device check once we move to PTL>=2.3 which has HPU fsdo support
-            # if _has_meta_device_parameters_or_buffers(model):
-            #     rank_zero_warn(
-            #         "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
-            #     )
+            if _has_meta_device_parameters_or_buffers(model):
+                rank_zero_warn(
+                    "The model is already wrapped in `FSDP` but there are still parameters on the meta device."
+                )
             if "auto_wrap_policy" in self.kwargs:
                 # The user has wrapped their submodules manually, don't apply the auto wrap policy.
                 rank_zero_warn(
