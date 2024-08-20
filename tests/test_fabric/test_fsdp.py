@@ -25,11 +25,9 @@ from torch.utils.data import DataLoader
 
 if module_available("lightning"):
     from lightning.fabric import Fabric
-    from lightning.fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_1
     from lightning.fabric.wrappers import _FabricOptimizer
 elif module_available("pytorch_lightning"):
     from lightning_fabric import Fabric
-    from lightning_fabric.utilities.imports import _TORCH_GREATER_EQUAL_2_1
     from lightning_fabric.wrappers import _FabricOptimizer
 
 from lightning_habana.fabric.accelerator import HPUAccelerator
@@ -311,9 +309,6 @@ def test_rewrap_warnings(arg_hpus):
         model = fabric.setup(model)
     assert not isinstance(model._forward_module, FullyShardedDataParallel)
     assert isinstance(model._forward_module[2], FullyShardedDataParallel)
-
-    if not _TORCH_GREATER_EQUAL_2_1:
-        return
 
     with fabric.init_module(empty_init=True):
         model = torch.nn.Sequential(
