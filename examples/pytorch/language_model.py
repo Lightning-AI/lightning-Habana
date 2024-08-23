@@ -101,7 +101,7 @@ if __name__ == "__main__":
 
     policy = {nn.TransformerEncoderLayer, nn.TransformerDecoderLayer}
     dataset = WikiText2()
-    train_dataloader = DataLoader(dataset)
+    train_dataloader = DataLoader(dataset, num_workers=2)
 
     if options.strategy == "DDP":
         model = LanguageModel(vocab_size=dataset.vocab_size)
@@ -120,7 +120,6 @@ if __name__ == "__main__":
             f"Peak Memory alloc using DDP strategy on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
         )
     else:
-        htorch.hpu.reset_peak_memory_stats()
         model = LanguageModel(vocab_size=dataset.vocab_size)
         _strategy = HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * options.devices,
@@ -129,9 +128,12 @@ if __name__ == "__main__":
             precision_plugin=HPUFSDPPrecision("bf16-mixed"),
         )
 
-        trainer = Trainer(accelerator=HPUAccelerator(), strategy=_strategy, fast_dev_run=1, enable_model_summary=True)
+        trainer = Trainer(accelerator=HPUAccelerator(), devices=options.devices, strategy=_strategy, fast_dev_run=1,
+                    enable_model_summary=True)
         trainer.fit(model, train_dataloader)
         rank_zero_info(
             f"Peak Memory alloc using FSDP {options.strategy} strategy "
             f" on HPU: {htorch.hpu.max_memory_allocated() / (1024**3)} GB"
         )
+
+    htorch.hpu.reset_peak_memory_stats()
