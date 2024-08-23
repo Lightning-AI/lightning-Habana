@@ -184,6 +184,7 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * arg_hpus,
             cpu_offload=config,
@@ -204,6 +205,7 @@ def test_fsdp_simple_model(strategy, arg_hpus):
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * arg_hpus,
             sharding_strategy=strategy,
@@ -225,6 +227,7 @@ def test_fsdp_simple_model_activation_cp(strategy, arg_hpus):
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         num_sanity_val_steps=0,
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * arg_hpus,
@@ -246,6 +249,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
     trainer = Trainer(
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         num_sanity_val_steps=0,
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * arg_hpus,
@@ -261,6 +265,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
+@pytest.mark.standalone()
 def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if arg_hpus <= 1:
@@ -273,6 +278,7 @@ def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * arg_hpus,
             cpu_offload=config,
@@ -308,6 +314,7 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=HPUFSDPStrategy(
             parallel_devices=[torch.device("hpu")] * arg_hpus,
             cpu_offload=True,
@@ -376,6 +383,7 @@ def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, arg_hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=strategy,
         max_epochs=1,
         barebones=True,
@@ -548,6 +556,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=strategy,
         max_epochs=1,
     )
@@ -633,6 +642,7 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
+        devices=arg_hpus,
         strategy=strategy,
         max_epochs=1,
     )
