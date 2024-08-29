@@ -60,3 +60,4 @@ class HPUCheckpointIO(TorchCheckpointIO):
         checkpoint = move_data_to_device(checkpoint, torch.device("cpu"))
         # write the checkpoint dictionary to the provided path
         _atomic_save(checkpoint, path)
+        move_data_to_device(checkpoint, torch.device("hpu"))
