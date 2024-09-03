@@ -20,7 +20,7 @@ from unittest import mock
 import pytest
 import torch
 from lightning_habana.utils.hpu_distributed import supported_reduce_ops
-from lightning_habana.utils.resources import device_count
+from lightning_habana.utils.resources import device_count, get_device_name_from_hlsmi
 from lightning_utilities import module_available
 
 if module_available("lightning"):
@@ -70,6 +70,8 @@ def test_all_stages(tmpdir, arg_hpus):
 def test_device_name():
     assert "GAUDI" in HPUAccelerator.get_device_name()
 
+def test_device_name_from_utility():
+    assert "GAUDI" in get_device_name_from_hlsmi()
 
 def test_accelerator_selected():
     trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())

@@ -94,6 +94,41 @@ def get_hpu_synapse_version() -> str:
     return hl or "0.0.0"
 
 
+def _parse_for_device_name(line: str) -> str:
+    """Parse the CMD output with version capture.
+
+    Args:
+        line: output of `hl-smi -L`
+
+    Returns:
+        device name
+
+    >>> _parse_for_device_name("Zephyr 2.7.2-hl-gaudi2-1.17.2-fw-51.5.1-sec-9")
+    ('GAUDI2')
+    >>> _parse_for_device_name("any other input")
+    ('GAUDI')
+
+    """
+    name = "GAUDI"
+    try:
+        name = name+re.search(r"hl-gaudi([\d\-])", line).group(1)  # type: ignore[union-attr]
+    except AttributeError:
+        rank_zero_warn("Provided string does not include device name; check if HPU is available with `hl-smi -L`.")
+
+    return name.replace("-","")
+
+@lru_cache
+def get_device_name_from_hlsmi() -> str:
+    """Get hpu device name from hl-smi."""
+    try:
+        proc = subprocess.Popen(["hl-smi", "-L"], stdout=subprocess.PIPE)
+    # TODO: FileNotFoundError: No such file or directory: 'hl-smi'
+    except (FileNotFoundError, NotADirectoryError):
+        return "GAUDI"
+    out = proc.communicate()[0]
+    return _parse_for_device_name(out.decode("utf-8"))
+
+
 def get_device_stats(device: _DEVICE) -> Dict[str, Any]:
     """Return a map of the following metrics with their values.
 
