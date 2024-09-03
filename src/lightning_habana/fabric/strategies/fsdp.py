@@ -54,7 +54,6 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
