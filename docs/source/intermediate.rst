@@ -213,20 +213,20 @@ fp8 Inference
 
 Lightning supports fp8 inference using HPUPrecisionPlugin, :class:`~lightning_habana.pytorch.plugins.precision.HPUPrecisionPlugin`. fp8 inference is only available on Gaudi2 and above.
 
-`Habana Quantization Toolkit` (HQT) is required to run fp8 inference.
+`Intel Neural Compressor` (INC) is required to run fp8 inference.
 
 .. code-block:: bash
 
-    python -um pip install habana-quantization-toolkit
+    python -um pip install neural-compressor
 
 
 **Measurement and Quantization mechanisms**
 
 Inference in fp8 is a two step process.
 
-1. Measurement mode: This step injects PyTorch measurement hooks to the model. Model is run on a portion of the dataset, and these measurement hooks measure the data statistics (e.g. max abs) and outputs them into a file specified by the json.
+1. Measurement mode: This step injects PyTorch measurement hooks to the model. Model is run on a portion of the dataset, and these measurement hooks measure the data statistics (e.g. max abs) and outputs them at the filepath specified by json.
 
-2. Quantization mode: This is achieved by replacing modules with quantized modules implemented in HQT that quantize and dequantize the tensors. It includes multiple steps, viz:
+2. Quantization mode: This is achieved by replacing modules with quantized modules implemented in INC that quantize and dequantize the tensors. It includes multiple steps, viz:
 
    * Loading the measurements file.
    * Calculating the scale of each tensor from its measurement.
@@ -257,7 +257,7 @@ Get measurement data by running inference on a portion on data with `HPUPrecisio
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         plugins=plugin,
-        limit_test_batches=0.1,
+        limit_predict_batches=0.1,
     )
 
     # Run inference and dump measurements ⚡
@@ -280,10 +280,11 @@ Run inference with `HPUPrecisionPlugin.convert_modules(model, inference=True, qu
 
 **JSONs for quant and measure modes**
 
-HQT uses configuration jsons for selecting between quant and measurement modes. This can be toggled via `quant` param in `HPUPrecisionPlugin.convert_modules()`.
-User may also set `QUANT_CONFIG` environment variable pointing to the json to use during training.
+INC uses configuration jsons for selecting between quant and measurement modes.
+This can be toggled via `quant` param in `HPUPrecisionPlugin.convert_modules()`.
+`quant` also accepts user defined config dictionary or a json path.
 
-Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information.
+Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information on supported json configs.
 
 
 .. note::
@@ -291,12 +292,8 @@ Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/P
     To enable fp8 inference with HPUDeepSpeedStrategy, use HPUDeepSpeedPrecisionPlugin, instead of HPUPrecisionPlugin, while keeping all other steps the same.
 
 
-**Limitations**
-
-1. Measurement mode and Quantization mode cannot be run in single process. Please run in measurement mode first, followed by quantization mode. Measurement data may be re-used for inference in quantiztion mode for the given model.
-
 For more details, refer to `Inference Using FP8 <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html>`__.
-For a list of data types supported with HPU, refer to `PyTorch Support Matrix <https://docs.habana.ai/en/v1.15.1/PyTorch/Reference/PyTorch_Support_Matrix.html>`__.
+For a list of data types supported with HPU, refer to `PyTorch Support Matrix <https://docs.habana.ai/en/latest/PyTorch/Reference/PyTorch_Support_Matrix.html>`__.
 
 ----
 

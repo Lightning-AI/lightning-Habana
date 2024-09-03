@@ -39,15 +39,10 @@ DEFAULT_RUN_TYPE = [
     "MixedPrecisionPlugin",
     "recipe_caching",
     "fp8_training",
+    "fp8_inference",
 ]
 
-# For fp8 inference,
-# 1. First run `fp8_inference_measure` on a portion of data.
-# 2. Followed by actual inference using `fp8_inference_quantize`.
-# The two modes cannot be run in same process due to HQT limitation.
 OPTIONAL_RUN_TYPE = [
-    "fp8_inference_measure",
-    "fp8_inference_quantize",
     "multi_tenancy",
 ]
 
@@ -211,10 +206,12 @@ if __name__ == "__main__":
         if _run_type == "fp8_training":
             plugin.convert_modules(model, replace_layers=True, inference=False)
 
-        if _run_type == "fp8_inference_measure":
+        if _run_type == "fp8_inference":
+            # Run on a sample of dataset to obtain measurement data
             plugin.convert_modules(model, inference=True, quant=False)
+            run_training(_run_type, options, model, data_module, plugin)
 
-        if _run_type == "fp8_inference_quantize":
+            # Quantize the model for inference
             plugin.convert_modules(model, inference=True, quant=True)
 
         if options.verbose:

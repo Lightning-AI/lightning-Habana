@@ -20,10 +20,10 @@ import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
 
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_17_0
 from lightning_habana.utils.resources import (
     _HABANA_FRAMEWORK_AVAILABLE,
-    _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE,
+    _INTEL_NEURAL_COMPRESSOR_AVAILABLE,
     is_fp8_available,
     is_fp16_available,
     modify_fp8_json,
@@ -48,12 +48,12 @@ _AMP_DICT = {
     "16-mixed": torch.float16,
 }
 
-if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
-    if _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE:
+    if _INTEL_NEURAL_COMPRESSOR_AVAILABLE:
         # Required for inference in fp8 using habana quantization toolkit
         import habana_frameworks.torch.core as htcore
 
@@ -73,7 +73,6 @@ class HPUPrecisionPlugin(Precision):
         precision (_PRECISION_INPUT, optional): Precision input. Defaults to "32-true".
 
     Raises:
-        OSError: Unsupported Synapse version.
         ValueError: Invalid precision value(s).
         NotImplementedError: fp8 / fp16 not available.
 
@@ -95,7 +94,7 @@ class HPUPrecisionPlugin(Precision):
 
         self.recipe: Union[Mapping[str, Any], "DelayedScaling"] = None
         self.replace_layers = False
-        self.fp8_train_available = False
+        self.fp8_training_available = False
         self.fp8_inference_available = False
 
         if self.precision == "16-mixed":
@@ -107,63 +106,69 @@ class HPUPrecisionPlugin(Precision):
             fp8_available, reason_no_fp8 = is_fp8_available()
             if not fp8_available:
                 raise NotImplementedError(f"fp8 not supported: {reason_no_fp8}.")
-            self.fp8_train_available = fp8_available
-            self.fp8_inference_available = fp8_available and _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE
-
-            rank_zero_info(
-                f"fp8 training available: {self.fp8_train_available}."
-                f"fp8 inference available: {self.fp8_inference_available}."
+            self.fp8_training_available = fp8_available
+            self.fp8_inference_available = (
+                fp8_available and _INTEL_NEURAL_COMPRESSOR_AVAILABLE and _HPU_SYNAPSE_GREATER_EQUAL_1_17_0
             )
 
-    def _setup_fp8_quant_config(self, quant: bool = True, fp8_data_path: Optional[str] = None) -> None:
-        """Setup QUANT_CONFIG for before importing HQT."""
-        if os.environ.get("QUANT_CONFIG", None) is None:
-            # Use default jsons in case one is not provided via env variable
-            fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
-            assert fp8_data_path is not None
-            # Create a copy in fp8_dump_path to avoid modifying package jsons.
-            fp8_json = MAXABS_QUANT if quant else MAXABS_MEASURE
-            if fp8_data_path is not None:
-                modify_fp8_json(
-                    file_path=fp8_json,
-                    patch={
-                        "dump_stats_path": os.path.join(fp8_data_path, "hqt"),
-                    },
+            rank_zero_info(
+                f"fp8 training available: {self.fp8_training_available}"
+                f"fp8 inference available: {self.fp8_inference_available}."
+            )
+            if not _INTEL_NEURAL_COMPRESSOR_AVAILABLE or not _HPU_SYNAPSE_GREATER_EQUAL_1_17_0:
+                rank_zero_info(
+                    "FP8 inference not available."
+                    f"Synapse version found: {_HPU_SYNAPSE_GREATER_EQUAL_1_17_0}. Should be >= 1.17.09."
+                    f"Intel Neural Compressor available: {_INTEL_NEURAL_COMPRESSOR_AVAILABLE}. Should be True."
                 )
-            os.environ["QUANT_CONFIG"] = fp8_json
+
+    def _setup_fp8_inference_config(
+        self, quant: Optional[Union[bool, str, dict]] = True, fp8_data_path: Optional[str] = None
+    ) -> Any:
+        """Setup fp8 inference config."""
+        from neural_compressor.torch.quantization import FP8Config
+
+        fp8_config = MAXABS_QUANT if quant is True else MAXABS_MEASURE if quant is False else quant
+        fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
+
+        if isinstance(fp8_config, str):
+            if os.path.isfile(fp8_config):
+                modify_fp8_json(
+                    file_path=fp8_config,
+                    patch={"dump_stats_path": os.path.join(fp8_data_path, "inc_output", "measure")},
+                )
+                return FP8Config.from_json_file(fp8_config)
+            raise FileNotFoundError
+
+        if isinstance(fp8_config, dict):
+            fp8_config["dump_stats_path"] = os.path.join(fp8_data_path, "inc_output", "measure")
+            return FP8Config.from_dict(fp8_config)
+
+        raise TypeError(f"`quant` must be either a bool, file path or a dictionary. Got {type(quant)}")
 
     def _enable_fp8_inference(
-        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+        self,
+        module: torch.nn.Module,
+        quant: Optional[Union[bool, str, dict]] = True,
+        fp8_data_path: Optional[str] = None,
     ) -> None:
         """Convert module for fp8 inference.
 
         This module cannot be used to run trainer.fit.
 
         """
-        htcore.quantization.hpu_set_inference_env()
-        module = module.to("hpu")
+        htcore.hpu_set_env()
         self._setup_fp8_inference_modules(module, quant, fp8_data_path)
 
     def _setup_fp8_inference_modules(
         self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
     ) -> None:
         """Convert module for fp8 inference."""
-        try:
-            self._setup_fp8_quant_config(quant, fp8_data_path)
-            import habana_quantization_toolkit
+        from neural_compressor.torch.quantization import FP8Config, convert, prepare
 
-            habana_quantization_toolkit.prep_model(module)
-            htcore.quantization.hpu_inference_initialize(module)
-        except FileNotFoundError as e:
-            print(
-                "Please run the fp8 measurement using a portion of data and try again. "
-                "Use HPUPrecisionPlugin.convert_modules(module, inference=True, quant=False) "
-                "and run trainer.fit() to dump measurement data."
-            )
-            raise e
-        except ModuleNotFoundError as e:
-            print("quantization_toolkit not found. Please install it using `pip install habana_quantization_toolkit`.")
-            raise e
+        config: FP8Config = self._setup_fp8_inference_config(quant, fp8_data_path)
+        module = prepare(module, config) if config.measure else convert(module, config)
+        htcore.hpu_initialize(module, mark_only_scales_as_const=True)
 
     def _enable_fp8_training(
         self,
@@ -191,7 +196,7 @@ class HPUPrecisionPlugin(Precision):
         inference: bool = False,
         replace_layers: bool = False,
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
-        quant: bool = True,
+        quant: Optional[Union[bool, str, dict]] = True,
         fp8_data_path: Optional[str] = None,
     ) -> torch.nn.Module:
         """Convert modules for fp8 precision.
@@ -201,9 +206,10 @@ class HPUPrecisionPlugin(Precision):
             inference (bool, optional): prepare modules for inference (True) / training (False). Defaults to False.
             replace_layers (bool, optional): Replace layers with transformer engine equivalent layers for fp8 training.
                 Defaults to False.
-            recipe (Optional[Union[Mapping[str, Any], &quot;DelayedScaling&quot;]], optional): Recipe for fp8 training.
+            recipe (Optional[Union[Mapping[str, Any], DelayedScaling]], optional): Recipe for fp8 training.
                 Defaults to None.
-            quant (bool, optional): Run fp8 inference in measurement (False) or Quant (True) mode. Defaults to True.
+            quant (bool, str, dict, optional): Run fp8 inference in measurement (False) or Quant (True) mode.
+                Can be used to pass a user defined dictionary or fp8 config json. Defaults to True.
             fp8_data_path (Optional[str], optional): path to dump fp8 inference data in measurement mode.
                 Defaults to None.
 
@@ -213,20 +219,22 @@ class HPUPrecisionPlugin(Precision):
         """
         assert self.precision == "fp8", "HPUPrecisionPlugin.convert_modules() should only be used with precision=`fp8`."
         if inference:
+            if not _HPU_SYNAPSE_GREATER_EQUAL_1_17_0:
+                raise OSError("FP8 inference on HPU requires SynapsesAI >= 1.17.0")
+            if not _INTEL_NEURAL_COMPRESSOR_AVAILABLE:
+                raise ModuleNotFoundError(
+                    "Intel neural compressor not found. " "Install it using `pip install neural-compressor`"
+                )
             if self.fp8_inference_available:
                 self._enable_fp8_inference(module, quant, fp8_data_path)
-            else:
-                raise ModuleNotFoundError(
-                    "habana_quantization_toolkit not found. "
-                    "Install it using `pip install habana_quantization_toolkit`"
-                )
-        if not inference and self.fp8_train_available:
+
+        if not inference and self.fp8_training_available:
             self._enable_fp8_training(module, replace_layers, recipe)
         return module
 
     def autocast_context_manager(self) -> Union[ContextManager[Any], torch.autocast]:
         """Return Autocast context manager."""
-        if self.fp8_train_available:
+        if self.fp8_training_available:
             return tengine.fp8_autocast(enabled=True, fp8_recipe=self.recipe)
         return torch.autocast(device_type="hpu", dtype=_AMP_DICT[self.precision], enabled=True)
 
