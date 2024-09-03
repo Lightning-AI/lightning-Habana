@@ -736,9 +736,7 @@ def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, device_count):
         torch.float,
         pytest.param(
             torch.float16,
-            marks=pytest.mark.skipif(
-                get_device_name_from_hlsmi() == "GAUDI", reason="FP16 is not supported by Gaudi1"
-            ),
+            marks=pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="FP16 is not supported by Gaudi1"),
         ),
     ],
 )
@@ -771,9 +769,7 @@ def test_lightning_deepspeed_inference_params(device_count, dtype):
         torch.float,
         pytest.param(
             torch.float16,
-            marks=pytest.mark.skipif(
-                get_device_name_from_hlsmi() == "GAUDI", reason="FP16 is not supported by Gaudi1"
-            ),
+            marks=pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="FP16 is not supported by Gaudi1"),
         ),
     ],
 )
