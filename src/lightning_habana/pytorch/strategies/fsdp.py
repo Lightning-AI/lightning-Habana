@@ -105,9 +105,9 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
         if parallel_devices is None:
-            parallel_devices = [torch.device("hpu", 0)] * HPUAccelerator.auto_device_count()
+            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
         elif torch.device("hpu") in parallel_devices:
-            parallel_devices = [torch.device("hpu", 0)] * len(parallel_devices)
+            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
 
         super().__init__(
             accelerator=accelerator,
