@@ -20,7 +20,7 @@ import torch
 from lightning_utilities import module_available
 from typing_extensions import get_args
 
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_11_0, _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import (
     _HABANA_FRAMEWORK_AVAILABLE,
     _HABANA_QUANTIZATION_TOOLKIT_AVAILABLE,
@@ -84,8 +84,6 @@ class HPUPrecisionPlugin(Precision):
         precision: _PRECISION_INPUT = "32-true",
         device: str = "hpu",
     ) -> None:
-        if not _HPU_SYNAPSE_GREATER_EQUAL_1_11_0:
-            raise OSError("HPU precision plugin requires `Synapse AI release >= 1.11.0`.")
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(

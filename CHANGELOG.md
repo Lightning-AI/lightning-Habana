@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
--
+- Added utility to get device name from hl-smi ([#232](https://github.com/Lightning-AI/lightning-Habana/pull/232))
 
 ### Changed
 

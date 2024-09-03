@@ -37,6 +37,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
+from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 if not _LIGHTNING_GREATER_EQUAL_2_3_0:
     pytestmark = pytest.mark.skip(reason="The tests require lightning version 2.3.0 or above")
@@ -328,7 +329,7 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
 
 @pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
 @pytest.mark.standalone()
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="The tests requires Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
     """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
     if state_dict_type == "sharded":
@@ -365,7 +366,7 @@ def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
 
 @pytest.mark.standalone()
 @pytest.mark.parametrize("wrap_min_params", [1024])
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="The tests requires Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, arg_hpus):
     """Test to ensure that the full state dict is extracted when using FSDP strategy.
 
@@ -535,7 +536,7 @@ def test_fsdp_precision_config(precision, expected):
 
 @pytest.mark.parametrize("wrap_min_params", [1024])
 @pytest.mark.standalone()
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="The tests requires Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     """Test to ensure that the full state dict and optimizer states is saved when using FSDP strategy.
 
@@ -603,7 +604,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
 
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
 @pytest.mark.standalone()
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="The tests requires Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
 
