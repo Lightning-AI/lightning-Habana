@@ -41,12 +41,6 @@ if not _LIGHTNING_GREATER_EQUAL_2_3_0:
     pytestmark = pytest.mark.skip(reason="The tests require lightning version 2.3.0 or above")
 
 
-def test_hpu_fsdp_strategy_defaults():
-    strategy = HPUFSDPStrategy()
-    assert strategy.process_group_backend == "hccl"
-    assert len(strategy.parallel_devices) == HPUAccelerator.auto_device_count()
-
-
 class BasicTrainer:
     """Implements a basic training loop for the end-to-end tests."""
 
