@@ -121,6 +121,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             state_dict_type=state_dict_type,
             **kwargs,
         )
+        self._parallel_devices = parallel_devices
 
     def setup_environment(self) -> None:
         if self._process_group_backend == "hccl":
@@ -195,12 +196,12 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         return module
 
     def setup(self, trainer: "pl.Trainer") -> None:
-        if self.parallel_devices is None:
-            self.parallel_devices = [
+        if self._parallel_devices is None:
+            self._parallel_devices = [
                 torch.device("hpu", torch.hpu.current_device())
             ] * HPUAccelerator.auto_device_count()
-        elif torch.device("hpu") in self.parallel_devices:
-            self.parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(self.parallel_devices)
+        elif torch.device("hpu") in self._parallel_devices:
+            self._parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(self._parallel_devices)
         self.model_to_device()
         super().setup(trainer)
 
