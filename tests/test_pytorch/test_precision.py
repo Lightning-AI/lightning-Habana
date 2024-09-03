@@ -38,6 +38,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
+from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 supported_precision = get_args(_PRECISION_INPUT)
 
@@ -187,7 +188,7 @@ def test_autocast_operators_override(tmpdir):
     run_training(tmpdir, BMAutocastOverride(), None)
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_synapse_version(monkeypatch):
     """Test fp8 with unsupported Synapse AI version < 1.14.0."""
     import lightning_habana.utils.imports
@@ -197,7 +198,7 @@ def test_hpu_precision_fp8_synapse_version(monkeypatch):
         HPUPrecisionPlugin(precision="fp8")
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize("replace_layers", [True, False])
 def test_hpu_precision_replace_layerse(replace_layers):
     """Tests plugin init with replcae_layers."""
@@ -207,7 +208,7 @@ def test_hpu_precision_replace_layerse(replace_layers):
     assert isinstance(model.layer, tengine.Linear) == replace_layers
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize(
     ("params", "expectation"),
     [
@@ -233,7 +234,7 @@ def test_hpu_precision_convert_modules(params, expectation, tmpdir):
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize("patch_path", ["tmpdir", None])
 def test_hpu_precision_fp8_patch(patch_path, tmpdir):
     """Tests fp8 jsons are patched correctly."""
@@ -255,7 +256,7 @@ def test_hpu_precision_fp8_patch(patch_path, tmpdir):
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_inference_measurement(tmpdir):
     """Tests inference measruement dumps with fp8_inference."""
 
@@ -301,7 +302,7 @@ def test_hpu_precision_fp8_inference_measurement(tmpdir):
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_inference_quantization(tmpdir):
     """Tests fp8_inference."""
     test_loss = []
@@ -329,7 +330,7 @@ def test_hpu_precision_fp8_inference_quantization(tmpdir):
 
 
 @pytest.mark.standalone_only()
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, arg_hpus):
     """Negative test for fp8 inference not supported with HPUDDPStrategy."""
     model = BoringModel()
@@ -349,7 +350,7 @@ def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, arg_hpus):
         trainer.test(model, dm)
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_output(tmpdir):
     """Test HPUPrecisionPlugin with module containing both bf16 and fp8 operations."""
 
@@ -366,7 +367,7 @@ def test_hpu_precision_fp8_output(tmpdir):
     run_training(tmpdir, model, plugin)
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() != "GAUDI", reason="Negative test for fp8 on Gaudi")
+@pytest.mark.skipif(get_device_name_from_hlsmi() != "GAUDI", reason="Negative test for fp8 on Gaudi")
 @pytest.mark.parametrize(
     ("precision", "expectation"),
     [
@@ -421,14 +422,14 @@ def test_hpu_precision_not_supported_on_gaudi(precision, expectation):
             HPUPrecisionPlugin,
             {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
             HPUPrecisionPlugin,
             {"precision": "fp8"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
         ),
     ],
@@ -473,13 +474,13 @@ def test_precision_plugin_invalid_precision_init():
         pytest.param(
             "16-mixed",
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
             "fp8",
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
         ),
     ],
@@ -505,14 +506,14 @@ def test_hpu_precision_supported_precision(precision):
             HPUPrecisionPlugin,
             {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
             HPUPrecisionPlugin,
             {"precision": "fp8"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
         ),
     ],
@@ -547,7 +548,7 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
             HPUPrecisionPlugin,
             {"precision": "16-mixed"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp16 supported on Gaudi2 and above."
             ),
         ),
         pytest.param(
@@ -555,7 +556,7 @@ def test_precision_plugin_fit(tmpdir, plugin, params):
             HPUPrecisionPlugin,
             {"precision": "fp8"},
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above."
             ),
         ),
     ],
@@ -586,7 +587,7 @@ def test_mixed_precision_compare_accuracy(tmpdir):
         (BaseBM, MixedPrecision, {"device": "hpu", "precision": "bf16-mixed"}),
         (BaseBM, HPUPrecisionPlugin, {"precision": "bf16-mixed"}),
     ]
-    if HPUAccelerator().get_device_name() != "GAUDI":
+    if get_device_name_from_hlsmi() != "GAUDI":
         model_plugin_list.append(
             (BaseBM, HPUPrecisionPlugin, {"precision": "16-mixed"}),
         )
@@ -602,7 +603,7 @@ def test_mixed_precision_compare_accuracy(tmpdir):
     assert all(torch.allclose(loss_list[0], loss_tensor, rtol=1e-2, atol=1e-2) for loss_tensor in loss_list[1:])
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_plugin_fp8_training_accuracy(tmpdir):
     """Test compare training accuracy between fp32 and fp8 precision."""
 
@@ -629,7 +630,7 @@ def test_hpu_precision_plugin_fp8_training_accuracy(tmpdir):
     assert torch.allclose(torch.tensor(loss_list[0][1]), torch.tensor(loss_list[1][1]), rtol=1e-2, atol=1e-2)
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize("precision", ["32-true", "fp8"])
 def test_hpu_precision_active_with_te_module(tmpdir, precision):
     """Tests that fp8 precision is only active when HPUPrecision plugin is init with fp8, even if module from.
@@ -678,7 +679,7 @@ def test_hpu_precision_active_with_te_module(tmpdir, precision):
     trainer.fit(model)
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="Native int64 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="Native int64 supported on Gaudi2 and above.")
 @pytest.mark.standalone_only()
 @pytest.mark.parametrize(
     ("int64_support", "expectation"),
@@ -705,19 +706,19 @@ def test_hpu_precision_long_type(int64_support, expectation):
         pytest.param(
             torch.float8_e5m2,
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
             ),
         ),
         pytest.param(
             torch.float8_e4m3fn,
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
             ),
         ),
         pytest.param(
             torch.float16,
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
             ),
         ),
         torch.float32,
@@ -856,7 +857,7 @@ def test_hpu_precision_plugin_grads_dtype(tmpdir):
             assert grad_cpu.dtype == grad_hpu.dtype
 
 
-@pytest.mark.skipif(HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_plugin_grads_dtype_fp8(tmpdir):
     """Test dtype of gradients when using fp8 training."""
 

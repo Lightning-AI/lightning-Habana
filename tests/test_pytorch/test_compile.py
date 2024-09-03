@@ -35,6 +35,7 @@ from lightning_habana import HPUProfiler
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
+from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 
 @pytest.fixture()
@@ -260,7 +261,7 @@ def test_hpu_profiler_with_compile(tmpdir, record_module_names, expectation):
             "fit",
             None,
             marks=pytest.mark.skipif(
-                HPUAccelerator.get_device_name() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
+                get_device_name_from_hlsmi() == "GAUDI", reason="fp16 supported on Gaudi2 and above"
             ),
         ),
         pytest.param(
@@ -271,7 +272,7 @@ def test_hpu_profiler_with_compile(tmpdir, record_module_names, expectation):
             },
             marks=[
                 pytest.mark.skipif(
-                    HPUAccelerator.get_device_name() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
+                    get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above"
                 ),
                 pytest.mark.xfail(reason="TBD: Fix included in release 1.17.0", strict=False),
             ],
