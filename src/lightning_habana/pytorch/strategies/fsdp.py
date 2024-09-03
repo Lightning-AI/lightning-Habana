@@ -182,11 +182,11 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
 
     def setup(self, trainer: "pl.Trainer") -> None:
         if self.parallel_devices is None:
-            self.parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * \
-                HPUAccelerator.auto_device_count()
+            self.parallel_devices = [
+                torch.device("hpu", torch.hpu.current_device())
+            ] * HPUAccelerator.auto_device_count()
         elif torch.device("hpu") in self.parallel_devices:
-            self.parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * \
-                len(self.parallel_devices)
+            self.parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(self.parallel_devices)
         self.model_to_device()
         super().setup(trainer)
 
