@@ -70,8 +70,10 @@ def test_all_stages(tmpdir, arg_hpus):
 def test_device_name():
     assert "GAUDI" in HPUAccelerator.get_device_name()
 
+
 def test_device_name_from_utility():
     assert "GAUDI" in get_device_name_from_hlsmi()
+
 
 def test_accelerator_selected():
     trainer = Trainer(accelerator=HPUAccelerator(), strategy=SingleHPUStrategy())

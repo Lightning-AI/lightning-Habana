@@ -111,11 +111,12 @@ def _parse_for_device_name(line: str) -> str:
     """
     name = "GAUDI"
     try:
-        name = name+re.search(r"hl-gaudi([\d\-])", line).group(1)  # type: ignore[union-attr]
+        name = name + re.search(r"hl-gaudi([\d\-])", line).group(1)  # type: ignore[union-attr]
     except AttributeError:
         rank_zero_warn("Provided string does not include device name; check if HPU is available with `hl-smi -L`.")
 
-    return name.replace("-","")
+    return name.replace("-", "")
+
 
 @lru_cache
 def get_device_name_from_hlsmi() -> str:
