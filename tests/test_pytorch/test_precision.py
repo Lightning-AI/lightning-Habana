@@ -390,15 +390,6 @@ def test_hpu_precision_not_supported_on_gaudi(precision, expectation):
         HPUPrecisionPlugin(precision=precision)
 
 
-def test_hpu_precision_synapse_version(monkeypatch):
-    """Test precision plugin init with unsupported Synapse AI version."""
-    import lightning_habana.pytorch.plugins.precision
-
-    monkeypatch.setattr(lightning_habana.pytorch.plugins.precision, "_HPU_SYNAPSE_GREATER_EQUAL_1_11_0", False)
-    with pytest.raises(OSError, match="HPU precision plugin requires `Synapse AI release >= 1.11.0`."):
-        HPUPrecisionPlugin(precision="bf16-mixed")
-
-
 @pytest.mark.parametrize(
     ("plugin", "params"),
     [
