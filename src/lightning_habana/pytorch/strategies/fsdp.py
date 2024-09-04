@@ -206,7 +206,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         ):
             yield
 
-
     def reduce(
         self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
     ) -> torch.Tensor:

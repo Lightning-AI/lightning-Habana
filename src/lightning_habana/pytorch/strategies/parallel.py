@@ -20,7 +20,6 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch import LightningModule
     from lightning.pytorch.accelerators import Accelerator
@@ -31,7 +30,6 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning import LightningModule
     from pytorch_lightning.accelerators import Accelerator
@@ -48,7 +46,7 @@ from torch.optim.optimizer import Optimizer
 
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_2_3_0
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore

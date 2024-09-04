@@ -169,4 +169,3 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
             cls,
             description=f"{cls.__class__.__name__}",
         )
-
