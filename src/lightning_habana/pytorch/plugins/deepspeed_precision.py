@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from typing import Any, Callable, Mapping, Optional, Union
 
 import torch
@@ -139,14 +138,11 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
 
     def _enable_fp8_inference(
         self,
-        quant: bool = True,
+        module: torch.nn.Module,
+        quant: Optional[Union[bool, str, dict]] = True,
         fp8_data_path: Optional[str] = None,
     ) -> None:
-        """Convert modules for fp8 inference.
-
-        This module cannot be used with trainer.fit.
-
-        """
+        """Enable fp8 inference."""
         htcore.hpu_set_env()
         self.quant = quant
         self.fp8_data_path = fp8_data_path
@@ -162,7 +158,7 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
     ) -> torch.nn.Module:
         """Enable support for fp8."""
         if inference and self.fp8_inference_available:
-            self._enable_fp8_inference(quant, fp8_data_path)
+            self._enable_fp8_inference(module=module, quant=quant, fp8_data_path=fp8_data_path)
         if not inference and self.fp8_training_available:
-            self._enable_fp8_training(module, replace_layers, recipe)
+            self._enable_fp8_training(module=module, replace_layers=replace_layers, recipe=recipe)
         return module

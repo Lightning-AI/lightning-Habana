@@ -130,6 +130,7 @@ class HPUPrecisionPlugin(Precision):
 
         fp8_config = MAXABS_QUANT if quant is True else MAXABS_MEASURE if quant is False else quant
         fp8_data_path = fp8_data_path if fp8_data_path is not None else os.environ.get("HABANA_LOGS")
+        assert fp8_data_path is not None
 
         if isinstance(fp8_config, str):
             if os.path.isfile(fp8_config):
@@ -161,7 +162,10 @@ class HPUPrecisionPlugin(Precision):
         self._setup_fp8_inference_modules(module, quant, fp8_data_path)
 
     def _setup_fp8_inference_modules(
-        self, module: torch.nn.Module, quant: bool = True, fp8_data_path: Optional[str] = None
+        self,
+        module: torch.nn.Module,
+        quant: Optional[Union[bool, str, dict]] = True,
+        fp8_data_path: Optional[str] = None,
     ) -> None:
         """Convert module for fp8 inference."""
         from neural_compressor.torch.quantization import FP8Config, convert, prepare
