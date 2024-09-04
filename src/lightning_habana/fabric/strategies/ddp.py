@@ -106,14 +106,6 @@ class HPUDDPStrategy(DDPStrategy):
     def determine_ddp_device_ids(self) -> None:
         return None
 
-    # def broadcast(self, obj: object, src: int = 0) -> object:  # type: ignore
-    #     obj = [obj]
-    #     if self.global_rank != src:
-    #         obj = [None]
-
-    #     broadcast_object_list(obj, src, group=_group.WORLD)
-    #     return obj[0]
-
     def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
         super().backward(tensor, module=module, args=args, kwargs=kwargs)
         if _TORCH_LESSER_EQUAL_1_13_1:

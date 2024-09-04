@@ -20,7 +20,6 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch import LightningModule, Trainer
     from lightning.pytorch.accelerators import Accelerator
@@ -31,7 +30,6 @@ if module_available("lightning"):
     from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
-    from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning import LightningModule, Trainer
     from pytorch_lightning.accelerators import Accelerator
@@ -49,7 +47,7 @@ from torch.optim.optimizer import Optimizer
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_2_3_0
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
@@ -124,17 +122,6 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
     def determine_ddp_device_ids(self) -> None:
         return None
 
-    def broadcast(self, obj: object, src: int = 0) -> object:
-        if not torch.distributed.is_available():
-            return obj
-
-        obj = [obj]
-        if self.global_rank != src:
-            obj = [None]
-
-        _hpu_broadcast_object_list(obj, src, group=_group.WORLD)
-        return obj[0]
-
     def on_after_backward(self) -> None:
         # Break lazy accumulation of graph after fwd+bwd
         htcore.mark_step()
@@ -183,87 +170,3 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
             description=f"{cls.__class__.__name__}",
         )
 
-
-# The code underneath is taken from PyTorch `torch/distributed/distributed_c10d.py`
-# the distributed backend and tensor type updates for habana backend is done here before broadcast
-def _hpu_broadcast_object_list(object_list, src=0, group=None, device=None):  # type: ignore
-    from torch.distributed import Backend, _rank_not_in_group, broadcast, get_backend, get_rank
-    from torch.distributed.distributed_c10d import _object_to_tensor, _tensor_to_object
-
-    if _rank_not_in_group(group):
-        return
-
-    my_rank = get_rank()
-    # Serialize object_list elements to tensors on src rank.
-    if my_rank == src:
-        tensor_list = []
-        size_list = []
-        if _TORCH_LESSER_2_3_0:
-            tensor_list, size_list = zip(*[_object_to_tensor(obj, device) for obj in object_list])
-        else:
-            tensor_list, size_list = zip(*[_object_to_tensor(obj, device, group) for obj in object_list])
-        object_sizes_tensor = torch.cat(size_list)
-    else:
-        object_sizes_tensor = torch.empty(len(object_list), dtype=torch.long)
-
-    # Current device selection.
-    # To preserve backwards compatibility, ``device`` is default to ``None``
-    # in which case we run current logic of device selection, i.e.
-    # ``current_device`` is CUDA if backend is NCCL otherwise CPU device. In the
-    # case it is not ``None`` we move the size and object tensors to be
-    # broadcasted to this device.
-    group_backend = get_backend(group)
-    is_nccl_backend = group_backend == Backend.NCCL
-    is_hpu_backend = group_backend == "hccl"
-    if device is not None:
-        if is_nccl_backend and device.type != "cuda":
-            raise ValueError("device type must be cuda for nccl backend")
-        current_device = device
-    else:
-        current_device = torch.device("cpu")
-        if is_nccl_backend:
-            # See note about using torch.cuda.current_device() here in
-            # docstring. We cannot simply use my_rank since rank == device is
-            # not necessarily true.
-            current_device = torch.device("cuda", torch.cuda.current_device())
-    if is_nccl_backend:
-        object_sizes_tensor = object_sizes_tensor.to(current_device)
-
-    elif is_hpu_backend:
-        current_device = torch.device("hpu")
-        # Workaround: HPU doesn't not support long tensors for collectives
-        if (object_sizes_tensor.type() == "torch.LongTensor") or (object_sizes_tensor.type() == "torch.hpu.LongTensor"):
-            object_sizes_tensor = object_sizes_tensor.int()
-        else:
-            print("unhandled hpu object_sizes_tensor type :: ", object_sizes_tensor.type())
-        object_sizes_tensor = object_sizes_tensor.to(current_device)
-
-    # Broadcast object sizes
-    broadcast(object_sizes_tensor, src=src, group=group)
-
-    # Concatenate and broadcast serialized object tensors
-    if my_rank == src:
-        object_tensor = torch.cat(tensor_list)
-    else:
-        object_tensor = torch.empty(
-            torch.sum(object_sizes_tensor).int().item(),
-            dtype=torch.uint8,
-        )
-
-    if is_nccl_backend or is_hpu_backend:
-        object_tensor = object_tensor.to(current_device)
-
-    broadcast(object_tensor, src=src, group=group)
-    # Deserialize objects using their stored sizes.
-    offset = 0
-    if my_rank != src:
-        for i, obj_size in enumerate(object_sizes_tensor):
-            obj_view = object_tensor[offset : offset + obj_size]
-            obj_view = obj_view.type(torch.uint8)
-            if obj_view.device != torch.device("cpu"):
-                obj_view = obj_view.cpu()
-            offset += obj_size
-            if _TORCH_LESSER_2_3_0:
-                object_list[i] = _tensor_to_object(obj_view, obj_size)
-            else:
-                object_list[i] = _tensor_to_object(obj_view, obj_size, group)

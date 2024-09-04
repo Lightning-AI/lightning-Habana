@@ -30,7 +30,6 @@ if module_available("lightning"):
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.precision import Precision
@@ -45,7 +44,6 @@ elif module_available("pytorch_lightning"):
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.precision import Precision
@@ -57,7 +55,7 @@ else:
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
@@ -208,17 +206,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         ):
             yield
 
-    @override
-    def broadcast(self, obj: object, src: int = 0) -> object:
-        if not torch.distributed.is_available():
-            return obj
-
-        obj = [obj]
-        if self.global_rank != src:
-            obj = [None]
-
-        _hpu_broadcast_object_list(obj, src, group=_group.WORLD)
-        return obj[0]
 
     def reduce(
         self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
