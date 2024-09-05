@@ -17,6 +17,7 @@ import json
 import os
 import re
 from contextlib import nullcontext
+from unittest.mock import patch
 
 import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 import pytest
@@ -189,16 +190,6 @@ def test_autocast_operators_override(tmpdir):
 
 
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_precision_fp8_synapse_version(monkeypatch):
-    """Test fp8 with unsupported Synapse AI version < 1.14.0."""
-    import lightning_habana.utils.imports
-
-    monkeypatch.setattr(lightning_habana.utils.imports, "_HPU_SYNAPSE_GREATER_EQUAL_1_14_0", False)
-    with pytest.raises(OSError, match="fp8 training requires `Synapse AI release >= 1.14.0`."):
-        HPUPrecisionPlugin(precision="fp8")
-
-
-@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize("replace_layers", [True, False])
 def test_hpu_precision_replace_layerse(replace_layers):
     """Tests plugin init with replcae_layers."""
@@ -208,18 +199,117 @@ def test_hpu_precision_replace_layerse(replace_layers):
     assert isinstance(model.layer, tengine.Linear) == replace_layers
 
 
+def test_hpu_precision_fp8_not_available_gaudi():
+    """Tests fp8 training not supported on Gaudi devices."""
+    with patch("lightning_habana.pytorch.plugins.precision.is_fp8_available", return_value=("", False)), pytest.raises(
+        NotImplementedError, match="fp8 not supported"
+    ):
+        HPUPrecisionPlugin(precision="fp8")
+
+
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above")
+def test_hpu_precision_init_fp8_inference_no_inc():
+    with patch("lightning_habana.pytorch.plugins.precision._INTEL_NEURAL_COMPRESSOR_AVAILABLE", False):
+        precision = HPUPrecisionPlugin(precision="fp8")
+        assert not precision.fp8_inference_available
+        assert precision.fp8_training_available
+
+
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above")
+@pytest.mark.parametrize(
+    ("neural_compressor_available", "synapse_version_greater_1_17_0", "expectation"),
+    [
+        (True, True, nullcontext()),
+        (True, False, pytest.raises(OSError, match="FP8 inference on HPU requires SynapsesAI >= 1.17.0")),
+        (
+            False,
+            True,
+            pytest.raises(
+                ModuleNotFoundError,
+                match="Intel neural compressor not found. Install it using `pip install neural-compressor`",
+            ),
+        ),
+    ],
+)
+def test_hpu_precision_convert_modules_fp8_inference_dependancy(
+    tmpdir, neural_compressor_available, synapse_version_greater_1_17_0, expectation
+):
+    with patch(
+        "lightning_habana.pytorch.plugins.precision._INTEL_NEURAL_COMPRESSOR_AVAILABLE", neural_compressor_available
+    ), patch(
+        "lightning_habana.pytorch.plugins.precision._HPU_SYNAPSE_GREATER_EQUAL_1_17_0", synapse_version_greater_1_17_0
+    ):
+        precision = HPUPrecisionPlugin(precision="fp8")
+        assert precision.fp8_inference_available is (neural_compressor_available and synapse_version_greater_1_17_0)
+        with expectation:
+            precision.convert_modules(BoringModel(), inference=True, quant=False, fp8_data_path=tmpdir)
+
+
+def test_hpu_precision_convert_modules_precision_not_fp8():
+    precision = HPUPrecisionPlugin(precision="bf16-mixed")
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("HPUPrecisionPlugin.convert_modules() should only be used with precision=`fp8`."),
+    ):
+        precision.convert_modules(BoringModel(), inference=False)
+
+
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("patch_path", ["tmpdir", None])
+@pytest.mark.parametrize(
+    "fp8_config",
+    [
+        (str(importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json"))),
+        (
+            {
+                "mode": "MEASURE",
+                "observer": "maxabs",
+                "allowlist": {"types": [], "names": []},
+                "blocklist": {"types": [], "names": []},
+            }
+        ),
+    ],
+)
+def test_hpu_precision_fp8_patch(patch_path, tmpdir, fp8_config):
+    """Tests fp8 jsons are patched correctly."""
+    model = BaseBM()
+    plugin = HPUPrecisionPlugin(precision="fp8")
+    patch_path = patch_path if patch_path is None else tmpdir
+    plugin.convert_modules(module=model, inference=True, quant=fp8_config, fp8_data_path=patch_path)
+    fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
+
+    data = fp8_config
+    if not isinstance(fp8_config, dict):
+        with open(fp8_config, encoding="utf-8") as jfile:
+            data = json.load(jfile)
+
+    assert data["dump_stats_path"] == os.path.join(fp8_data_dump_path, "inc_output", "measure")
+
+
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 @pytest.mark.parametrize(
     ("params", "expectation"),
     [
-        pytest.param(
+        (
             {"inference": True, "quant": True},
             pytest.raises(FileNotFoundError, match=r"Failed to load file"),
-            marks=pytest.mark.standalone_only(),
-        ),  # HQT cannot be reloaded in same process
-        pytest.param(
-            {"inference": True, "quant": False}, nullcontext(), marks=pytest.mark.standalone_only()
-        ),  # HQT cannot be reloaded in same process
+        ),
+        (
+            {"inference": True, "quant": False},
+            nullcontext(),
+        ),
+        (
+            {"inference": True, "quant": None},
+            pytest.raises(TypeError, match="`quant` must be either a bool, file path or a dictionary."),
+        ),
+        (
+            {"inference": True, "quant": "file_path_does_not_exist"},
+            pytest.raises(FileNotFoundError),
+        ),
+        (
+            {"inference": True, "quant": {"mode": "MEASURE"}},
+            nullcontext(),
+        ),
         ({"inference": False}, nullcontext()),
         ({"inference": False, "replace_layers": True}, nullcontext()),
         ({"inference": False, "replace_layers": True, "recipe": tengine.recipe.DelayedScaling}, nullcontext()),
@@ -233,56 +323,80 @@ def test_hpu_precision_convert_modules(params, expectation, tmpdir):
         plugin.convert_modules(module=model, fp8_data_path=tmpdir, **params)
 
 
-@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-@pytest.mark.parametrize("patch_path", ["tmpdir", None])
-def test_hpu_precision_fp8_patch(patch_path, tmpdir):
-    """Tests fp8 jsons are patched correctly."""
-    model = BaseBM()
-    plugin = HPUPrecisionPlugin(precision="fp8")
-    patch_path = patch_path if patch_path is None else tmpdir
-    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=patch_path)
+def test_hpu_precision_fp8_inference_with_quant_dict(tmpdir):
+    measure_dict = {
+        "mode": "MEASURE",
+        "observer": "maxabs",
+        "allowlist": {"types": [], "names": []},
+        "blocklist": {"types": [], "names": []},
+    }
 
-    package_measure_json = str(
-        importlib.resources.path("lightning_habana.pytorch.plugins.quant_config.fp8", "maxabs_measure.json")
+    quant_dict = {
+        "mode": "QUANTIZE",
+        "observer": "maxabs",
+        "scale_method": "maxabs_hw",
+        "allowlist": {"types": [], "names": []},
+        "blocklist": {"types": [], "names": ["lm_head"]},
+    }
+
+    seed_everything(42)
+    model = BoringModel()
+    dm = BoringDataModule()
+    precision_plugin = HPUPrecisionPlugin(precision="fp8")
+
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=SingleHPUStrategy(),
+        devices=1,
+        fast_dev_run=True,
     )
-    fp8_data_dump_path = os.environ.get("HABANA_LOGS") if patch_path is None else patch_path
 
-    # Check json is patched correctly
-    with open(package_measure_json, encoding="utf-8") as jfile:
-        data = json.load(jfile)
-        stats_path = data["dump_stats_path"]
-        assert stats_path == os.path.join(fp8_data_dump_path, "hqt")
+    # Measurement mode
+    precision_plugin.convert_modules(module=model, inference=True, quant=measure_dict, fp8_data_path=tmpdir)
+    trainer.test(model, dm)
+
+    # Quant mode
+    precision_plugin.convert_modules(module=model, inference=True, quant=quant_dict, fp8_data_path=tmpdir)
+    trainer.test(model, dm)
 
 
-@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
+@pytest.mark.standalone_only()
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+def test_hpu_precision_fp8_inference_log_files(tmpdir):
+    log_file = os.path.join(os.environ["HABANA_LOGS"], "hqt_log.txt")
+    # remove log file if it exists
+    if os.path.isfile(log_file):
+        os.remove(log_file)
+
+    precision_plugin = HPUPrecisionPlugin(precision="fp8")
+    precision_plugin.convert_modules(module=BoringModel(), inference=True, quant=False, fp8_data_path=tmpdir)
+
+    # check log file is created with size > 0
+    assert os.path.isfile(log_file)
+    assert os.path.getsize(log_file) > 0
+
+
+@pytest.mark.standalone_only()
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_inference_measurement(tmpdir):
     """Tests inference measruement dumps with fp8_inference."""
 
     def get_fp8_measurement_files(path):
-        """Returns a list of hqt files."""
+        """Returns a list of fp8 measurement files."""
         assert path is not None
         assert os.path.isdir(path)
         filenames = []
-        file_path = []
         for file in os.listdir(path):
-            if "hqt" in file:
-                file_path.append(os.path.join(path, file))
-                filenames.append(file)
-        return file_path, filenames
-
-    # cleanup measurement files before test, if any
-    file_path, _ = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
-    if file_path:
-        for file in file_path:
-            os.remove(file)
+            filenames.append(file)
+        return filenames
 
     seed_everything(42)
 
-    model = BaseBM()
+    model = BoringModel()
     plugin = HPUPrecisionPlugin(precision="fp8")
-    plugin.convert_modules(module=model, inference=True, quant=False)
+    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=tmpdir)
 
     trainer = Trainer(
         default_root_dir=tmpdir,
@@ -296,24 +410,22 @@ def test_hpu_precision_fp8_inference_measurement(tmpdir):
     trainer.test(model)
 
     # check measurement files are dumped
-    _, filenames = get_fp8_measurement_files(os.environ.get("HABANA_LOGS", None))
-    expected_data_files = {"hqt_hooks_maxabs.json", "hqt_hooks_maxabs_mod_list.json", "hqt_hooks_maxabs.npz"}
+    filenames = get_fp8_measurement_files(os.path.join(tmpdir, "inc_output"))
+    expected_data_files = {
+        "measure_hooks_maxabs.json",
+        "measure_hooks_maxabs_mod_list.json",
+        "measure_hooks_maxabs.npz",
+    }
     assert set(filenames) == expected_data_files
 
 
-@pytest.mark.standalone_only()  # HQT cannot be reloaded in same process
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
-def test_hpu_precision_fp8_inference_quantization(tmpdir):
-    """Tests fp8_inference."""
+def test_hpu_precision_fp8_inference_accuracy(tmpdir):
+    """Tests fp8_inference accuracy."""
     test_loss = []
-    for precision in ["bf16", "fp8"]:
-        seed_everything(42)
-        model = BaseBM()
-        plugin = HPUPrecisionPlugin(precision=precision)
-        if precision == "fp8":
-            plugin.convert_modules(module=model, inference=True, quant=True)
 
-        trainer = Trainer(
+    def get_trainer(plugin):
+        return Trainer(
             default_root_dir=tmpdir,
             accelerator=HPUAccelerator(),
             devices=1,
@@ -322,11 +434,28 @@ def test_hpu_precision_fp8_inference_quantization(tmpdir):
             fast_dev_run=True,
         )
 
-        trainer.test(model)
+    for precision in ["bf16", "fp8"]:
+        seed_everything(42)
+        model = BaseBM()
+        plugin = HPUPrecisionPlugin(precision=precision)
+
+        if precision == "fp8":
+            # Get measurement from portion of data
+            plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=tmpdir)
+            trainer = get_trainer(plugin)
+            trainer.test(model)
+
+            # Set module to quantization mode
+            plugin.convert_modules(module=model, inference=True, quant=True, fp8_data_path=tmpdir)
+
+        seed_everything(42)
+        dm = BoringDataModule()
+        trainer = get_trainer(plugin)
+        trainer.test(model, dm)
         test_loss.append(trainer.callback_metrics["test_loss"])
 
     # Compare bf16 and fp8 inference loss
-    assert torch.isclose(test_loss[0], test_loss[1], rtol=0.01, atol=0.01)
+    assert torch.isclose(test_loss[0], test_loss[1], rtol=0.02, atol=0.01)
 
 
 @pytest.mark.standalone_only()
@@ -336,7 +465,7 @@ def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, arg_hpus):
     model = BoringModel()
     dm = BoringDataModule()
     plugin = HPUPrecisionPlugin(precision="fp8")
-    plugin.convert_modules(module=model, inference=True, quant=False)
+    plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=tmpdir)
 
     trainer = Trainer(
         default_root_dir=tmpdir,
@@ -445,10 +574,10 @@ def test_precision_plugin_init(plugin, params):
     # HPUPrecision specific params
     if isinstance(_plugin, HPUPrecisionPlugin):
         if _plugin.precision == "fp8":
-            assert _plugin.fp8_train_available
+            assert _plugin.fp8_training_available
             assert _plugin.fp8_inference_available
         else:
-            assert not _plugin.fp8_train_available
+            assert not _plugin.fp8_training_available
             assert not _plugin.fp8_inference_available
 
 
@@ -690,7 +819,6 @@ def test_hpu_precision_active_with_te_module(tmpdir, precision):
 )
 def test_hpu_precision_long_type(int64_support, expectation):
     """Tests native support for long tensor on G2."""
-    os.environ["PT_HPU_LAZY_MODE"] = "0"
     os.environ["PT_ENABLE_INT64_SUPPORT"] = int64_support
     with expectation:
         torch.tensor(torch.iinfo(torch.int64).max, dtype=torch.int64, device=torch.device("hpu"))

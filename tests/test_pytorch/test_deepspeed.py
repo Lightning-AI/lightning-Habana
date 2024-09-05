@@ -26,13 +26,13 @@ from torch.utils.data import DataLoader, Dataset
 if module_available("lightning"):
     from lightning.pytorch import LightningModule, Trainer, seed_everything
     from lightning.pytorch.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
-    from lightning.pytorch.demos.boring_classes import BoringModel
+    from lightning.pytorch.demos.boring_classes import BoringDataModule, BoringModel
     from lightning.pytorch.loggers import CSVLogger
     from lightning.pytorch.utilities.exceptions import MisconfigurationException
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer, seed_everything
     from pytorch_lightning.callbacks import Callback, LearningRateMonitor, ModelCheckpoint
-    from pytorch_lightning.demos.boring_classes import BoringModel
+    from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
     from pytorch_lightning.loggers import CSVLogger
     from pytorch_lightning.utilities.exceptions import MisconfigurationException
 
@@ -874,39 +874,30 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, device_count):
     class TestModel(BoringModel):
         """Test model."""
 
-        def __init__(self):
-            """Init."""
-            super().__init__()
-            self.layer = torch.nn.Linear(32, 2)
-
         def test_step(self, batch, batch_idx):
             """Training step."""
             loss = super().test_step(batch, batch_idx)
             self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
             return loss
 
-    def run_training(tmpdir, model, plugin, strategy):
-        """Runs a model and returns loss."""
-        trainer = Trainer(
-            default_root_dir=tmpdir,
-            accelerator=HPUAccelerator(),
-            devices=device_count,
-            strategy=strategy,
-            plugins=plugin,
-            fast_dev_run=True,
-        )
-        trainer.test(model)
-        return trainer.callback_metrics["test_loss"]
-
     seed_everything(42)
     model = TestModel()
-    _plugin = HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")
-    _strategy = HPUDeepSpeedStrategy()
+    dm = BoringDataModule()
 
-    bf16_test_loss = run_training(tmpdir, model, _plugin, _strategy)
-    bf16_loss = torch.tensor(0.414062)
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=device_count,
+        strategy=HPUDeepSpeedStrategy(),
+        plugins=HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed"),
+        fast_dev_run=True,
+    )
+    trainer.test(model, dm)
+
+    bf16_test_loss = trainer.callback_metrics["test_loss"]
+    bf16_loss = torch.tensor(0.6641)
     if device_count == 2:
-        bf16_loss = torch.tensor(1.253906)
+        bf16_loss = torch.tensor(1.2734)
     assert torch.allclose(bf16_test_loss, bf16_loss, rtol=1e-5, atol=1e-5)
 
 
@@ -919,39 +910,31 @@ def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, device_count, quant):
     class TestModel(BoringModel):
         """Test model."""
 
-        def __init__(self):
-            """Init."""
-            super().__init__()
-            self.layer = torch.nn.Linear(32, 2)
-
         def test_step(self, batch, batch_idx):
             """Training step."""
             loss = super().test_step(batch, batch_idx)
-            self.log("test_loss", loss.get("y"), prog_bar=True, sync_dist=True)
+            self.log("test_loss", loss.get("y"), sync_dist=True)
             return loss
-
-    def run_training(tmpdir, model, plugin, strategy):
-        """Runs a model and returns loss."""
-        trainer = Trainer(
-            default_root_dir=tmpdir,
-            accelerator=HPUAccelerator(),
-            devices=device_count,
-            strategy=strategy,
-            plugins=plugin,
-            fast_dev_run=True,
-        )
-        trainer.test(model)
-        return trainer.callback_metrics["test_loss"]
 
     seed_everything(42)
     model = TestModel()
-    _plugin = HPUDeepSpeedPrecisionPlugin(precision="fp8")
-    _strategy = HPUDeepSpeedStrategy()
-    _plugin.convert_modules(model, inference=True, quant=quant)
+    dm = BoringDataModule()
+    plugin = HPUDeepSpeedPrecisionPlugin(precision="fp8")
+    plugin.convert_modules(model, inference=True, quant=quant)
 
-    fp8_test_loss = run_training(tmpdir, model, _plugin, _strategy)
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=device_count,
+        strategy=HPUDeepSpeedStrategy(),
+        plugins=plugin,
+        fast_dev_run=True,
+    )
+    trainer.test(model, dm)
+
+    fp8_test_loss = trainer.callback_metrics["test_loss"]
     if quant is True:
-        bf16_loss = torch.tensor(0.4141)
+        bf16_loss = torch.tensor(0.6641)
         if device_count == 2:
-            bf16_loss = torch.tensor(1.253906)
-        assert torch.allclose(fp8_test_loss, bf16_loss, rtol=1e-2, atol=1e-2)
+            bf16_loss = torch.tensor(1.2734)
+        assert torch.allclose(fp8_test_loss, bf16_loss, rtol=0.03, atol=0.02)

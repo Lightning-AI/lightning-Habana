@@ -27,10 +27,9 @@ else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana.fabric.plugins.precision import _PRECISION_INPUT, HPUPrecision
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     # Required for training in fp8 using habana transformer engine
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
