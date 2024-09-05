@@ -174,7 +174,6 @@ def test_fsdp_custom_mixed_precision():
 
 
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
-@pytest.mark.standalone()
 def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP on HPU."""
     if arg_hpus <= 1:
@@ -200,7 +199,6 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
 
 
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
-@pytest.mark.standalone()
 def test_fsdp_simple_model(strategy, arg_hpus):
     model = TestBoringModel()
 
@@ -220,9 +218,7 @@ def test_fsdp_simple_model(strategy, arg_hpus):
     trainer.fit(model)
 
 
-@pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
-@pytest.mark.standalone()
 def test_fsdp_simple_model_activation_cp(strategy, arg_hpus):
     model = BoringModel()
 
@@ -332,9 +328,6 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
     """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
-    if state_dict_type == "sharded":
-        pytest.xfail(reason="Sharded checkpointing is not yet enabled")
-
     model = TestFSDPModel()
     trainer = Trainer(
         default_root_dir=tmpdir,
@@ -421,7 +414,6 @@ def test_fsdp_strategy_cpu_offload():
         ("32-true", torch.float32),
     ],
 )
-@pytest.mark.standalone()
 def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
     """Test that the module under configure_model gets moved to the right device and dtype."""
     trainer = Trainer(
@@ -705,12 +697,12 @@ class AccuracyTestModel(BoringModel):
         return loss
 
 
-def run_training(root_dir, model, dm, strategy, hpus):
+def run_training(root_dir, model, dm, strategy, arg_hpus):
     seed_everything(42)
     trainer = Trainer(
         default_root_dir=root_dir,
         accelerator=HPUAccelerator(),
-        devices=hpus,
+        devices=arg_hpus,
         strategy=strategy,
         plugins=None if isinstance(strategy, HPUFSDPStrategy) else HPUPrecisionPlugin(precision="bf16-mixed"),
         fast_dev_run=True,
@@ -751,3 +743,54 @@ def test_hpu_fsdp_precision_accuracy(tmpdir, arg_hpus):
         expected_val_loss = torch.tensor(2.5781)
     assert torch.allclose(train_loss, expected_train_loss, rtol=1e-4, atol=1e-4)
     assert torch.allclose(val_loss, expected_val_loss, rtol=1e-2, atol=1e-2)
+
+
+@pytest.mark.standalone()
+@pytest.mark.parametrize(
+    "reduce_op",
+    [
+        "sum",
+        "max",
+        "min",
+        "mean",
+    ],
+)
+def test_hpu_fsdp_reduce(tmpdir, arg_hpus, reduce_op):
+    """Test reduce_op with logger and sync_dist."""
+    seed_everything(42)
+    logged_value_arr = [torch.rand(1) for _ in range(arg_hpus)]
+    torch_function = getattr(torch, reduce_op)
+    expected_value = torch_function(torch.stack(logged_value_arr))
+
+    class BaseBM(BoringModel):
+        """Model to test with reduce ops."""
+
+        def __init__(self, reduce_op=None):
+            """Init."""
+            super().__init__()
+            self.reduce_op = reduce_op
+            self.reduced_value = None
+            self.logged_value = None
+
+        def training_step(self, batch, batch_idx):
+            """Training step."""
+            self.logged_value = logged_value_arr[self.trainer.strategy.local_rank]
+            self.reduced_value = self.trainer.strategy.reduce(self.logged_value, reduce_op=reduce_op)
+            return super().training_step(batch, batch_idx)
+
+    seed_everything(42)
+    _model = BaseBM(reduce_op=reduce_op)
+    _strategy = HPUFSDPStrategy(
+        parallel_devices=[torch.device("hpu")] * arg_hpus,
+        sharding_strategy="FULL_SHARD",
+        precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+    )
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        devices=arg_hpus,
+        strategy=_strategy,
+        fast_dev_run=True,
+    )
+    trainer.fit(_model)
+    assert expected_value.item() == _model.reduced_value.item()

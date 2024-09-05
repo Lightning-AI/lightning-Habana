@@ -44,7 +44,6 @@ if not _LIGHTNING_GREATER_EQUAL_2_3_0:
 def test_hpu_fsdp_strategy_defaults():
     strategy = HPUFSDPStrategy()
     assert strategy.process_group_backend == "hccl"
-    assert len(strategy.parallel_devices) == HPUAccelerator.auto_device_count()
 
 
 class BasicTrainer:

@@ -14,51 +14,72 @@
 
 
 import logging
-from datetime import timedelta
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional, Union
 
+import torch
 import torch.distributed
 from lightning_utilities import module_available
+from lightning_utilities.core.rank_zero import rank_zero_only as utils_rank_zero_only
+from torch import Tensor
+from torch.nn import Module
+from typing_extensions import override
 
 if module_available("lightning"):
     from lightning.fabric.accelerators import Accelerator
-    from lightning.fabric.plugins import CheckpointIO
+    from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
-    from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning.fabric.plugins.precision import Precision
-    from lightning.fabric.strategies.ddp import DDPStrategy
-    from lightning.fabric.utilities.types import Optimizable
+    from lightning.fabric.strategies.launchers import _MultiProcessingLauncher, _SubprocessScriptLauncher
+    from lightning.fabric.strategies.parallel import ParallelStrategy
+    from lightning.fabric.strategies.strategy import TBroadcast
+    from lightning.fabric.utilities.distributed import (
+        _distributed_is_initialized,
+        _get_default_process_group_backend_for_device,
+        _init_dist_connection,
+    )
+    from lightning.fabric.utilities.distributed import group as _group
+    from lightning.fabric.utilities.rank_zero import rank_zero_only
+    from lightning.fabric.utilities.seed import reset_seed
+    from lightning.fabric.utilities.types import ReduceOp
+    from lightning_fabric.utilities.types import Optimizable
 elif module_available("pytorch_lightning"):
     from lightning_fabric.accelerators import Accelerator
-    from lightning_fabric.plugins import CheckpointIO
+    from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
-    from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning_fabric.plugins.precision import Precision
-    from lightning_fabric.strategies.ddp import DDPStrategy
-    from lightning_fabric.utilities.types import Optimizable
+    from lightning_fabric.strategies.launchers import _MultiProcessingLauncher, _SubprocessScriptLauncher
+    from lightning_fabric.strategies.parallel import ParallelStrategy
+    from lightning_fabric.strategies.strategy import TBroadcast
+    from lightning_fabric.utilities.distributed import (
+        _distributed_is_initialized,
+        _get_default_process_group_backend_for_device,
+        _init_dist_connection,
+    )
+    from lightning_fabric.utilities.distributed import group as _group
+    from lightning_fabric.utilities.rank_zero import rank_zero_only
+    from lightning_fabric.utilities.seed import reset_seed
+    from lightning_fabric.utilities.types import ReduceOp
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from torch import Tensor
-from torch.nn import Module
 
 from lightning_habana import HPU_AVAILABLE
 from lightning_habana.fabric.accelerator import HPUAccelerator
+from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
+from lightning_habana.utils.hpu_distributed import _sync_hpu_processes_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl  # noqa: F401
+    import habana_frameworks.torch.distributed.hccl as hpu_dist
 
 log = logging.getLogger(__name__)
 
 
-class HPUParallelStrategy(DDPStrategy):
+class HPUParallelStrategy(ParallelStrategy):
     """Strategy for distributed training on multiple HPU devices."""
 
-    strategy_name = "parallel_hpu"
+    strategy_name = "hpu_parallel"
 
     def __init__(
         self,
@@ -67,10 +88,6 @@ class HPUParallelStrategy(DDPStrategy):
         cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
         precision: Optional[Precision] = None,
-        process_group_backend: Optional[str] = "hccl",
-        timeout: Optional[timedelta] = default_pg_timeout,
-        start_method: Literal["popen", "spawn", "fork", "forkserver"] = "popen",
-        **kwargs: Any,
     ) -> None:
         if not HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
@@ -82,16 +99,16 @@ class HPUParallelStrategy(DDPStrategy):
             cluster_environment=cluster_environment,
             checkpoint_io=checkpoint_io,
             precision=precision,
-            process_group_backend=process_group_backend,
-            timeout=timeout,
-            start_method=start_method,
-            **kwargs,
         )
+        self._process_group_backend = "hccl"
+        self._timeout = default_pg_timeout
+        self._num_nodes = 1
+        self._start_method = "spawn" if self.strategy_name == "hpu_parallel" else None
 
     @property
     def checkpoint_io(self) -> CheckpointIO:
         if self._checkpoint_io is None:  # type: ignore
-            self._checkpoint_io = TorchCheckpointIO()
+            self._checkpoint_io = HPUCheckpointIO()
 
         return self._checkpoint_io
 
@@ -99,18 +116,57 @@ class HPUParallelStrategy(DDPStrategy):
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
         self._checkpoint_io = io
 
+    def setup_environment(self) -> None:
+        super().setup_environment()
+        if self.strategy_name == "hpu_parallel":
+            # Strategies derived from this class should handle their own distributed setups.
+            self.setup_distributed()
+        self.setup_hccl_env()
+
+    def setup_hccl_env(self):
+        assert self._process_group_backend == "hccl"
+        # this env is used in overrides to check the backend initiated
+        _ws = self.cluster_environment.world_size()
+        _grank = self.cluster_environment.global_rank()
+        _lrank = self.cluster_environment.local_rank()
+        hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
+
+    def setup_distributed(self) -> None:
+        log.debug(f"{self.__class__.__name__}: setting up distributed...")
+        reset_seed()
+        self.set_world_ranks()
+        self._process_group_backend = self._get_process_group_backend()
+        assert self.cluster_environment is not None
+        _init_dist_connection(self.cluster_environment, self._process_group_backend, timeout=self._timeout)
+
+    def _get_process_group_backend(self) -> str:
+        return self._process_group_backend or _get_default_process_group_backend_for_device(self.root_device)
+
+    def set_world_ranks(self) -> None:
+        if self.cluster_environment is not None:
+            self.cluster_environment.set_global_rank(self.node_rank * self.num_processes + self.local_rank)
+            self.cluster_environment.set_world_size(self.num_nodes * self.num_processes)
+        # `LightningEnvironment.set_global_rank` will do this too, but we cannot rely on that implementation detail
+        # additionally, for some implementations, the setter is a no-op, so it's safer to access the getter
+        rank_zero_only.rank = utils_rank_zero_only.rank = self.global_rank
+
     @property
-    def process_group_backend(self) -> Optional[str]:
-        return self._process_group_backend
+    def num_nodes(self) -> int:
+        return self._num_nodes
 
-    def determine_ddp_device_ids(self) -> None:
-        return None
+    @num_nodes.setter
+    def num_nodes(self, num_nodes: int) -> None:
+        # note that world ranks is related to num_nodes, when resetting it, need to reset world ranks
+        self._num_nodes = num_nodes
 
-    def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
-        super().backward(tensor, module=module, *args, **kwargs)
-        if _TORCH_LESSER_EQUAL_1_13_1:
-            # Break lazy accumulation of graph after fwd+bwd
-            htcore.mark_step()
+    @property
+    def num_processes(self) -> int:
+        return len(self.parallel_devices) if self.parallel_devices is not None else 0
+
+    @num_processes.setter
+    def num_processes(self, num_processes: int) -> None:
+        # note that world ranks is related to num_nodes, when resetting it, need to reset world ranks
+        self._num_processes = num_processes
 
     def setup_module(self, module: Module) -> Module:
         """Performs setup for the model, e.g., by wrapping it by another class."""
@@ -126,6 +182,80 @@ class HPUParallelStrategy(DDPStrategy):
             Module.__getattr__ = _FabricModule.original__get_attr__  # type: ignore
 
         return super().setup_module(module)
+
+    @override
+    def _configure_launcher(self) -> None:
+        assert self.cluster_environment is not None
+        self._start_method = "spawn" if self._start_method is None else self._start_method
+        if self._start_method == "popen":
+            self._launcher = _SubprocessScriptLauncher(self.cluster_environment, self.num_processes, self.num_nodes)
+        else:
+            self._launcher = _MultiProcessingLauncher(self, start_method=self._start_method)
+
+    @override
+    def broadcast(self, obj: TBroadcast, src: int = 0) -> TBroadcast:
+        if not _distributed_is_initialized():
+            return obj
+
+        obj = [obj]
+        torch.distributed.broadcast_object_list(obj, src, group=_group.WORLD)
+        return obj[0]
+
+    @property
+    @override
+    def root_device(self) -> torch.device:
+        assert self.parallel_devices is not None
+        return self.parallel_devices[0]
+
+    def barrier(self, name: Optional[str] = None) -> None:
+        if not _distributed_is_initialized():
+            return
+        torch.distributed.barrier()
+
+    def model_to_device(self) -> None:
+        assert self.model is not None
+        self.model.to(self.root_device)
+
+    def reduce(
+        self,
+        tensor: Union[Tensor, Any],
+        group: Optional[Any] = None,
+        reduce_op: Optional[Union[ReduceOp, str]] = "mean",
+    ) -> Union[Tensor, Any]:
+        if isinstance(tensor, Tensor):
+            if tensor.device != self.root_device:
+                tensor = tensor.to(self.root_device)
+            return _sync_hpu_processes_if_available(tensor, group, reduce_op=reduce_op)
+        return tensor
+
+    def reduce_loss_if_parallel(self, output, reduce_op="mean"):
+        if isinstance(output, dict) and "loss" in output:
+            output["loss"] = self.reduce(output["loss"], reduce_op=reduce_op)
+        elif isinstance(output, Tensor):
+            output = self.reduce(output, reduce_op=reduce_op)
+        return output
+
+    def training_step(self, *args: Any, **kwargs: Any) -> Any:
+        output = super().training_step(*args, **kwargs)
+        if self.strategy_name == "hpu_parallel":
+            return self.reduce_loss_if_parallel(output)
+        htcore.mark_step()
+        return output
+
+    def validation_step(self, *args: Any, **kwargs: Any) -> Any:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().validation_step(*args, **kwargs)
+
+    def test_step(self, *args: Any, **kwargs: Any) -> Any:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().test_step(*args, **kwargs)
+
+    def predict_step(self, *args: Any, **kwargs: Any) -> Any:
+        # Break lazy accumulation of graph after every step
+        htcore.mark_step()
+        return super().predict_step(*args, **kwargs)
 
     def optimizer_step(
         self,

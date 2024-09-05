@@ -56,7 +56,7 @@ def _is_reduce_op_supported(reduce_op: Union[ReduceOp, str]) -> bool:
     return True
 
 
-def _sync_ddp_if_available(
+def _sync_hpu_processes_if_available(
     result: Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "sum"
 ) -> Tensor:
     """Function to reduce a tensor across worker processes during distributed training.
@@ -70,14 +70,13 @@ def _sync_ddp_if_available(
         reduced value
 
     """
+    assert reduce_op is not None
     if _distributed_available() and _is_reduce_op_supported(reduce_op):
-        return _sync_ddp_hpu(result, group=group, reduce_op=reduce_op)
+        return _sync_hpu(result, group=group, reduce_op=reduce_op)
     return result
 
 
-def _sync_ddp_hpu(
-    result: Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "sum"
-) -> Tensor:
+def _sync_hpu(result: Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "sum") -> Tensor:
     """Reduces a tensor across several distributed processes.
 
     This operation is performed in-place, meaning the result will be placed back into the input tensor on all processes.
@@ -93,7 +92,7 @@ def _sync_ddp_hpu(
     """
     # Simulate mean using sum
     reduce_op = reduce_op.lower() if isinstance(reduce_op, str) else reduce_op
-    op = ReduceOp.SUM if (reduce_op == ReduceOp.AVG or reduce_op in ("mean", "avg")) else reduce_op
+    op = "sum" if (reduce_op == ReduceOp.AVG or reduce_op in ("mean", "avg")) else reduce_op
     result = _sync_ddp(result, group, op)
 
     if reduce_op == ReduceOp.AVG or reduce_op in ("mean", "avg"):

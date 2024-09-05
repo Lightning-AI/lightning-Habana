@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, List, Literal, Optio
 
 import torch
 from lightning_utilities import module_available
+from torch import Tensor
 from torch.nn import Module
 from typing_extensions import override
 
@@ -56,7 +57,6 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
-from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if TYPE_CHECKING:
@@ -101,12 +101,10 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     ) -> None:
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
-
         if parallel_devices is None:
             parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
         elif torch.device("hpu") in parallel_devices:
             parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
-
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -187,10 +185,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         self.model_to_device()
         super().setup(trainer)
 
-    def model_to_device(self) -> None:
-        assert self.model is not None
-        self.model.to(self.root_device)
-
     @contextmanager
     def model_sharded_context(self) -> Generator[None, None, None]:
         from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel
@@ -207,11 +201,16 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             yield
 
     def reduce(
-        self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
-    ) -> torch.Tensor:
-        if isinstance(tensor, torch.Tensor):
-            return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
-        return tensor
+        self,
+        tensor: Union[Tensor, Any],
+        group: Optional[Any] = None,
+        reduce_op: Optional[Union[ReduceOp, str]] = "mean",
+    ) -> Union[Tensor, Any]:
+        # Skipping FSDPStrategy (first in mro) and inheriting from HPUParallelStrategy.
+        return HPUParallelStrategy.reduce(self, tensor, group, reduce_op)
+
+    def _get_process_group_backend(self) -> str:
+        return HPUParallelStrategy._get_process_group_backend(self)
 
     @classmethod
     def get_registered_strategies(cls) -> List[str]:

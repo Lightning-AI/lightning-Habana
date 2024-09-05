@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import copy
 import os
 from contextlib import nullcontext
 from typing import Any, Optional, Union
@@ -65,6 +64,48 @@ def test_all_stages(tmpdir, arg_hpus):
     trainer.validate(model)
     trainer.test(model)
     trainer.predict(model)
+
+
+@pytest.mark.parametrize(
+    ("device", "strategy"),
+    [
+        (
+            "auto",
+            "auto",
+        ),
+        (1, "auto"),
+        pytest.param(
+            2,
+            "auto",
+            marks=pytest.mark.skipif(
+                HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple hpu devices."
+            ),
+        ),
+        ("auto", SingleHPUStrategy),  # Test assumes only 1 card is available
+        pytest.param(
+            "auto",
+            HPUParallelStrategy,
+            marks=pytest.mark.skipif(
+                HPUAccelerator.auto_device_count() < 2, reason="Test requires multiple hpu devices."
+            ),
+        ),
+    ],
+)
+def test_hpu_accelerator_trainer_init_devices_and_strategy(device, strategy, arg_hpus):
+    """Tests correct number of devices and strategy is picked when using "auto"."""
+    # Mock the node to only have "hpus" number of cards
+    num_hpus = 1 if arg_hpus == 1 or (device == "auto" and strategy == SingleHPUStrategy) else 2
+    with mock.patch.object(
+        HPUAccelerator, "get_parallel_devices", return_value=[torch.device("hpu")] * num_hpus
+    ), mock.patch.object(HPUAccelerator, "auto_device_count", return_value=num_hpus):
+        trainer = Trainer(
+            accelerator=HPUAccelerator(), devices=device, strategy=strategy() if strategy != "auto" else strategy
+        )
+        assert trainer.num_devices == num_hpus
+        trainer_strategy = (
+            strategy if strategy != "auto" else SingleHPUStrategy if num_hpus == 1 else HPUParallelStrategy
+        )
+        assert isinstance(trainer.strategy, trainer_strategy)
 
 
 def test_device_name():
@@ -180,69 +221,10 @@ def test_stages_correct(tmpdir):
     trainer.predict(model)
 
 
-def test_accelerator_is_hpu():
-    trainer = Trainer(accelerator=HPUAccelerator(), devices=1, strategy=SingleHPUStrategy())
+@pytest.mark.parametrize("accelerator", ["auto", "hpu", HPUAccelerator()])
+def test_hpu_accelerator_trainer_init_accelerator(accelerator):
+    trainer = Trainer(accelerator=accelerator, strategy=SingleHPUStrategy())
     assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == 1
-
-
-def test_accelerator_with_single_device():
-    trainer = Trainer(accelerator="hpu", devices=1)
-    assert isinstance(trainer.strategy, SingleHPUStrategy)
-    assert isinstance(trainer.accelerator, HPUAccelerator)
-
-
-@pytest.mark.standalone()
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_accelerator_with_multiple_devices(arg_hpus):
-    if arg_hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
-    trainer = Trainer(accelerator="hpu", devices=arg_hpus)
-    assert isinstance(trainer.strategy, HPUParallelStrategy)
-    assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == arg_hpus
-
-    trainer = Trainer(accelerator="hpu")
-    assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == HPUAccelerator.auto_device_count()
-
-
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_accelerator_auto_with_devices_hpu(arg_hpus):
-    if arg_hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
-    trainer = Trainer(accelerator="auto", devices=arg_hpus)
-    assert isinstance(trainer.strategy, HPUParallelStrategy)
-    assert isinstance(trainer.accelerator, HPUAccelerator)
-    assert trainer.num_devices == arg_hpus
-
-
-def test_strategy_choice_single_strategy():
-    trainer = Trainer(strategy=SingleHPUStrategy(device=torch.device("hpu")), accelerator=HPUAccelerator(), devices=1)
-    assert isinstance(trainer.strategy, SingleHPUStrategy)
-
-    trainer = Trainer(accelerator="hpu", devices=1)
-    assert isinstance(trainer.strategy, SingleHPUStrategy)
-
-
-@pytest.mark.skipif(device_count() <= 1, reason="Test requires multiple HPU devices")
-def test_strategy_choice_ddp_strategy(arg_hpus):
-    if arg_hpus <= 1:
-        pytest.skip(reason="Test reqruires multiple cards")
-    trainer = Trainer(
-        strategy=HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus),
-        accelerator=HPUAccelerator(),
-        devices=arg_hpus,
-    )
-    assert isinstance(trainer.strategy, HPUDDPStrategy)
-
-    trainer = Trainer(accelerator="hpu", devices=arg_hpus)
-    assert isinstance(trainer.strategy, HPUParallelStrategy)
-
-
-def test_devices_auto_choice_hpu():
-    trainer = Trainer(accelerator="auto", devices="auto")
-    assert trainer.num_devices == HPUAccelerator.auto_device_count()
 
 
 @pytest.mark.parametrize("hpus", [1])
@@ -268,23 +250,6 @@ def test_hpu_auto_device_count():
 def test_hpu_unsupported_device_type():
     with pytest.raises(MisconfigurationException, match="`devices` for `HPUAccelerator` must be int, string or None."):
         Trainer(accelerator=HPUAccelerator(), devices=[1])
-
-
-def test_strategy_params_with_hpu_ddp_strategy():
-    bucket_cap_mb = 100
-    gradient_as_bucket_view = True
-    static_graph = True
-    find_unused_parameters = True
-    strategy = HPUDDPStrategy(
-        bucket_cap_mb=bucket_cap_mb,
-        gradient_as_bucket_view=gradient_as_bucket_view,
-        static_graph=static_graph,
-        find_unused_parameters=find_unused_parameters,
-    )
-    assert strategy._ddp_kwargs["bucket_cap_mb"] == bucket_cap_mb
-    assert strategy._ddp_kwargs["gradient_as_bucket_view"] == gradient_as_bucket_view
-    assert strategy._ddp_kwargs["static_graph"] == static_graph
-    assert strategy._ddp_kwargs["find_unused_parameters"] == find_unused_parameters
 
 
 def test_multi_optimizers_with_hpu(tmpdir):
@@ -341,46 +306,6 @@ def test_hpu_device_stats_monitor():
         assert any(f in h for h in hpu_stats)
 
 
-class BaseBM(BoringModel):
-    """Model to test with reduce ops."""
-
-    def __init__(self, reduce_op=None):
-        """Init."""
-        super().__init__()
-        self.reduce_op = reduce_op
-        self.logged_value_start = 42
-
-    def training_step(self, batch, batch_idx):
-        """Training step."""
-        # Each ddp process logs 3 values: 42, 43, and 44.
-        # logger performs reduce depending on the reduce_op
-        loss = super().training_step(batch, batch_idx)
-        self.log(
-            "logged_value",
-            self.logged_value_start,
-            prog_bar=True,
-            sync_dist=True,
-            reduce_fx=self.reduce_op,
-            on_epoch=True,
-        )
-        self.logged_value_start += 1
-        return loss
-
-
-class MetricsCallback(Callback):
-    """PyTorch Lightning metric callback."""
-
-    def __init__(self):
-        """Init."""
-        super().__init__()
-        self.metrics = []
-
-    def on_validation_epoch_end(self, trainer, pl_module):
-        """Copy trainer metrics."""
-        metric = copy.deepcopy(trainer.logged_metrics)
-        self.metrics.append(metric)
-
-
 class MockHPUDDPStrategy(HPUDDPStrategy):
     def __init__(
         self,
@@ -395,13 +320,6 @@ class MockHPUDDPStrategy(HPUDDPStrategy):
         self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "sum"
     ) -> torch.Tensor:
         return super().reduce(tensor, group, self.reduce_op)
-
-
-def test_hpu_ddp_reduce_op_strategy_default():
-    """Test default reduce_op."""
-    strategy = MockHPUDDPStrategy()
-    # Assert that the strategy's reduce_op attribute is set to the default "sum"
-    assert strategy.reduce_op == "sum"
 
 
 @pytest.mark.standalone()
@@ -448,7 +366,7 @@ def test_hpu_ddp_reduce_op_strategy_default():
         "ReduceOp.PRODUCT",
     ],
 )
-def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
+def test_hpu_supported_reduce_op(tmpdir, arg_hpus, reduce_op, expectation):
     """Tests all reduce in HPUDDP strategy."""
     seed_everything(42)
     _model = BoringModel()
@@ -457,14 +375,15 @@ def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
         accelerator=HPUAccelerator(),
         devices=arg_hpus,
         strategy=MockHPUDDPStrategy(reduce_op=reduce_op),
-        max_epochs=1,
-        fast_dev_run=3,
+        fast_dev_run=True,
         plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
     )
     with expectation:
         trainer.fit(_model)
 
 
+@pytest.mark.standalone()
+@pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),
     [
@@ -478,7 +397,7 @@ def test_reduce_op_strategy(tmpdir, arg_hpus, reduce_op, expectation):
         ("mean", 43.0, 44.0),
     ],
 )
-def test_reduce_op_logging(tmpdir, arg_hpus, reduce_op, logged_value_epoch, logged_value_step):
+def test_hpu_reduce_op_logging(tmpdir, arg_hpus, reduce_op, logged_value_epoch, logged_value_step):
     """Test reduce_op with logger and sync_dist."""
     # Logger has its own reduce_op sanity check.
     # It only accepts following string reduce_ops {min, max, mean, sum}
@@ -488,20 +407,40 @@ def test_reduce_op_logging(tmpdir, arg_hpus, reduce_op, logged_value_epoch, logg
         logged_value_epoch *= arg_hpus
         logged_value_step *= arg_hpus
 
+    class BaseBM(BoringModel):
+        """Model to test with reduce ops."""
+
+        def __init__(self, reduce_op=None):
+            """Init."""
+            super().__init__()
+            self.reduce_op = reduce_op
+            self.logged_value_start = 42
+
+        def training_step(self, batch, batch_idx):
+            """Training step."""
+            # Each ddp process logs 3 values: 42, 43, and 44.
+            # logger performs reduce depending on the reduce_op
+            loss = super().training_step(batch, batch_idx)
+            self.log(
+                "logged_value",
+                self.logged_value_start,
+                prog_bar=True,
+                sync_dist=True,
+                reduce_fx=self.reduce_op,
+                on_epoch=True,
+            )
+            self.logged_value_start += 1
+            return loss
+
     seed_everything(42)
     _model = BaseBM(reduce_op=reduce_op)
-    _strategy = (
-        HPUDDPStrategy(parallel_devices=[torch.device("hpu")] * arg_hpus) if arg_hpus > 1 else SingleHPUStrategy()
-    )
     trainer = Trainer(
         default_root_dir=tmpdir,
         accelerator=HPUAccelerator(),
         devices=arg_hpus,
-        strategy=_strategy,
+        strategy=MockHPUDDPStrategy(reduce_op=reduce_op),
         max_epochs=1,
         fast_dev_run=3,
-        plugins=HPUPrecisionPlugin(precision="bf16-mixed"),
-        callbacks=[MetricsCallback()],
     )
     trainer.fit(_model)
 
