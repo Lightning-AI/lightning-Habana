@@ -113,7 +113,7 @@ class HPUParallelStrategy(ParallelStrategy):
 
     @checkpoint_io.setter
     def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
+        self._checkpoint_io = io  # type: ignore
 
     def setup_environment(self) -> None:
         super().setup_environment()
@@ -122,7 +122,7 @@ class HPUParallelStrategy(ParallelStrategy):
             self.setup_distributed()
         self.setup_hccl_env()
 
-    def setup_hccl_env(self):
+    def setup_hccl_env(self) -> None:
         assert self._process_group_backend == "hccl"
         # this env is used in overrides to check the backend initiated
         _ws = self.cluster_environment.world_size()
@@ -224,7 +224,9 @@ class HPUParallelStrategy(ParallelStrategy):
             return _sync_hpu_processes_if_available(tensor, group, reduce_op=reduce_op)
         return tensor
 
-    def reduce_loss_if_parallel(self, output: Union[Tensor, dict], reduce_op: Optional[Union[ReduceOp, str]] = "mean"):
+    def reduce_loss_if_parallel(
+        self, output: Union[Tensor, dict], reduce_op: Optional[Union[ReduceOp, str]] = "mean"
+    ) -> Union[Tensor, dict]:
         if isinstance(output, dict) and "loss" in output:
             output["loss"] = self.reduce(output["loss"], reduce_op=reduce_op)
         elif isinstance(output, Tensor):

@@ -214,7 +214,9 @@ class HPUParallelStrategy(ParallelStrategy):
         htcore.mark_step()
         return output
 
-    def reduce_loss_if_parallel(self, output: Union[Tensor, dict], reduce_op: Optional[Union[ReduceOp, str]] = "mean"):
+    def reduce_loss_if_parallel(
+        self, output: Union[Tensor, dict], reduce_op: Optional[Union[ReduceOp, str]] = "mean"
+    ) -> Union[Tensor, dict]:
         if isinstance(output, dict) and "loss" in output:
             output["loss"] = self.reduce(output["loss"], reduce_op=reduce_op)
         elif isinstance(output, Tensor):
