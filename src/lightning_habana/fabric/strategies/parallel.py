@@ -22,7 +22,6 @@ from lightning_utilities import module_available
 from lightning_utilities.core.rank_zero import rank_zero_only as utils_rank_zero_only
 from torch import Tensor
 from torch.nn import Module
-from typing_extensions import override
 
 if module_available("lightning"):
     from lightning.fabric.accelerators import Accelerator
@@ -40,8 +39,7 @@ if module_available("lightning"):
     from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.rank_zero import rank_zero_only
     from lightning.fabric.utilities.seed import reset_seed
-    from lightning.fabric.utilities.types import ReduceOp
-    from lightning_fabric.utilities.types import Optimizable
+    from lightning.fabric.utilities.types import Optimizable, ReduceOp
 elif module_available("pytorch_lightning"):
     from lightning_fabric.accelerators import Accelerator
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -58,7 +56,7 @@ elif module_available("pytorch_lightning"):
     from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.rank_zero import rank_zero_only
     from lightning_fabric.utilities.seed import reset_seed
-    from lightning_fabric.utilities.types import ReduceOp
+    from lightning_fabric.utilities.types import Optimizable, ReduceOp
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
@@ -88,6 +86,7 @@ class HPUParallelStrategy(ParallelStrategy):
         cluster_environment: Optional[ClusterEnvironment] = None,
         checkpoint_io: Optional[CheckpointIO] = None,
         precision: Optional[Precision] = None,
+        **kwargs: Any,
     ) -> None:
         if not HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
@@ -183,7 +182,6 @@ class HPUParallelStrategy(ParallelStrategy):
 
         return super().setup_module(module)
 
-    @override
     def _configure_launcher(self) -> None:
         assert self.cluster_environment is not None
         self._start_method = "spawn" if self._start_method is None else self._start_method
@@ -192,7 +190,6 @@ class HPUParallelStrategy(ParallelStrategy):
         else:
             self._launcher = _MultiProcessingLauncher(self, start_method=self._start_method)
 
-    @override
     def broadcast(self, obj: TBroadcast, src: int = 0) -> TBroadcast:
         if not _distributed_is_initialized():
             return obj
@@ -202,7 +199,6 @@ class HPUParallelStrategy(ParallelStrategy):
         return obj[0]
 
     @property
-    @override
     def root_device(self) -> torch.device:
         assert self.parallel_devices is not None
         return self.parallel_devices[0]
@@ -228,7 +224,7 @@ class HPUParallelStrategy(ParallelStrategy):
             return _sync_hpu_processes_if_available(tensor, group, reduce_op=reduce_op)
         return tensor
 
-    def reduce_loss_if_parallel(self, output, reduce_op="mean"):
+    def reduce_loss_if_parallel(self, output: Union[Tensor, dict], reduce_op: Optional[Union[ReduceOp, str]] = "mean"):
         if isinstance(output, dict) and "loss" in output:
             output["loss"] = self.reduce(output["loss"], reduce_op=reduce_op)
         elif isinstance(output, Tensor):

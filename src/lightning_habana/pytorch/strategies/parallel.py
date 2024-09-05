@@ -21,7 +21,6 @@ from lightning_utilities.core.rank_zero import rank_zero_only as utils_rank_zero
 from torch import Tensor
 from torch.nn import Module
 from torch.optim.optimizer import Optimizer
-from typing_extensions import override
 
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
@@ -87,6 +86,7 @@ class HPUParallelStrategy(ParallelStrategy):
         checkpoint_io: Optional[CheckpointIO] = None,
         precision_plugin: Optional[Precision] = None,
         cluster_environment: Optional[ClusterEnvironment] = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__(
             accelerator=accelerator,
@@ -120,7 +120,7 @@ class HPUParallelStrategy(ParallelStrategy):
             self.setup_distributed()
         self.setup_hccl_env()
 
-    def setup_hccl_env(self):
+    def setup_hccl_env(self) -> None:
         """Initializes the HCCL environment for distributed training on HPU devices."""
         assert self._get_process_group_backend() == "hccl"
         _ws = self.cluster_environment.world_size()
@@ -165,7 +165,6 @@ class HPUParallelStrategy(ParallelStrategy):
     def num_processes(self, num_processes: int) -> None:
         self._num_processes = num_processes
 
-    @override
     def _configure_launcher(self) -> None:
         assert self.cluster_environment is not None
         self._start_method = "spawn" if self._start_method is None else self._start_method
@@ -175,7 +174,6 @@ class HPUParallelStrategy(ParallelStrategy):
             self._launcher = _MultiProcessingLauncher(self, start_method=self._start_method)
 
     @property
-    @override
     def root_device(self) -> torch.device:
         assert self.parallel_devices is not None
         return self.parallel_devices[0]
@@ -201,7 +199,6 @@ class HPUParallelStrategy(ParallelStrategy):
             return _sync_hpu_processes_if_available(tensor, group, reduce_op=reduce_op)
         return tensor
 
-    @override
     def broadcast(self, obj: TBroadcast, src: int = 0) -> TBroadcast:
         if not _distributed_is_initialized():
             return obj
@@ -217,7 +214,7 @@ class HPUParallelStrategy(ParallelStrategy):
         htcore.mark_step()
         return output
 
-    def reduce_loss_if_parallel(self, output, reduce_op="mean"):
+    def reduce_loss_if_parallel(self, output: Union[Tensor, dict], reduce_op: Optional[Union[ReduceOp, str]] = "mean"):
         if isinstance(output, dict) and "loss" in output:
             output["loss"] = self.reduce(output["loss"], reduce_op=reduce_op)
         elif isinstance(output, Tensor):
