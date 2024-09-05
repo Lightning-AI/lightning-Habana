@@ -20,7 +20,7 @@ from packaging.version import Version
 
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE, get_hpu_synapse_version  # noqa: F401
 
-_HPU_SYNAPSE_GREATER_EQUAL_1_14_0 = Version(get_hpu_synapse_version()) >= Version("1.14.0")
+_HPU_SYNAPSE_GREATER_EQUAL_1_17_0 = Version(get_hpu_synapse_version()) >= Version("1.17.0")
 _TORCH_LESSER_EQUAL_1_13_1 = compare_version("torch", operator.le, "1.13.1")
 _TORCH_GREATER_EQUAL_2_0_0 = compare_version("torch", operator.ge, "2.0.0")
 _TORCH_LESSER_2_3_0 = Version(Version(torch.__version__).base_version) < Version("2.3.0")
