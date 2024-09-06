@@ -166,7 +166,6 @@ class TestFSDPModelAutoWrapped(TestBoringModel):
             assert self.layer[layer_num].mixed_precision.buffer_dtype == buffer_dtype
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_custom_mixed_precision():
     """Test to ensure that passing a custom mixed precision config works."""
     config = MixedPrecision()
@@ -174,7 +173,6 @@ def test_fsdp_custom_mixed_precision():
     assert strategy.mixed_precision_config == config
 
 
-@pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP on HPU."""
@@ -200,7 +198,6 @@ def test_fsdp_strategy_sync_batchnorm(tmpdir, arg_hpus):
     trainer.fit(model)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("strategy", ["SHARD_GRAD_OP", "FULL_SHARD", "NO_SHARD"])
 def test_fsdp_simple_model(strategy, arg_hpus):
     model = TestBoringModel()
@@ -400,7 +397,6 @@ def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, arg_hpus):
     assert all(_ex == _co for _ex, _co in zip(full_state_dict.keys(), correct_state_dict.keys()))
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_strategy_cpu_offload():
     """Test the different ways cpu offloading can be enabled."""
     # bool
@@ -413,7 +409,6 @@ def test_fsdp_strategy_cpu_offload():
     assert strategy.cpu_offload == config
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("precision", "expected_dtype"),
     [
@@ -454,7 +449,6 @@ def test_configure_model(tmpdir, arg_hpus, precision, expected_dtype):
     trainer.fit(model)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_fsdp_sharding_strategy():
     """Test the different ways the sharding strategy can be set."""
     from torch.distributed.fsdp import ShardingStrategy
@@ -511,7 +505,6 @@ def test_fsdp_activation_checkpointing():
     apply_mock.assert_called_with(wrapped, checkpoint_wrapper_fn=ANY, **strategy._activation_checkpointing_kwargs)
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("precision", "expected"),
     [
@@ -669,7 +662,6 @@ def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     trainer.strategy.barrier()
 
 
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 def test_dummy_fsdp_string_init(tmpdir):
     """Test that TorchMetrics get moved to the device despite not having any parameters."""
 
