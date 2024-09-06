@@ -52,4 +52,3 @@ repos:
       - id: ruff
         args: ["--fix"]
       - id: ruff-format
-        args: ["--fix"]
