@@ -21,42 +21,33 @@ from lightning_utilities import module_available
 if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning.fabric.utilities.types import ReduceOp
-    from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch import Trainer
     from lightning.pytorch.accelerators import Accelerator
-    from lightning.pytorch.plugins.io.wrapper import _WrappingCheckpointIO
     from lightning.pytorch.plugins.precision import PrecisionPlugin
     from lightning.pytorch.strategies.ddp import DDPStrategy
     from lightning.pytorch.trainer.states import TrainerFn
-    from lightning.pytorch.utilities.types import STEP_OUTPUT
 elif module_available("pytorch_lightning"):
     from lightning_fabric.plugins import CheckpointIO, ClusterEnvironment
     from lightning_fabric.utilities.types import ReduceOp
-    from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning import Trainer
     from pytorch_lightning.accelerators import Accelerator
-    from pytorch_lightning.plugins.io.wrapper import _WrappingCheckpointIO
     from pytorch_lightning.plugins.precision import PrecisionPlugin
     from pytorch_lightning.strategies.ddp import DDPStrategy
     from pytorch_lightning.trainer.states import TrainerFn
-    from pytorch_lightning.utilities.types import STEP_OUTPUT
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 from torch import Tensor
-from torch.nn import Module
-from torch.optim.optimizer import Optimizer
 
-from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
-from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
 
 if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl as hpu_dist
+    pass
 
 log = logging.getLogger(__name__)
 
 
-class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
+class HPUDDPStrategy(DDPStrategy, HPUParallelStrategy):
     """Strategy for distributed training on multiple HPU devices."""
 
     strategy_name = "hpu_ddp"
@@ -89,19 +80,6 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
             **kwargs,
         )
 
-    @property
-    def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:
-            self._checkpoint_io = HPUCheckpointIO()
-        elif isinstance(self._checkpoint_io, _WrappingCheckpointIO):
-            self._checkpoint_io.checkpoint_io = HPUCheckpointIO()
-
-        return self._checkpoint_io
-
-    @checkpoint_io.setter
-    def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io  # type: ignore
-
     def setup(self, trainer: "Trainer") -> None:
         if (
             trainer.state.fn in (TrainerFn.PREDICTING, TrainerFn.TESTING)
@@ -110,57 +88,20 @@ class HPUDDPStrategy(HPUParallelStrategy, DDPStrategy):
             raise NotImplementedError("FP8 inference is not supported with HPUDDPStrategy yet !!!")
         return super().setup(trainer)
 
-    def setup_environment(self) -> None:
-        if self._process_group_backend == "hccl":
-            # this env is used in overrides to check the backend initiated
-            _ws = self.cluster_environment.world_size()
-            _grank = self.cluster_environment.global_rank()
-            _lrank = self.cluster_environment.local_rank()
-            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
-        super().setup_environment()
-
     def determine_ddp_device_ids(self) -> None:
         return None
 
-    def on_after_backward(self) -> None:
-        # Break lazy accumulation of graph after fwd+bwd
-        htcore.mark_step()
-
-    def optimizer_step(
-        self,
-        optimizer: Optimizer,
-        closure: Callable[[], Any],
-        model: Optional[Union[LightningModule, Module]] = None,
-        **kwargs: Any,
-    ) -> Any:
-        optimizer_output = super().optimizer_step(optimizer, closure, model, **kwargs)
-        # Break lazy accumulation of graph after optimizer
-        htcore.mark_step()
-        return optimizer_output
-
-    def validation_step(self, *args: Any, **kwargs: Any) -> STEP_OUTPUT:
-        # Break lazy accumulation of graph after every step
-        htcore.mark_step()
-        return super().validation_step(*args, **kwargs)
-
-    def test_step(self, *args: Any, **kwargs: Any) -> STEP_OUTPUT:
-        # Break lazy accumulation of graph after every step
-        htcore.mark_step()
-        return super().test_step(*args, **kwargs)
-
-    def predict_step(self, *args: Any, **kwargs: Any) -> Any:
-        # Break lazy accumulation of graph after every step
-        htcore.mark_step()
-        return super().predict_step(*args, **kwargs)
-
     def reduce(
-        self, tensor: Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
-    ) -> Tensor:
-        if isinstance(tensor, Tensor):
-            if tensor.device != self.root_device:
-                tensor = tensor.to(self.root_device)
-            return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
-        return tensor
+        self,
+        tensor: Union[Tensor, Any],
+        group: Optional[Any] = None,
+        reduce_op: Optional[Union[ReduceOp, str]] = "mean",
+    ) -> Union[Tensor, Any]:
+        # Skipping DDPStrategy (first in mro) and inheriting from HPUParallelStrategy
+        return HPUParallelStrategy.reduce(self, tensor, group, reduce_op)
+
+    def _get_process_group_backend(self) -> str:
+        return HPUParallelStrategy._get_process_group_backend(self)
 
     @classmethod
     def register_strategies(cls, strategy_registry: Dict) -> None:

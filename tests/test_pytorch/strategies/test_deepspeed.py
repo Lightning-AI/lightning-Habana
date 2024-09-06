@@ -189,7 +189,7 @@ def test_hpu_deepspeed_strategy_env(tmpdir, monkeypatch, deepspeed_config):
     strategy = trainer.strategy
     assert isinstance(strategy, HPUDeepSpeedStrategy)
     assert len(trainer.strategy.parallel_devices) > 1
-    assert trainer.strategy.parallel_devices[0] == torch.device("hpu")
+    assert trainer.strategy.parallel_devices[0].type == "hpu"
     assert strategy.config == deepspeed_config
 
 
@@ -247,7 +247,7 @@ def test_warn_hpu_deepspeed_ignored(tmpdir):
         accelerator=HPUAccelerator(),
         fast_dev_run=True,
         default_root_dir=tmpdir,
-        strategy=HPUDeepSpeedStrategy(),
+        strategy=HPUDeepSpeedStrategy(parallel_devices=[torch.device("hpu")]),
         plugins=_plugins,
         devices=1,
         enable_progress_bar=False,
@@ -355,7 +355,7 @@ def test_deepspeed_config(tmpdir):
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        strategy=HPUDeepSpeedStrategy(),
+        strategy=HPUDeepSpeedStrategy(parallel_devices=[torch.device("hpu")]),
         default_root_dir=tmpdir,
         devices=1,
         log_every_n_steps=1,
@@ -440,7 +440,7 @@ def test_multi_optimizer_with_hpu_deepspeed(tmpdir):
         accelerator=HPUAccelerator(),
         fast_dev_run=True,
         default_root_dir=tmpdir,
-        strategy=HPUDeepSpeedStrategy(),
+        strategy=HPUDeepSpeedStrategy(parallel_devices=[torch.device("hpu")]),
         plugins=_plugins,
         devices=1,
         enable_progress_bar=False,
@@ -531,7 +531,12 @@ def test_lightning_deepspeed_stages(device_count, zero_stage, offload):
     trainer = Trainer(
         accelerator=HPUAccelerator(),
         devices=device_count,
-        strategy=HPUDeepSpeedStrategy(zero_optimization=True, stage=zero_stage, offload_optimizer=offload),
+        strategy=HPUDeepSpeedStrategy(
+            zero_optimization=True,
+            stage=zero_stage,
+            offload_optimizer=offload,
+            parallel_devices=[torch.device("hpu")] * device_count,
+        ),
         plugins=[HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")],
         fast_dev_run=2,
         enable_progress_bar=False,
@@ -555,7 +560,7 @@ def test_hpu_deepspeed_with_invalid_optimizer():
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO),
+        strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO, parallel_devices=[torch.device("hpu")]),
         max_epochs=1,
         plugins=_plugins,
         devices=1,
@@ -589,7 +594,9 @@ def test_hpu_deepspeed_with_optimizer_and_config(deepspeed_zero_config):
     _plugins = [HPUDeepSpeedPrecisionPlugin(precision="bf16-mixed")]
     trainer = Trainer(
         accelerator=HPUAccelerator(),
-        strategy=HPUDeepSpeedStrategy(logging_level=logging.INFO, config=deepspeed_zero_config),
+        strategy=HPUDeepSpeedStrategy(
+            logging_level=logging.INFO, config=deepspeed_zero_config, parallel_devices=[torch.device("hpu")]
+        ),
         callbacks=[TestCB()],
         max_epochs=1,
         plugins=_plugins,
@@ -860,7 +867,7 @@ def test_hpu_deepspeed_training_accuracy(tmpdir, device_count, stage):
         _plugin = HPUDeepSpeedPrecisionPlugin(precision=precision)
         if precision == "fp8":
             _plugin.convert_modules(model)
-        _strategy = HPUDeepSpeedStrategy(stage=stage)
+        _strategy = HPUDeepSpeedStrategy(stage=stage, parallel_devices=[torch.device("hpu")] * device_count)
         loss_list.append(run_training(tmpdir, model, _plugin, _strategy))
 
     assert torch.allclose(torch.tensor(loss_list[0][1]), torch.tensor(loss_list[1][1]), rtol=1e-2, atol=1e-2)
