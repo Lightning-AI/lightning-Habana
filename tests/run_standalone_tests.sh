@@ -62,7 +62,12 @@ fi
 echo "Test files: $test_files"
 
 # Get all the tests marked with standalone marker
+file_prefix="${HABANA_VISIBLE_MODULES//,/}"
+echo "$file_prefix"
+
 TEST_FILE="standalone_tests.txt"
+TEST_FILE="$file_prefix$TEST_FILE"
+echo "Test file $TEST_FILE"
 test_command="python -um pytest ${test_files} -q --collect-only --pythonwarnings ignore -m \"${marker}\""
 
 if [[ -n "$filter" ]]; then
