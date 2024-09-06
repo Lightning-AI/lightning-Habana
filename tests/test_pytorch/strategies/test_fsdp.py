@@ -261,6 +261,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
     trainer.fit(model)
 
+
 @pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
 @pytest.mark.standalone()
