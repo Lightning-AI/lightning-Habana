@@ -96,7 +96,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
-
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
