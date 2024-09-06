@@ -55,12 +55,6 @@ wrap-descriptions = 120
 blank = true
 
 
-[tool.black]
-# https://github.com/psf/black
-line-length = 120
-exclude = "(.eggs|.git|.hg|.mypy_cache|.venv|_build|buck-out|build|dist)"
-
-
 [tool.mypy]
 files = [
     "src",
@@ -81,6 +75,7 @@ warn_no_return = false
 
 
 [tool.ruff]
+target-version = "py38"
 line-length = 120
 
 [tool.ruff.lint]
@@ -96,6 +91,8 @@ extend-select = [
     "PT",  # see: https://pypi.org/project/flake8-pytest-style
     "RET",  # see: https://pypi.org/project/flake8-return
     "SIM",  # see: https://pypi.org/project/flake8-simplify
+    "UP", # pyupgrade
+    "RUF100", # yesqa
 ]
 ignore = [
     "E731",  # Do not assign a lambda expression, use a def

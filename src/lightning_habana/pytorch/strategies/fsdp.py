@@ -150,7 +150,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         self._precision_plugin = precision_plugin
 
     def _setup_model(self, model: Module) -> Module:
-
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in model.modules()):

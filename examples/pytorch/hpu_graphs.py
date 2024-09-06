@@ -288,7 +288,9 @@ if __name__ == "__main__":
     _train_type = (
         "fit"
         if (args.run_type == "train" or args.run_type == "dynamicity")
-        else "test" if args.run_type == "inference" else None
+        else "test"
+        if args.run_type == "inference"
+        else None
     )
 
     for mode in args.mode:
