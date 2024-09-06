@@ -21,13 +21,6 @@ repos:
       - id: check-docstring-first
       - id: detect-private-key
 
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.16.0
-    hooks:
-      - id: pyupgrade
-        args: ["--py38-plus"]
-        name: Upgrade code
-
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
@@ -42,36 +35,21 @@ repos:
         additional_dependencies: [tomli]
         args: ["--in-place"]
 
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
-    hooks:
-      - id: black
-        name: Black code
-
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.17
     hooks:
       - id: mdformat
+        args: ["--number"]
         additional_dependencies:
           - mdformat-gfm
           - mdformat-black
           - mdformat_frontmatter
         exclude: CHANGELOG.md
 
-  - repo: https://github.com/asottile/yesqa
-    rev: v1.5.0
-    hooks:
-      - id: yesqa
-        additional_dependencies:
-          - pep8-naming
-          - pydocstyle
-          #- flake8-comprehensions
-          #- flake8-pytest-style
-          #- flake8-return
-          #- flake8-simplify
-
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.5.0
     hooks:
       - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
         args: ["--fix"]
