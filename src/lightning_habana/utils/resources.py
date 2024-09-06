@@ -22,7 +22,7 @@ from lightning_utilities.core.imports import package_available
 from lightning_utilities.core.rank_zero import rank_zero_debug, rank_zero_warn
 
 _HABANA_FRAMEWORK_AVAILABLE = package_available("habana_frameworks")
-_HABANA_QUANTIZATION_TOOLKIT_AVAILABLE = package_available("habana_quantization_toolkit")
+_INTEL_NEURAL_COMPRESSOR_AVAILABLE = package_available("neural_compressor")
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.hpu as torch_hpu
@@ -167,10 +167,6 @@ def device_count() -> int:
 @lru_cache
 def is_fp8_available() -> Tuple[bool, str]:
     """Returns a bool indicating if fp8 is available."""
-    from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
-
-    if not _HPU_SYNAPSE_GREATER_EQUAL_1_14_0:
-        raise OSError("fp8 training requires `Synapse AI release >= 1.14.0`.")
     if not _HABANA_FRAMEWORK_AVAILABLE:
         raise OSError("Habana Frameworks required for training on Habana devices.")
     import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine

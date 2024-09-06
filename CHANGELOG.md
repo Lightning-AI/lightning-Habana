@@ -10,22 +10,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added utility to get device name from hl-smi ([#232](https://github.com/Lightning-AI/lightning-Habana/pull/232))
+- Integrated Intel Neural Compressor for FP8 inference ([#235](https://github.com/Lightning-AI/lightning-Habana/pull/235))
+-
 
 ### Changed
 
 - Updated to Intel Gaudi software Release 1.16.2 ([#207](https://github.com/Lightning-AI/lightning-Habana/pull/207))
 - Updated to Intel Gaudi software Release 1.17.0 ([#221](https://github.com/Lightning-AI/lightning-Habana/pull/221))
 - Modified torch device specification for FSDP on HPU ([#222](https://github.com/Lightning-AI/lightning-Habana/pull/222))
+- Updated strategy to use default fork ([#234](https://github.com/Lightning-AI/lightning-Habana/pull/234))
+- Updated hpu parallel strategy as base class ([#237](https://github.com/Lightning-AI/lightning-Habana/pull/237))
 
 ### Fixed
 
 -
+
 ### Removed
 
 -
 
 ### Deprecated
 
+- Deprecated support for Habana Quantization Toolkit. ([#235](https://github.com/Lightning-AI/lightning-Habana/pull/235))
 -
 
 ## [1.6.0] - 2024-06-28

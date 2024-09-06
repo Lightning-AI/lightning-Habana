@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any, Callable, Generator, List, Literal, Optio
 
 import torch
 from lightning_utilities import module_available
+from torch import Tensor
 from torch.nn import Module
 from typing_extensions import override
 
@@ -30,7 +31,6 @@ if module_available("lightning"):
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning.fabric.utilities.distributed import group as _group
     from lightning.fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning.fabric.utilities.types import ReduceOp
     from lightning.pytorch.plugins.precision import Precision
@@ -45,7 +45,6 @@ elif module_available("pytorch_lightning"):
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning_fabric.utilities.distributed import group as _group
     from lightning_fabric.utilities.init import _has_meta_device_parameters_or_buffers
     from lightning_fabric.utilities.types import ReduceOp
     from pytorch_lightning.plugins.precision import Precision
@@ -56,8 +55,7 @@ else:
 
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy, _hpu_broadcast_object_list
-from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
+from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if TYPE_CHECKING:
@@ -189,10 +187,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         self.model_to_device()
         super().setup(trainer)
 
-    def model_to_device(self) -> None:
-        assert self.model is not None
-        self.model.to(self.root_device)
-
     @contextmanager
     def model_sharded_context(self) -> Generator[None, None, None]:
         from torch.distributed.fsdp.fully_sharded_data_parallel import FullyShardedDataParallel
@@ -208,24 +202,17 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         ):
             yield
 
-    @override
-    def broadcast(self, obj: object, src: int = 0) -> object:
-        if not torch.distributed.is_available():
-            return obj
-
-        obj = [obj]
-        if self.global_rank != src:
-            obj = [None]
-
-        _hpu_broadcast_object_list(obj, src, group=_group.WORLD)
-        return obj[0]
-
     def reduce(
-        self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
-    ) -> torch.Tensor:
-        if isinstance(tensor, torch.Tensor):
-            return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
-        return tensor
+        self,
+        tensor: Union[Tensor, Any],
+        group: Optional[Any] = None,
+        reduce_op: Optional[Union[ReduceOp, str]] = "mean",
+    ) -> Union[Tensor, Any]:
+        # Skipping FSDPStrategy (first in mro) and inheriting from HPUParallelStrategy.
+        return HPUParallelStrategy.reduce(self, tensor, group, reduce_op)
+
+    def _get_process_group_backend(self) -> str:
+        return HPUParallelStrategy._get_process_group_backend(self)
 
     @classmethod
     def get_registered_strategies(cls) -> List[str]:

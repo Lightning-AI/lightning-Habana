@@ -32,9 +32,7 @@ if module_available("lightning"):
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning.fabric.utilities.distributed import (
-        ReduceOp,
-    )
+    from lightning.fabric.utilities.distributed import ReduceOp
     from lightning.fabric.utilities.rank_zero import rank_zero_warn
 elif module_available("pytorch_lightning"):
     import pytorch_lightning as pl
@@ -47,20 +45,14 @@ elif module_available("pytorch_lightning"):
         _move_torchmetrics_to_device,
         _setup_activation_checkpointing,
     )
-    from lightning_fabric.utilities.distributed import (
-        ReduceOp,
-    )
+    from lightning_fabric.utilities.distributed import ReduceOp
     from lightning_fabric.utilities.rank_zero import rank_zero_warn
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana.fabric.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
-from lightning_habana.utils.hpu_distributed import _sync_ddp_if_available
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _LIGHTNING_GREATER_EQUAL_2_3_0
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.distributed.hccl as hpu_dist
+from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
 
 if TYPE_CHECKING:
     from torch.distributed.fsdp.fully_sharded_data_parallel import CPUOffload, MixedPrecision, ShardingStrategy
@@ -104,6 +96,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
 
+
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -120,15 +113,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
             state_dict_type=state_dict_type,
             **kwargs,
         )
-
-    def setup_environment(self) -> None:
-        if self._process_group_backend == "hccl":
-            # this env is used in overrides to check the backend initiated
-            _ws = self.cluster_environment.world_size()
-            _grank = self.cluster_environment.global_rank()
-            _lrank = self.cluster_environment.local_rank()
-            hpu_dist.initialize_distributed_hpu(world_size=_ws, rank=_grank, local_rank=_lrank)
-        super().setup_environment()
 
     @property
     def mixed_precision_config(self) -> Optional["MixedPrecision"]:
@@ -225,9 +209,8 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     def reduce(
         self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
     ) -> torch.Tensor:
-        if isinstance(tensor, torch.Tensor):
-            return _sync_ddp_if_available(tensor, group, reduce_op=reduce_op)
-        return tensor
+        # Skipping FSDPStrategy (first in mro) and inheriting from HPUParallelStrategy.
+        return HPUParallelStrategy.reduce(self, tensor, group, reduce_op)
 
     @classmethod
     def get_registered_strategies(cls) -> List[str]:

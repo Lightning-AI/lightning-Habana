@@ -41,10 +41,13 @@ from torch.nn import Module
 from torch.optim.optimizer import Optimizer
 
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
+from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _HPU_SYNAPSE_GREATER_EQUAL_1_17_0
 
 if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
+
+    if _HPU_SYNAPSE_GREATER_EQUAL_1_17_0:
+        from neural_compressor.torch.quantization import finalize_calibration
 
 
 class SingleHPUStrategy(SingleDeviceStrategy):
@@ -126,18 +129,14 @@ class SingleHPUStrategy(SingleDeviceStrategy):
 
     def on_test_end(self) -> None:
         if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
-            import habana_quantization_toolkit
+            finalize_calibration(self.model)
 
-            habana_quantization_toolkit.finish_measurements(self.model)
-            htcore.quantization.hpu_teardown_inference_env()
         return super().on_test_end()
 
     def on_predict_end(self) -> None:
         if self.precision_plugin.precision == "fp8" and self.precision_plugin.fp8_inference_available:
-            import habana_quantization_toolkit
+            finalize_calibration(self.model)
 
-            habana_quantization_toolkit.finish_measurements(self.model)
-            htcore.quantization.hpu_teardown_inference_env()
         return super().on_predict_end()
 
     @classmethod

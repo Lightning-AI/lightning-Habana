@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from typing import Any, Callable, Mapping, Optional, Union
 
 import torch
@@ -39,10 +38,9 @@ else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT, HPUPrecisionPlugin
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_14_0
 from lightning_habana.utils.resources import _HABANA_FRAMEWORK_AVAILABLE
 
-if _HPU_SYNAPSE_GREATER_EQUAL_1_14_0 and _HABANA_FRAMEWORK_AVAILABLE:
+if _HABANA_FRAMEWORK_AVAILABLE:
     import habana_frameworks.torch.core as htcore
     from habana_frameworks.torch.hpex.experimental.transformer_engine.recipe import DelayedScaling
 
@@ -141,25 +139,13 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
     def _enable_fp8_inference(
         self,
         module: torch.nn.Module,
-        quant: bool = True,
+        quant: Optional[Union[bool, str, dict]] = True,
         fp8_data_path: Optional[str] = None,
-        ds_inference_kwargs: Optional[dict] = None,
     ) -> None:
-        """Convert modules for fp8 inference.
-
-        This module cannot be used with trainer.fit.
-
-        """
-        ds_inference_kwargs = {} if ds_inference_kwargs is None else ds_inference_kwargs
-        if "dtype" not in ds_inference_kwargs:
-            ds_inference_kwargs["dtype"] = torch.bfloat16
-        assert ds_inference_kwargs["dtype"] in (torch.bfloat16, torch.float)
-
-        htcore.quantization.hpu_set_inference_env()
-        module = module.to("hpu")
-
-        module = deepspeed.init_inference(module, **ds_inference_kwargs)
-        super()._setup_fp8_inference_modules(module, quant, fp8_data_path)
+        """Enable fp8 inference."""
+        htcore.hpu_set_env()
+        self.quant = quant
+        self.fp8_data_path = fp8_data_path
 
     def convert_modules(
         self,
@@ -167,13 +153,12 @@ class HPUDeepSpeedPrecisionPlugin(HPUPrecisionPlugin):
         inference: bool = False,
         replace_layers: bool = False,
         recipe: Optional[Union[Mapping[str, Any], "DelayedScaling"]] = None,
-        quant: bool = True,
+        quant: Optional[Union[bool, str, dict]] = True,
         fp8_data_path: Optional[str] = None,
-        ds_inference_kwargs: Optional[dict] = None,
     ) -> torch.nn.Module:
         """Enable support for fp8."""
         if inference and self.fp8_inference_available:
-            self._enable_fp8_inference(module, quant, fp8_data_path, ds_inference_kwargs)
-        if not inference and self.fp8_train_available:
-            self._enable_fp8_training(module, replace_layers, recipe)
+            self._enable_fp8_inference(module=module, quant=quant, fp8_data_path=fp8_data_path)
+        if not inference and self.fp8_training_available:
+            self._enable_fp8_training(module=module, replace_layers=replace_layers, recipe=recipe)
         return module

@@ -15,7 +15,7 @@
 
 import logging
 from datetime import timedelta
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 import torch.distributed
 from lightning_utilities import module_available
@@ -25,37 +25,29 @@ if module_available("lightning"):
     from lightning.fabric.plugins import CheckpointIO
     from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
     from lightning.fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning.fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning.fabric.plugins.precision import Precision
     from lightning.fabric.strategies.ddp import DDPStrategy
-    from lightning.fabric.utilities.types import Optimizable
+    from lightning.fabric.utilities.types import ReduceOp
 elif module_available("pytorch_lightning"):
     from lightning_fabric.accelerators import Accelerator
     from lightning_fabric.plugins import CheckpointIO
     from lightning_fabric.plugins.collectives.torch_collective import default_pg_timeout
     from lightning_fabric.plugins.environments.cluster_environment import ClusterEnvironment
-    from lightning_fabric.plugins.io.torch_io import TorchCheckpointIO
     from lightning_fabric.plugins.precision import Precision
     from lightning_fabric.strategies.ddp import DDPStrategy
-    from lightning_fabric.utilities.types import Optimizable
+    from lightning_fabric.utilities.types import ReduceOp
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from torch import Tensor
-from torch.nn import Module
 
 from lightning_habana import HPU_AVAILABLE
 from lightning_habana.fabric.accelerator import HPUAccelerator
-from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE, _TORCH_LESSER_EQUAL_1_13_1
-
-if _HABANA_FRAMEWORK_AVAILABLE:
-    import habana_frameworks.torch.core as htcore
-    import habana_frameworks.torch.distributed.hccl  # noqa: F401
+from lightning_habana.fabric.strategies.parallel import HPUParallelStrategy
 
 log = logging.getLogger(__name__)
 
 
-class HPUDDPStrategy(DDPStrategy):
+class HPUDDPStrategy(DDPStrategy, HPUParallelStrategy):
     """Strategy for distributed training on multiple HPU devices."""
 
     strategy_name = "hpu_ddp"
@@ -89,62 +81,17 @@ class HPUDDPStrategy(DDPStrategy):
         )
 
     @property
-    def checkpoint_io(self) -> CheckpointIO:
-        if self._checkpoint_io is None:  # type: ignore
-            self._checkpoint_io = TorchCheckpointIO()
-
-        return self._checkpoint_io
-
-    @checkpoint_io.setter
-    def checkpoint_io(self, io: Optional[CheckpointIO]) -> None:
-        self._checkpoint_io = io
-
-    @property
     def process_group_backend(self) -> Optional[str]:
         return self._process_group_backend
 
     def determine_ddp_device_ids(self) -> None:
         return None
 
-    # def broadcast(self, obj: object, src: int = 0) -> object:  # type: ignore
-    #     obj = [obj]
-    #     if self.global_rank != src:
-    #         obj = [None]
-
-    #     broadcast_object_list(obj, src, group=_group.WORLD)
-    #     return obj[0]
-
-    def backward(self, tensor: Tensor, module: Optional[Module], *args: Any, **kwargs: Any) -> None:
-        super().backward(tensor, module=module, args=args, kwargs=kwargs)
-        if _TORCH_LESSER_EQUAL_1_13_1:
-            # Break lazy accumulation of graph after fwd+bwd
-            htcore.mark_step()
-
-    def setup_module(self, module: Module) -> Module:
-        """Performs setup for the model, e.g., by wrapping it by another class."""
-        # Fabric doesn't support nn.Module with wrapped attributes currently.
-        # Refer https://github.com/Lightning-AI/pytorch-lightning/issues/19307 for the description.
-        # It is a workaround as default wrapper is overridden for HPU backend.
-        if hasattr(Module, "original__get_attr__"):
-            if module_available("lightning"):
-                from lightning.fabric.wrappers import _FabricModule
-            elif module_available("pytorch_lightning"):
-                from lightning_fabric.wrappers import _FabricModule
-
-            Module.__getattr__ = _FabricModule.original__get_attr__  # type: ignore
-
-        return super().setup_module(module)
-
-    def optimizer_step(
-        self,
-        optimizer: Optimizable,
-        **kwargs: Any,
-    ) -> Any:
-        optimizer_output = super().optimizer_step(optimizer=optimizer, kwargs=kwargs)
-        if _TORCH_LESSER_EQUAL_1_13_1:
-            # Break lazy accumulation of graph after optimizer
-            htcore.mark_step()
-        return optimizer_output
+    def reduce(
+        self, tensor: torch.Tensor, group: Optional[Any] = None, reduce_op: Optional[Union[ReduceOp, str]] = "mean"
+    ) -> torch.Tensor:
+        # Skipping FSDPStrategy (first in mro) and inheriting from HPUParallelStrategy.
+        return HPUParallelStrategy.reduce(self, tensor, group, reduce_op)
 
     @classmethod
     def register_strategies(cls, strategy_registry: Dict) -> None:
