@@ -107,5 +107,5 @@ for result in "${results[@]}"; do
 done
 echo "===== STANDALONE TEST STATUS END ====="
 
-mv tests/**/*.xml .
+mv tests/**/**/*.xml .
 rm $TEST_FILE
