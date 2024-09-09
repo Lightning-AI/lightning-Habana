@@ -152,7 +152,6 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
         return torch.device("hpu", torch.hpu.current_device())
 
     def _setup_model(self, model: Module) -> Module:
-
         from torch.distributed.fsdp import FullyShardedDataParallel
 
         if any(isinstance(mod, FullyShardedDataParallel) for mod in model.modules()):

@@ -75,7 +75,6 @@ def parse_args():
 
 
 if __name__ == "__main__":
-
     seed_everything(42)
 
     options = parse_args()

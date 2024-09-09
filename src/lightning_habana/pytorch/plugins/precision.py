@@ -92,7 +92,7 @@ class HPUPrecisionPlugin(Precision):
         self.device = device
         self.precision = precision
 
-        self.recipe: Union[Mapping[str, Any], "DelayedScaling"] = None
+        self.recipe: Union[Mapping[str, Any], DelayedScaling] = None
         self.replace_layers = False
         self.fp8_training_available = False
         self.fp8_inference_available = False

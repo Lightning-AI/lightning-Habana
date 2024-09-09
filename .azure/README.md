@@ -5,10 +5,10 @@
 In general follow instructions in [Bare Metal Fresh OS Installation](https://docs.habana.ai/en/v1.15.0/Installation_Guide/Bare_Metal_Fresh_OS.html#) and in particular [Habana Driver Unattended Upgrade](https://docs.habana.ai/en/v1.15.0/Installation_Guide/Bare_Metal_Fresh_OS.html#habana-driver-unattended-upgrade).
 
 1. check what is the actual state and version of HW - `hl-smi`
-1. check the actual OS version - `lsb_release -a`
-1. update sources - `sudo apt update --fix-missing`
-1. run upgrade to the latest - `sudo apt upgrade`
-1. reboot the machine...
+2. check the actual OS version - `lsb_release -a`
+3. update sources - `sudo apt update --fix-missing`
+4. run upgrade to the latest - `sudo apt upgrade`
+5. reboot the machine...
 
 ### Troubleshooting
 
@@ -25,7 +25,7 @@ In some cases you may get stack with hanged libs linked to past kernel (for exam
    sudo mv /var/lib/dpkg/info_old /var/lib/dpkg/info
    sudo apt-get update && sudo apt-get -f install
    ```
-1. purge the hanging package
+2. purge the hanging package
    ```bash
    apt list --installed | grep habana
    sudo rm /var/lib/dpkg/info/habanalabs-dkms*
@@ -33,11 +33,11 @@ In some cases you may get stack with hanged libs linked to past kernel (for exam
    sudo apt -f install
    sudo apt purge habanalabs-dkms
    ```
-1. if the package folder hangs, drop it:
+3. if the package folder hangs, drop it:
    ```bash
    sudo rm -rf  /var/lib/dkms/habanalabs-dkms
    ```
-1. install all, if some failed try rerun the script
+4. install all, if some failed try rerun the script
    ```bash
    wget -nv https://vault.habana.ai/artifactory/gaudi-installer/latest/habanalabs-installer.sh
    chmod +x habanalabs-installer.sh
