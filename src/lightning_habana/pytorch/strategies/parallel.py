@@ -114,11 +114,11 @@ class HPUParallelStrategy(ParallelStrategy):
         self._checkpoint_io = io  # type: ignore
 
     def setup_environment(self) -> None:
+        self.setup_hccl_env()
         super().setup_environment()
         if self.__class__.__name__ == "HPUParallelStrategy":
             # Strategies derived from this class should handle their own distributed setups.
             self.setup_distributed()
-        self.setup_hccl_env()
 
     def setup_hccl_env(self) -> None:
         """Initializes the HCCL environment for distributed training on HPU devices."""
