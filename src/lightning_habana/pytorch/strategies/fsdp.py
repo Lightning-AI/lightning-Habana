@@ -153,7 +153,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     @override
     def root_device(self) -> torch.device:
         assert self.parallel_devices is not None
-        #HPUParallelStrategy.setup_hccl_env(self)
+        # HPUParallelStrategy.setup_hccl_env(self)
         return torch.device("hpu", torch.hpu.current_device())
 
     def _setup_model(self, model: Module) -> Module:
