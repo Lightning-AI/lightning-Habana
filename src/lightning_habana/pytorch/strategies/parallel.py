@@ -63,6 +63,7 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
+from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.utils.hpu_distributed import _sync_hpu_processes_if_available
 from lightning_habana.utils.imports import _HABANA_FRAMEWORK_AVAILABLE
@@ -123,6 +124,9 @@ class HPUParallelStrategy(ParallelStrategy):
     def setup_hccl_env(self) -> None:
         """Initializes the HCCL environment for distributed training on HPU devices."""
         assert self._get_process_group_backend() == "hccl"
+        assert isinstance(
+            self.accelerator, HPUAccelerator
+        ), f"{self.__class__.__name__} requires HPUAccelerator. Found {self.accelerator}"
         _ws = self.cluster_environment.world_size()
         _grank = self.cluster_environment.global_rank()
         _lrank = self.cluster_environment.local_rank()
@@ -137,7 +141,7 @@ class HPUParallelStrategy(ParallelStrategy):
         _init_dist_connection(self.cluster_environment, self._process_group_backend, timeout=self._timeout)
 
     def _get_process_group_backend(self) -> str:
-        return "hccl"
+        return self._process_group_backend
 
     def set_world_ranks(self) -> None:
         if self.cluster_environment is not None:

@@ -91,7 +91,6 @@ class HPUParallelStrategy(ParallelStrategy):
         if not HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
 
-        self._process_group_backend: Optional[str] = "hccl"
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,

@@ -62,6 +62,15 @@ def test_hpu_ddp_strategy_init():
     assert strategy._ddp_kwargs["find_unused_parameters"] == find_unused_parameters
 
 
+def test_hpu_ddp_strategy_device_not_hpu(tmpdir):
+    """Tests hpu required with HPUDDPStrategy."""
+    trainer = Trainer(
+        default_root_dir=tmpdir, accelerator="cpu", strategy=HPUDDPStrategy(), devices=1, fast_dev_run=True
+    )
+    with pytest.raises(AssertionError, match="HPUDDPStrategy requires HPUAccelerator"):
+        trainer.fit(BoringModel())
+
+
 def test_hpu_ddp_custom_strategy_registry():
     """Test custom parallel strategy registry."""
 

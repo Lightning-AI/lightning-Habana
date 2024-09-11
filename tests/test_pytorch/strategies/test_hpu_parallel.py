@@ -18,6 +18,7 @@ import pytest
 import torch
 import torch.distributed
 from lightning_utilities import module_available
+from torch.multiprocessing.spawn import ProcessRaisedException
 
 if module_available("lightning"):
     from lightning.fabric.plugins.collectives.torch_collective import default_pg_timeout
@@ -53,6 +54,15 @@ def test_hpu_parallel_strategy_init():
     assert strategy._start_method == "spawn"
     assert strategy._timeout == default_pg_timeout
     assert strategy._num_nodes == 1
+
+
+def test_hpu_parallel_strategy_device_not_hpu(tmpdir):
+    """Tests hpu required with HPUParallelStrategy."""
+    trainer = Trainer(
+        default_root_dir=tmpdir, accelerator="cpu", strategy=HPUParallelStrategy(), devices=1, fast_dev_run=True
+    )
+    with pytest.raises(ProcessRaisedException, match="HPUParallelStrategy requires HPUAccelerator"):
+        trainer.fit(BoringModel())
 
 
 def test_hpu_parallel_parallel_devices():
