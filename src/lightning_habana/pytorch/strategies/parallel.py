@@ -137,7 +137,6 @@ class HPUParallelStrategy(ParallelStrategy):
         _init_dist_connection(self.cluster_environment, self._process_group_backend, timeout=self._timeout)
 
     def _get_process_group_backend(self) -> str:
-        assert self.root_device.type == "hpu"
         return "hccl"
 
     def set_world_ranks(self) -> None:
