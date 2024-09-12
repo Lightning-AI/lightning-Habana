@@ -98,7 +98,7 @@ class HPUParallelStrategy(ParallelStrategy):
             checkpoint_io=checkpoint_io,
             precision=precision,
         )
-        self._process_group_backend = "hccl"
+        self._process_group_backend: Optional[str] = "hccl"
         self._timeout = default_pg_timeout
         self._num_nodes = 1
         self._start_method = "spawn" if self.strategy_name == "hpu_parallel" else None
