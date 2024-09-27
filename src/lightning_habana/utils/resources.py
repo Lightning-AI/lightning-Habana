@@ -93,14 +93,15 @@ def get_hpu_synapse_version() -> str:
     hl, fw = _parse_hpu_synapse_versions(out.decode("utf-8"))
     return hl or "0.0.0"
 
+
 @lru_cache
 def get_device_name_from_backend() -> str:
     """Return the name of the HPU device."""
     try:
-        #this opens up a device to retrieve the name
+        # this opens up a device to retrieve the name
         return torch_hpu.get_device_name()
     except (AttributeError, NameError):
-        #return GAUDI as default name
+        # return GAUDI as default name
         return "GAUDI"
 
 
@@ -134,7 +135,7 @@ def get_device_name_from_hlsmi() -> str:
     try:
         proc = subprocess.Popen(["hl-smi", "-L"], stdout=subprocess.PIPE)
     except (FileNotFoundError, NotADirectoryError):
-        #if hl-smi is not present, we open a device to get the name
+        # if hl-smi is not present, we open a device to get the name
         return get_device_name_from_backend()
     out = proc.communicate()[0]
     return _parse_for_device_name(out.decode("utf-8"))
