@@ -93,6 +93,16 @@ def get_hpu_synapse_version() -> str:
     hl, fw = _parse_hpu_synapse_versions(out.decode("utf-8"))
     return hl or "0.0.0"
 
+@lru_cache
+def get_device_name_from_backend() -> str:
+    """Return the name of the HPU device."""
+    try:
+        #this opens up a device to retrieve the name
+        return torch_hpu.get_device_name()
+    except (AttributeError, NameError):
+        #return GAUDI as default name
+        return "GAUDI"
+
 
 def _parse_for_device_name(line: str) -> str:
     """Parse the CMD output with version capture.
@@ -123,9 +133,9 @@ def get_device_name_from_hlsmi() -> str:
     """Get hpu device name from hl-smi."""
     try:
         proc = subprocess.Popen(["hl-smi", "-L"], stdout=subprocess.PIPE)
-    # TODO: FileNotFoundError: No such file or directory: 'hl-smi'
     except (FileNotFoundError, NotADirectoryError):
-        return "GAUDI"
+        #if hl-smi is not present, we open a device to get the name
+        return get_device_name_from_backend()
     out = proc.communicate()[0]
     return _parse_for_device_name(out.decode("utf-8"))
 
@@ -179,7 +189,7 @@ def is_fp16_available() -> Tuple[bool, str]:
     """Returns a bool indicating if fp16 is available."""
     if not _HABANA_FRAMEWORK_AVAILABLE:
         raise OSError("Habana Frameworks required for training on Habana devices.")
-    if torch_hpu.get_device_name() == "GAUDI":
+    if get_device_name_from_hlsmi() == "GAUDI":
         return False, "FP16 not supported on Gaudi, Gaudi2 or higher required."
     return True, ""
 
