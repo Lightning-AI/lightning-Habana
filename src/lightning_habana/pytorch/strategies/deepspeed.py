@@ -862,7 +862,10 @@ class HPUDeepSpeedStrategy(HPUDDPStrategy):
 
         is_fitting = self.lightning_module.trainer.state.fn == TrainerFn.FITTING
         _, client_state = self.deepspeed_engine.load_checkpoint(
-            checkpoint_path, load_optimizer_states=is_fitting, load_lr_scheduler_states=False
+            checkpoint_path,
+            load_optimizer_states=is_fitting,
+            load_lr_scheduler_states=False,
+            load_module_strict=self.lightning_module.strict_loading,
         )
         if client_state is None:
             raise MisconfigurationException(
