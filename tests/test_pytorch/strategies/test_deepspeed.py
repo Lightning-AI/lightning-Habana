@@ -945,3 +945,12 @@ def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, device_count, quant):
         if device_count == 2:
             bf16_loss = torch.tensor(1.2734)
         assert torch.allclose(fp8_test_loss, bf16_loss, rtol=0.03, atol=0.02)
+
+
+def test_hpu_deepspeed_strategy_device_not_hpu(tmpdir):
+    """Tests hpu required with HPUDeepSpeedStrategy."""
+    trainer = Trainer(
+        default_root_dir=tmpdir, accelerator="cpu", strategy=HPUDeepSpeedStrategy(), devices=1, fast_dev_run=True
+    )
+    with pytest.raises(AssertionError, match="HPUDeepSpeedStrategy requires HPUAccelerator"):
+        trainer.fit(BoringModel())
