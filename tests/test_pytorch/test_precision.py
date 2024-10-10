@@ -118,10 +118,10 @@ class BMPluginActive(BaseBM):
     def forward(self, x):
         """Forward."""
         if self.trainer.precision == "fp8":
-            assert tengine.fp8.is_fp8_enabled()
+            assert tengine.fp8.FP8GlobalStateManager.is_fp8_enabled()
             assert not torch.hpu.is_autocast_hpu_enabled()
         else:
-            assert not tengine.fp8.is_fp8_enabled()
+            assert not tengine.fp8.FP8GlobalStateManager.is_fp8_enabled()
             assert torch.hpu.is_autocast_hpu_enabled()
         return super().forward(x)
 
@@ -307,7 +307,13 @@ def test_hpu_precision_fp8_patch(patch_path, tmpdir, fp8_config):
             pytest.raises(FileNotFoundError),
         ),
         (
-            {"inference": True, "quant": {"mode": "MEASURE"}},
+            {
+                "inference": True,
+                "quant": {
+                    "mode": "MEASURE",
+                    "allowlist": {"types": [], "names": []},
+                },
+            },
             nullcontext(),
         ),
         ({"inference": False}, nullcontext()),
@@ -365,17 +371,18 @@ def test_hpu_precision_fp8_inference_with_quant_dict(tmpdir):
 @pytest.mark.standalone_only()
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_inference_log_files(tmpdir):
-    log_file = os.path.join(os.environ["HABANA_LOGS"], "hqt_log.txt")
-    # remove log file if it exists
+    log_file = os.path.join(os.environ["HABANA_LOGS"], "inc_log.txt")
+    file_size = 0  # if file does not exist
     if os.path.isfile(log_file):
-        os.remove(log_file)
+        file_size = os.path.getsize(log_file)  # file exists. log will be appended.
 
+    model = BoringModel()
     precision_plugin = HPUPrecisionPlugin(precision="fp8")
-    precision_plugin.convert_modules(module=BoringModel(), inference=True, quant=False, fp8_data_path=tmpdir)
+    precision_plugin.convert_modules(module=model, inference=True, quant=False, fp8_data_path=tmpdir)
 
     # check log file is created with size > 0
     assert os.path.isfile(log_file)
-    assert os.path.getsize(log_file) > 0
+    assert os.path.getsize(log_file) > file_size
 
 
 @pytest.mark.standalone_only()
@@ -781,9 +788,9 @@ def test_hpu_precision_active_with_te_module(tmpdir, precision):
             # fp8 training is only enabled when precision is fp8,
             # even if module used is from transformer engine.
             if precision == "fp8":
-                assert tengine.fp8.is_fp8_enabled()
+                assert tengine.fp8.FP8GlobalStateManager.is_fp8_enabled()
             else:
-                assert not tengine.fp8.is_fp8_enabled()
+                assert not tengine.fp8.FP8GlobalStateManager.is_fp8_enabled()
             return super().training_step(batch, batch_idx)
 
         def configure_optimizers(self):
