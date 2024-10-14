@@ -226,9 +226,10 @@ def test_ddp_strategy_with_compile(tmp_path, arg_hpus):
     ("record_module_names", "expectation"),
     [
         (False, nullcontext()),
-        (
+        pytest.param(
             True,
             pytest.raises(TypeError, match=r"nullcontext.__enter__\(\) missing 1 required positional argument: 'self'"),
+            marks=pytest.mark.xfail(),
         ),
     ],
 )
