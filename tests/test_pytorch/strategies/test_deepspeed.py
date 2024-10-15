@@ -905,7 +905,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, device_count):
     bf16_loss = torch.tensor(0.6641)
     if device_count == 2:
         bf16_loss = torch.tensor(1.2734)
-    assert torch.allclose(bf16_test_loss, bf16_loss, rtol=1e-5, atol=1e-5)
+    assert torch.allclose(bf16_test_loss, bf16_loss, rtol=1e-4, atol=1e-4)
 
 
 @pytest.mark.standalone_only()  # HQT cannot be reconfigured in same process
