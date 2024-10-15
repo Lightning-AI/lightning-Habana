@@ -324,7 +324,7 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
     trainer.fit(model)
 
 
-@pytest.mark.parametrize("state_dict_type", [pytest.param("sharded", marks=pytest.mark.xfail(reason="Failure with 1.18")), "full"])  # noqa: E501
+@pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
 @pytest.mark.standalone()
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
