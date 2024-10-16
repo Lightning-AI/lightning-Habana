@@ -169,9 +169,10 @@ def is_fp8_available() -> Tuple[bool, str]:
     """Returns a bool indicating if fp8 is available."""
     if not _HABANA_FRAMEWORK_AVAILABLE:
         raise OSError("Habana Frameworks required for training on Habana devices.")
-    import habana_frameworks.torch.hpex.experimental.transformer_engine as tengine
 
-    return tengine.fp8.is_fp8_available()
+    if get_device_name_from_hlsmi() == "GAUDI":
+        return False, "FP8 not supported on Gaudi, Gaudi2 or higher required"
+    return True, ""
 
 
 @lru_cache
@@ -179,7 +180,8 @@ def is_fp16_available() -> Tuple[bool, str]:
     """Returns a bool indicating if fp16 is available."""
     if not _HABANA_FRAMEWORK_AVAILABLE:
         raise OSError("Habana Frameworks required for training on Habana devices.")
-    if torch_hpu.get_device_name() == "GAUDI":
+
+    if get_device_name_from_hlsmi() == "GAUDI":
         return False, "FP16 not supported on Gaudi, Gaudi2 or higher required."
     return True, ""
 

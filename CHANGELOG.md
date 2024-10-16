@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.7.0] - 2024-09-DD
+## [1.7.0] - 2024-10-DD
 
 ### Added
 
@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Modified torch device specification for FSDP on HPU ([#222](https://github.com/Lightning-AI/lightning-Habana/pull/222))
 - Updated strategy to use default fork ([#234](https://github.com/Lightning-AI/lightning-Habana/pull/234))
 - Updated hpu parallel strategy as base class ([#237](https://github.com/Lightning-AI/lightning-Habana/pull/237))
+- Updated to Intel Gaudi software Release 1.18.0 ([#245](https://github.com/Lightning-AI/lightning-Habana/pull/245))
 
 ### Fixed
 

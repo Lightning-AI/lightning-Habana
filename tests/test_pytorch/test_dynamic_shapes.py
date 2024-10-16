@@ -61,10 +61,10 @@ def run_training(tmpdir, hpus, model, data_module):
 
 def test_dynamic_shapes_recompilations_recipe_caching(tmpdir, arg_hpus, monkeypatch):
     """Tests number of recompilations between cached and non-cached runs."""
+    with monkeypatch.context() as m:
+        m.setenv("PT_HPU_RECIPE_CACHE_CONFIG", f"{tmpdir}/recipes/,true,1024")
+        cached_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
     default_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
-
-    monkeypatch.setenv("PT_HPU_RECIPE_CACHE_CONFIG", f"{tmpdir}/recipes,True,1024")
-    cached_compiles = run_training(tmpdir, hpus=arg_hpus, model=DynamicOpsBoringModel, data_module=BoringDataModule)
 
     assert cached_compiles[0] <= default_compiles[0]
 
