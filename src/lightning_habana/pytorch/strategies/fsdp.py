@@ -53,7 +53,6 @@ elif module_available("pytorch_lightning"):
 else:
     raise ModuleNotFoundError("You are missing `lightning` or `pytorch-lightning` package, please install it.")
 
-from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.pytorch.plugins.io_plugin import HPUCheckpointIO
 from lightning_habana.pytorch.strategies.parallel import HPUParallelStrategy
@@ -101,10 +100,7 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
     ) -> None:
         if not _LIGHTNING_GREATER_EQUAL_2_3_0:
             raise OSError("HPUFSDPStrategy requires `lightning>=2.3.0 or pytorch-lightning >= 2.3.0`.")
-        if parallel_devices is None:
-            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * HPUAccelerator.auto_device_count()
-        elif torch.device("hpu") in parallel_devices:
-            parallel_devices = [torch.device("hpu", torch.hpu.current_device())] * len(parallel_devices)
+
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -148,6 +144,12 @@ class HPUFSDPStrategy(FSDPStrategy, HPUParallelStrategy):
                 f"The FSDP strategy can only work with the `HPUFSDPPrecision` plugin, found {precision_plugin}"
             )
         self._precision_plugin = precision_plugin
+
+    @property
+    @override
+    def root_device(self) -> torch.device:
+        assert self.parallel_devices is not None
+        return torch.device("hpu", torch.hpu.current_device())
 
     def _setup_model(self, model: Module) -> Module:
         from torch.distributed.fsdp import FullyShardedDataParallel
