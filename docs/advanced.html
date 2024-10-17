@@ -1,0 +1,1429 @@
+
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-PQBQ3CV');
+  </script>
+  <!-- End Google Tag Manager -->
+
+  <meta charset="utf-8">
+  <meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="google-site-verification" content="okUst94cAlWSsUsGZTB4xSS4UKTtRV8Nu5XZ9pdd3Aw" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Accelerator: HPU Training &mdash; lightning-habana 1.7.0.rc0 documentation</title>
+  
+
+  
+  
+    <link rel="shortcut icon" href="_static/icon.svg"/>
+  
+  
+  
+    <link rel="canonical" href="https://github.com/Lightning-AI/lightning-habana/advanced.html"/>
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!-- <link rel="stylesheet" href="_static/pygments.css" type="text/css" /> -->
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/sphinx_paramlinks.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <!-- Google Analytics -->
+  
+  <!-- End Google Analytics -->
+  
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+  <!-- Preload the theme fonts -->
+
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-book.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/FreightSans/freight-sans-medium-italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/UCity/UCity-Light.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/UCity/UCity-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/UCity/UCity-Semibold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="_static/fonts/Inconsolata/Inconsolata.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+
+<!-- Preload the katex fonts -->
+
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Math-Italic.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Main-Bold.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size1-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size4-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size2-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Size3-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/katex@0.10.0/dist/fonts/KaTeX_Caligraphic-Regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+  <script defer src="https://use.fontawesome.com/releases/v6.1.1/js/all.js" integrity="sha384-xBXmu0dk1bEoiwd71wOonQLyH+VpgR1XcDH3rtxrLww5ajNTuMvBdL5SOiFZnNdp" crossorigin="anonymous"></script>
+
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <script src="_static/js/react/react.jsx" type="text/babel"></script>
+</head>
+
+<div class="container-fluid header-holder tutorials-header" id="header-holder">
+  <div class="container">
+    <div class="header-container">
+      <a class="header-logo" href="https://lightning-habana.rtfd.io/en/latest/" aria-label="PyTorch Lightning">
+      <!--  <img class="call-to-action-img" src="_static/images/logo-lightning-icon.png"/> -->
+      </a>
+
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://lightning-habana.readthedocs.io/en/latest/introduction_guide.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://www.Lightning-AI.ai/blog">Blog</a>
+          </li>
+
+          <li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-orange-arrow">
+                Docs
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning.ai/docs/pytorch/stable/">
+                  <span class="dropdown-title">PyTorch Lightning</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning.ai/docs/fabric/stable/">
+                  <span class="dropdown-title">Lightning Fabric</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://torchmetrics.readthedocs.io/en/stable/">
+                  <span class="dropdown-title">TorchMetrics</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning-flash.readthedocs.io/en/stable/">
+                  <span class="dropdown-title">Lightning Flash</span>
+                </a>
+                <a class="doc-dropdown-option nav-dropdown-item" href="https://lightning-bolts.readthedocs.io/en/stable/">
+                  <span class="dropdown-title">Lightning Bolts</span>
+                </a>
+            </div>
+          </li>
+
+          <!--<li>
+            <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                Resources
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Community</span>
+                  <p>Join the PyTorch developer community to contribute, learn, and get your questions answered.</p>
+                </a>
+                <a class="nav-dropdown-item" href="https://lightning-habana.readthedocs.io/en/latest/#community-examples">
+                  <span class="dropdown-title">Developer Resources</span>
+                  <p>Find resources and get questions answered</p>
+                </a>
+                <a class="nav-dropdown-item" href="" target="_blank">
+                  <span class="dropdown-title">Forums</span>
+                  <p>A place to discuss PyTorch code, issues, install, research</p>
+                </a>
+                <a class="nav-dropdown-item" href="">
+                  <span class="dropdown-title">Models (Beta)</span>
+                  <p>Discover, publish, and reuse pre-trained models</p>
+                </a>
+              </div>
+            </div>
+          </li>-->
+
+          
+
+          <li>
+            <a href="https://github.com/Lightning-AI/lightning-habana">GitHub</a>
+          </li>
+
+          <li>
+            <a href="https://www.lightning.ai/">Lightning AI</a>
+          </li>
+
+        </ul>
+      </div>
+
+      <a class="main-menu-open-button" href="#" data-behavior="open-mobile-menu"></a>
+    </div>
+  </div>
+</div>
+
+<body class="pytorch-body">
+
+   
+
+    
+
+    <div class="table-of-contents-link-wrapper">
+      <span>Table of Contents</span>
+      <a href="#" class="toggle-table-of-contents" data-behavior="toggle-table-of-contents"></a>
+    </div>
+
+    <nav data-toggle="wy-nav-shift" class="pytorch-left-menu" id="pytorch-left-menu">
+      <div class="pytorch-side-scroll">
+        <div class="pytorch-menu pytorch-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          <div class="pytorch-left-menu-search">
+            
+
+            
+              
+              
+                <div class="version">
+                  1.7.0.rc0
+                </div>
+              
+            
+
+            
+
+
+  
+
+
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search Docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+            
+          </div>
+
+          
+            
+            
+              
+            
+            
+              <p class="caption" role="heading"><span class="caption-text">Start here</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="readme.html">Lightning ⚡ Intel Habana</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readme.html#support-matrix">Support Matrix</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <div class="pytorch-container">
+      <div class="pytorch-page-level-bar" id="pytorch-page-level-bar">
+        <div class="pytorch-breadcrumbs-wrapper">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="pytorch-breadcrumbs">
+    
+      <li>
+        <a href="index.html">
+          
+            Docs
+          
+        </a> &gt;
+      </li>
+
+        
+      <li>Accelerator: HPU Training</li>
+    
+    
+      <li class="pytorch-breadcrumbs-aside">
+        
+            
+            <a href="_sources/advanced.rst.txt" rel="nofollow"><img src="_static/images/view-page-source-icon.svg"></a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+</div>
+        </div>
+
+        <div class="pytorch-shortcuts-wrapper" id="pytorch-shortcuts-wrapper">
+          Shortcuts
+        </div>
+      </div>
+
+      <section data-toggle="wy-nav-shift" id="pytorch-content-wrap" class="pytorch-content-wrap">
+        <div class="pytorch-content-left">
+
+        
+          
+          <div class="rst-content">
+          
+            <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
+             <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
+              
+  <section id="accelerator-hpu-training">
+<span id="hpu-advanced"></span><h1>Accelerator: HPU Training<a class="headerlink" href="#accelerator-hpu-training" title="Permalink to this heading">¶</a></h1>
+<p>This document offers instructions to Intel Gaudi users who want to use advanced strategies and profiling HPUs.</p>
+<hr class="docutils" />
+<section id="using-hpuprofiler">
+<h2>Using HPUProfiler<a class="headerlink" href="#using-hpuprofiler" title="Permalink to this heading">¶</a></h2>
+<p>HPUProfiler is a Lightning implementation of PyTorch profiler for HPU. It aids in obtaining profiling summary of PyTorch functions.
+It subclasses PyTorch Lightning’s <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/api/pytorch_lightning.profilers.PyTorchProfiler.html">PyTorch profiler</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>It is recommended to import <cite>lightning_habana</cite> before <cite>lightning</cite> to initialize the environment of custom Intel Gaudi Profiler.</p>
+</div>
+<section id="default-profiling">
+<h3>Default Profiling<a class="headerlink" href="#default-profiling" title="Permalink to this heading">¶</a></h3>
+<p>For auto profiling, create an <code class="docutils literal notranslate"><span class="pre">HPUProfiler</span></code> instance and pass it to the trainer.
+At the end of <code class="docutils literal notranslate"><span class="pre">profiler.fit()</span></code>, it will generate a JSON trace for the run.
+In case <code class="docutils literal notranslate"><span class="pre">accelerator=</span> <span class="pre">HPUAccelerator()</span></code> is not used with <code class="docutils literal notranslate"><span class="pre">HPUProfiler</span></code>, it will dump only CPU traces, similar to <code class="docutils literal notranslate"><span class="pre">PyTorchProfiler</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.profiler.profiler</span> <span class="kn">import</span> <span class="n">HPUProfiler</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">profiler</span><span class="o">=</span><span class="n">HPUProfiler</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+<section id="distributed-profiling">
+<h3>Distributed Profiling<a class="headerlink" href="#distributed-profiling" title="Permalink to this heading">¶</a></h3>
+<p>To profile a distributed model, use <code class="docutils literal notranslate"><span class="pre">HPUProfiler</span></code> with the filename argument which will save a report per rank.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.profiler.profiler</span> <span class="kn">import</span> <span class="n">HPUProfiler</span>
+
+<span class="n">profiler</span> <span class="o">=</span> <span class="n">HPUProfiler</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="s2">&quot;perf-logs&quot;</span><span class="p">)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">profiler</span><span class="o">=</span><span class="n">profiler</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-profiling">
+<h3>Custom Profiling<a class="headerlink" href="#custom-profiling" title="Permalink to this heading">¶</a></h3>
+<p>To <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_expert.html#profile-custom-actions-of-interest">profile custom actions of interest</a>,
+reference a profiler in the <code class="docutils literal notranslate"><span class="pre">LightningModule</span></code>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning</span> <span class="kn">import</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.profiler.profiler</span> <span class="kn">import</span> <span class="n">HPUProfiler</span>
+
+<span class="c1"># Reference profiler in LightningModule</span>
+<span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profiler</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profiler</span> <span class="o">=</span> <span class="n">profiler</span>
+
+<span class="c1"># To profile in any part of your code, use the self.profiler.profile() function</span>
+    <span class="k">def</span> <span class="nf">custom_processing_step_basic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">profiler</span><span class="o">.</span><span class="n">profile</span><span class="p">(</span><span class="s2">&quot;my_custom_action&quot;</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;do something&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+<span class="c1"># Alternatively, use self.profiler.start(&quot;my_custom_action&quot;)</span>
+<span class="c1"># and self.profiler.stop(&quot;my_custom_action&quot;) functions</span>
+<span class="c1"># to enclose the part of code to be profiled.</span>
+    <span class="k">def</span> <span class="nf">custom_processing_step_granular</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profiler</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="s2">&quot;my_custom_action&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;do something&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">profiler</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="s2">&quot;my_custom_action&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+<span class="c1"># Pass profiler instance to LightningModule</span>
+<span class="n">profiler</span> <span class="o">=</span> <span class="n">HPUProfiler</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">MyModel</span><span class="p">(</span><span class="n">profiler</span><span class="p">)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">profiler</span><span class="o">=</span><span class="n">profiler</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For more details on Profiler, refer to <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/tuning/profiler_intermediate.html">PyTorchProfiler</a></p>
+</section>
+<section id="visualizing-profiled-operations">
+<h3>Visualizing Profiled Operations<a class="headerlink" href="#visualizing-profiled-operations" title="Permalink to this heading">¶</a></h3>
+<p>Profiler dumps traces in JSON format. The traces can be visualized in 2 ways as described below.</p>
+<section id="using-pytorch-tensorboard-profiler">
+<h4>Using PyTorch TensorBoard Profiler<a class="headerlink" href="#using-pytorch-tensorboard-profiler" title="Permalink to this heading">¶</a></h4>
+<p>For further instructions see, <a class="reference external" href="https://github.com/pytorch/kineto/tree/master/tb_plugin">https://github.com/pytorch/kineto/tree/master/tb_plugin</a>.</p>
+<ol class="arabic simple">
+<li><p>Install TensorBoard:</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-um<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>tensorboard<span class="w"> </span>torch-tb-profiler
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p>Start the TensorBoard server (default at port 6006):</p></li>
+</ol>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>tensorboard<span class="w"> </span>--logdir<span class="w"> </span>./tensorboard<span class="w"> </span>--port<span class="w"> </span><span class="m">6006</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p>Open the following URL in your browser: <cite>http://localhost:6006/#profile</cite>.</p></li>
+</ol>
+</section>
+<section id="using-chrome">
+<h4>Using Chrome<a class="headerlink" href="#using-chrome" title="Permalink to this heading">¶</a></h4>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Open Chrome and paste this URL: <cite>chrome://tracing/</cite>.</p></li>
+<li><p>Once tracing opens, click on <cite>Load</cite> at the top-right and load one of the generated traces.</p></li>
+</ol>
+</div></blockquote>
+<figure class="align-default" id="id4">
+<a class="reference internal image-reference" href="_images/HPUProfiler.png"><img alt="HPUProfiler trace on tensorboard" src="_images/HPUProfiler.png" style="width: 600px;" /></a>
+<figcaption>
+<p><span class="caption-text">HPUProfiler trace for torch.nn.Linear on TensorBoard</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+<section id="limitations">
+<h3>Limitations<a class="headerlink" href="#limitations" title="Permalink to this heading">¶</a></h3>
+<ul class="simple">
+<li><p>When using <code class="docutils literal notranslate"><span class="pre">HPUProfiler</span></code>, wall clock time will not be representative of the true wall clock time. This is due to forcing profiled operations to be measured synchronously, when many HPU ops happen asynchronously.
+It is recommended to use this Profiler to find bottlenecks/breakdowns, however for end to end wall clock time use the <code class="docutils literal notranslate"><span class="pre">SimpleProfiler</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">HPUProfiler.summary()</span></code> is not supported.</p></li>
+<li><p>Passing the Profiler name as a string “hpu” to the trainer is not supported.</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="using-intel-gaudi-profiler">
+<h2>Using Intel Gaudi Profiler<a class="headerlink" href="#using-intel-gaudi-profiler" title="Permalink to this heading">¶</a></h2>
+<p>The Intel Gaudi Profiling subsystem, and the Profiling Configuration tools are methods to configure Intel Gaudi Profiler. To use Intel Gaudi Profiler, set <cite>HABANA_PROFILE</cite>, and run the lightning script as usual. This will dump a hltv trace file in the working directly. This can be viewed by loading it at <a class="reference external" href="https://perfetto.habana.ai/">https://perfetto.habana.ai/</a>.</p>
+<p>Intel Gaudi Profiler profiles the whole process as compared to HPUProfiler that profiles events only when the trainer is active, and therefore is useful for getting additional information in host trace.
+It however does not provide traces for Lightning Python code. Use HPUProfiler to obtain those traces. The device traces on Gaudi devices are identical for both profilers.</p>
+<p>Please refer to <a class="reference external" href="https://docs.habana.ai/en/latest/Profiling/Intel_Gaudi_Profiling/Getting_Started_with_Profiler.html">Getting Started with Intel Gaudi Profiler</a> for more information.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="docutils literal notranslate"><span class="pre">HPUProfiler</span></code> and Intel Gaudi Profiler should not be used together. Therefore, <cite>HABANA_PROFILE</cite> should not be set in environment when using <code class="docutils literal notranslate"><span class="pre">HPUProfiler</span></code>.</p>
+</div>
+<figure class="align-default" id="id5">
+<a class="reference internal image-reference" href="_images/IGP.png"><img alt="Intel Gaudi Profiler trace on perfetto" src="_images/IGP.png" style="width: 600px;" /></a>
+<figcaption>
+<p><span class="caption-text">Intel Gaudi Profiler trace for torch.nn.Linear on perfetto</span><a class="headerlink" href="#id5" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<hr class="docutils" />
+<section id="using-deepspeed">
+<h2>Using DeepSpeed<a class="headerlink" href="#using-deepspeed" title="Permalink to this heading">¶</a></h2>
+<p>HPU supports advanced optimization libraries like <code class="docutils literal notranslate"><span class="pre">deepspeed</span></code>. The Intel Gaudi GitHub has a fork of the DeepSpeed library that includes changes to support the Intel Gaudi software.</p>
+<section id="installing-deepspeed-for-hpu">
+<h3>Installing DeepSpeed for HPU<a class="headerlink" href="#installing-deepspeed-for-hpu" title="Permalink to this heading">¶</a></h3>
+<p>To use DeepSpeed with Lightning on Gaudi, you must install Intel Gaudi’s fork for DeepSpeed.
+To install the latest supported version of DeepSpeed, follow the instructions at <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html#installing-deepspeed-library">https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/DeepSpeed_User_Guide/DeepSpeed_User_Guide.html#installing-deepspeed-library</a></p>
+</section>
+<section id="using-deepspeed-on-hpu">
+<h3>Using DeepSpeed on HPU<a class="headerlink" href="#using-deepspeed-on-hpu" title="Permalink to this heading">¶</a></h3>
+<p>In Lightning, DeepSpeed functionalities are enabled for HPU via HPUDeepSpeedStrategy. By default, HPU training uses 32-bit precision. To enable mixed precision, set the <code class="docutils literal notranslate"><span class="pre">precision</span></code> flag.
+A basic example of HPUDeepSpeedStrategy invocation is shown below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">DemoModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">_TORCH_LRSCHEDULER</span><span class="p">]]:</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">SGD</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+        <span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">StepLR</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">step_size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">[</span><span class="n">lr_scheduler</span><span class="p">]</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">DemoModel</span><span class="p">()</span>
+<span class="n">_plugins</span> <span class="o">=</span> <span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)]</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(),</span>
+    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">TestCB</span><span class="p">()],</span> <span class="n">max_epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">plugins</span><span class="o">=</span><span class="n">_plugins</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ol class="arabic simple">
+<li><p>accelerator=”auto” or accelerator=”hpu” is not yet enabled with lightning&gt;2.0.0 and lightning-habana.</p></li>
+<li><p>Passing strategy in a string representation (“hpu_deepspeed”, “hpu_deepspeed_stage_1”, etc.. ) are not yet enabled.</p></li>
+</ol>
+</div>
+</section>
+<section id="deepspeed-configurations">
+<h3>DeepSpeed Configurations<a class="headerlink" href="#deepspeed-configurations" title="Permalink to this heading">¶</a></h3>
+<p>Below is a summary of all the DeepSpeed configurations supported by HPU. For full details on the HPU supported DeepSpeed features and functionalities, refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html">Using DeepSpeed with HPU</a>.
+All further information on DeepSpeed configurations can be found in DeepSpeed&lt;<a class="reference external" href="https://www.deepspeed.ai/training/#features">https://www.deepspeed.ai/training/#features</a>&gt; documentation.</p>
+<ul class="simple">
+<li><p>ZeRO-1</p></li>
+<li><p>ZeRO-2</p></li>
+<li><p>ZeRO-3</p></li>
+<li><p>ZeRO-Offload</p></li>
+<li><p>ZeRO-Infinity</p></li>
+<li><p>BF16 precision</p></li>
+<li><p>BF16Optimizer</p></li>
+<li><p>Activation Checkpointing</p></li>
+</ul>
+<p>The HPUDeepSpeedStrategy can be configured using its arguments or a JSON configuration file. Both configuration methods are shown in the examples below.</p>
+<section id="zero-1">
+<h4>ZeRO-1<a class="headerlink" href="#zero-1" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch.plugins</span> <span class="kn">import</span> <span class="n">DeepSpeedPrecisionPlugin</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">zero_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="zero-2">
+<h4>ZeRO-2<a class="headerlink" href="#zero-2" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch.plugins</span> <span class="kn">import</span> <span class="n">DeepSpeedPrecisionPlugin</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">zero_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span> <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="zero-3">
+<h4>ZeRO-3<a class="headerlink" href="#zero-3" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch.plugins</span> <span class="kn">import</span> <span class="n">DeepSpeedPrecisionPlugin</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">zero_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span> <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="zero-offload">
+<h4>ZeRO-Offload<a class="headerlink" href="#zero-offload" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch.plugins</span> <span class="kn">import</span> <span class="n">DeepSpeedPrecisionPlugin</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">zero_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">offload_optimizer</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="zero-infinity">
+<h4>ZeRO-Infinity<a class="headerlink" href="#zero-infinity" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch.plugins</span> <span class="kn">import</span> <span class="n">DeepSpeedPrecisionPlugin</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">zero_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">stage</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">offload_optimizer</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="bf16-precision">
+<h4>BF16 Precision<a class="headerlink" href="#bf16-precision" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch.plugins</span> <span class="kn">import</span> <span class="n">DeepSpeedPrecisionPlugin</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(),</span> <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)])</span>
+</pre></div>
+</div>
+</section>
+<section id="bf16-optimizer">
+<h4>BF16-Optimizer<a class="headerlink" href="#bf16-optimizer" title="Permalink to this heading">¶</a></h4>
+<p>This example demonstrates how the HPUDeepSpeedStrategy can be configured using a DeepSpeed json configuration.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch</span> <span class="kn">import</span> <span class="n">LightningModule</span><span class="p">,</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;train_batch_size&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="s2">&quot;bf16&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">True</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;fp16&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;enabled&quot;</span><span class="p">:</span> <span class="kc">False</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;train_micro_batch_size_per_gpu&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">&quot;scheduler&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;WarmupDecayLR&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;warmup_min_lr&quot;</span><span class="p">:</span> <span class="mf">0.02</span><span class="p">,</span>
+        <span class="s2">&quot;warmup_max_lr&quot;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span>
+        <span class="s2">&quot;warmup_num_steps&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s2">&quot;total_num_steps&quot;</span> <span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+        <span class="s2">&quot;warmup_type&quot;</span><span class="p">:</span> <span class="s2">&quot;linear&quot;</span>
+        <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;zero_allow_untested_optimizer&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;zero_optimization&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;stage&quot;</span> <span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="p">}</span>
+
+
+<span class="k">class</span> <span class="nc">SampleModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="o">...</span>
+
+    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">torch.optim.adamw</span> <span class="kn">import</span> <span class="n">AdamW</span> <span class="k">as</span> <span class="n">AdamW</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">optimizer</span>
+
+
+<span class="n">_plugins</span> <span class="o">=</span> <span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)]</span>
+<span class="n">_accumulate_grad_batches</span><span class="o">=</span><span class="mi">2</span>
+<span class="n">_parallel_hpus</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="n">HPUAccelerator</span><span class="o">.</span><span class="n">auto_device_count</span><span class="p">()</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">SampleModel</span><span class="p">()</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">parallel_devices</span><span class="o">=</span><span class="n">_parallel_hpus</span><span class="p">),</span>
+    <span class="n">enable_progress_bar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">fast_dev_run</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">plugins</span><span class="o">=</span><span class="n">_plugins</span><span class="p">,</span>
+    <span class="n">use_distributed_sampler</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">limit_train_batches</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">accumulate_grad_batches</span><span class="o">=</span><span class="n">_accumulate_grad_batches</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>When the optimizer and/or scheduler configuration is specified in both LightningModule and DeepSpeed json configuration file, preference will be given to the optimizer/scheduler returned by LightningModule::configure_optimizers().</p>
+</div>
+</section>
+<section id="activation-checkpointing">
+<h4>Activation Checkpointing<a class="headerlink" href="#activation-checkpointing" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning.pytorch</span> <span class="kn">import</span> <span class="n">LightningModule</span><span class="p">,</span> <span class="n">Trainer</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.accelerator</span> <span class="kn">import</span> <span class="n">HPUAccelerator</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUDeepSpeedStrategy</span>
+<span class="kn">from</span> <span class="nn">deepspeed.runtime.activation_checkpointing.checkpointing</span> <span class="kn">import</span> <span class="n">checkpoint</span>
+
+<span class="k">class</span> <span class="nc">SampleModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">l2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">l1_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">l1</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">l2_out</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">l2</span><span class="p">,</span> <span class="n">l1_out</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">l2_out</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span>
+                    <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">zero_optimization</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                    <span class="n">stage</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                                    <span class="n">offload_optimizer</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                                    <span class="n">cpu_checkpointing</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)]</span>
+                <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="deepspeed-inference-on-hpu">
+<h3>DeepSpeed Inference on HPU<a class="headerlink" href="#deepspeed-inference-on-hpu" title="Permalink to this heading">¶</a></h3>
+<p>HPUDeepSpeedStrategy can be used for inference with DeepSpeed on HPU.
+For more information, refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/Inference_Using_DeepSpeed.html">Inference Using DeepSpeed</a>.</p>
+<p>The following options can be used to initialize inference.</p>
+<section id="using-arguments">
+<h4>Using Arguments<a class="headerlink" href="#using-arguments" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">InferenceSample</span><span class="p">()</span>
+<span class="n">_parallel_hpus</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">8</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span>
+    <span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span>
+        <span class="n">parallel_devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+        <span class="n">tensor_parallel</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tp_size&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+        <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+        <span class="n">replace_with_kernel_inject</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)],</span>
+    <span class="n">use_distributed_sampler</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="using-kwargs">
+<h4>Using Kwargs<a class="headerlink" href="#using-kwargs" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">InferenceSample</span><span class="p">()</span>
+<span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">}</span>
+<span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;tensor_parallel&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;tp_size&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+<span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;enable_cuda_graph&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;replace_method&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+<span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;replace_with_kernel_inject&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;injection_policy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">InferenceSample</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;l1&quot;</span><span class="p">)}</span>
+<span class="n">_parallel_hpus</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">4</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span>
+    <span class="n">devices</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span><span class="n">parallel_devices</span><span class="o">=</span><span class="n">_parallel_hpus</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+    <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)],</span>
+    <span class="n">use_distributed_sampler</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="using-configuration">
+<h4>Using Configuration<a class="headerlink" href="#using-configuration" title="Permalink to this heading">¶</a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">InferenceSample</span><span class="p">()</span>
+<span class="n">_parallel_hpus</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">8</span>
+
+<span class="n">_config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;replace_with_kernel_inject&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s2">&quot;tensor_parallel&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;tp_size&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span>
+    <span class="s2">&quot;dtype&quot;</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">float</span><span class="p">,</span>
+    <span class="s2">&quot;enable_cuda_graph&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span>
+    <span class="n">devices</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="n">HPUDeepSpeedStrategy</span><span class="p">(</span>
+        <span class="n">parallel_devices</span><span class="o">=</span><span class="n">_parallel_hpus</span><span class="p">,</span>
+        <span class="n">config</span><span class="o">=</span><span class="n">_config</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">plugins</span><span class="o">=</span><span class="p">[</span><span class="n">DeepSpeedPrecisionPlugin</span><span class="p">(</span><span class="n">precision</span><span class="o">=</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)],</span>
+    <span class="n">use_distributed_sampler</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="limitations-of-deepspeed-on-hpu">
+<h3>Limitations of DeepSpeed on HPU<a class="headerlink" href="#limitations-of-deepspeed-on-hpu" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Model Pipeline and Tensor Parallelism are currently supported only on Gaudi2.</p></li>
+<li><p>DeepSpeed inference with float16 is not supported on First-gen Gaudi.</p></li>
+</ol>
+</div></blockquote>
+<p>For further details on the supported DeepSpeed features and functionalities, refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/DeepSpeed/index.html">Using DeepSpeed with HPU</a>.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="using-fsdp-on-hpu">
+<h2>Using FSDP on HPU<a class="headerlink" href="#using-fsdp-on-hpu" title="Permalink to this heading">¶</a></h2>
+<p>Fully Sharded Data Parallel (FSDP) is supported by Gaudi 2 for running distributed training on large-scale models.</p>
+<p>To enable FSDP training on HPU, use <code class="docutils literal notranslate"><span class="pre">HPUFSDPStrategy</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">lightning_habana.pytorch.strategies</span> <span class="kn">import</span> <span class="n">HPUFSDPStrategy</span>
+<span class="kn">from</span> <span class="nn">lightning_habana.pytorch.plugins.fsdp_precision</span> <span class="kn">import</span> <span class="n">HPUFSDPPrecisionPlugin</span>
+
+<span class="n">strategy</span><span class="o">=</span><span class="n">HPUFSDPStrategy</span><span class="p">(</span><span class="n">parallel_devices</span><span class="o">=</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                            <span class="n">sharding_strategy</span><span class="o">=</span><span class="s2">&quot;FULL_SHARD&quot;</span><span class="p">,</span>
+                            <span class="n">precision_plugin</span><span class="o">=</span><span class="n">HPUFSDPPrecisionPlugin</span><span class="p">(</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">)</span>
+                        <span class="p">)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">,</span> <span class="n">fast_dev_run</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">enable_model_summary</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="choosing-sharding-strategy">
+<h3>Choosing Sharding Strategy<a class="headerlink" href="#choosing-sharding-strategy" title="Permalink to this heading">¶</a></h3>
+<p>Sharding stragey can be configured to control the way model parameters, gradients, and optimizer states are sharded. Sharding strategy can be one of the four values shown below:</p>
+<ol class="arabic simple">
+<li><p>“FULL_SHARD”     -   Default: Shard weights, gradients, optimizer state (1 + 2 + 3)</p></li>
+<li><p>“SHARD_GRAD_OP”  -   Shard gradients, optimizer state (2 + 3)</p></li>
+<li><p>“HYBRID_SHARD”   -   Full-shard within a machine, replicate across machines</p></li>
+<li><p>“NO_SHARD”       -   Don’t shard anything (similar to DDP)</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">strategy</span> <span class="o">=</span> <span class="n">HPUFSDPStrategy</span><span class="p">(</span>
+    <span class="n">sharding_strategy</span><span class="o">=</span><span class="s2">&quot;FULL_SHARD&quot;</span><span class="p">,</span>
+    <span class="o">...</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">strategy</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The below example shows Gaudi scaling with PyTorch using Fully Sharded Data Parallelism (FSDP) approach:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyModel</span><span class="p">(</span><span class="n">BoringModel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">configure_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">32</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">configure_optimizers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">AdamW</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layer</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">_strategy</span><span class="o">=</span><span class="n">HPUFSDPStrategy</span><span class="p">(</span>
+    <span class="n">parallel_devices</span><span class="o">=</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">)]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="n">sharding_strategy</span><span class="o">=</span><span class="s2">&quot;SHARD_GRAD_OP&quot;</span><span class="p">,</span>
+    <span class="n">precision_plugin</span><span class="o">=</span><span class="n">HPUFSDPPrecision</span><span class="p">(</span><span class="s2">&quot;bf16-mixed&quot;</span><span class="p">))</span>
+
+<span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+    <span class="n">default_root_dir</span><span class="o">=</span><span class="n">tmpdir</span><span class="p">,</span>
+    <span class="n">accelerator</span><span class="o">=</span><span class="n">HPUAccelerator</span><span class="p">(),</span>
+    <span class="n">devices</span><span class="o">=</span><span class="n">hpus</span><span class="p">,</span>
+    <span class="n">strategy</span><span class="o">=</span><span class="n">_strategy</span><span class="p">,</span>
+    <span class="n">max_epochs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="limitations-of-fsdp-on-hpu">
+<h3>Limitations of FSDP on HPU<a class="headerlink" href="#limitations-of-fsdp-on-hpu" title="Permalink to this heading">¶</a></h3>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>This is an experimental feature.</p></li>
+<li><p>FSDP on HPU can only be used in Eager/compile mode. To use Eager mode, set the environment variable <cite>PT_HPU_LAZY_MODE=0</cite>.</p></li>
+<li><p>Saving/loading checkpoint using FSDP strategy is partially enabled.</p></li>
+<li><p>If you encounter stability issues when running your model with FSDP, set <cite>PT_HPU_EAGER_PIPELINE_ENABLE=false`</cite> flag.</p></li>
+<li><p>Activation checkpointing with bf16-mixed is not supported currently.</p></li>
+</ol>
+</div></blockquote>
+<p>For more details on the supported FSDP features and limitations, refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/PyTorch_FSDP/Pytorch_FSDP.html">Using Fully Sharded Data Parallel (FSDP) with Intel Gaudi</a>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This feature requires lightning/pytorch-lightning &gt;= 2.3.0 or installing nightly from the source.</p>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="using-hpu-graphs">
+<h2>Using HPU Graphs<a class="headerlink" href="#using-hpu-graphs" title="Permalink to this heading">¶</a></h2>
+<p>HPU Graphs reduce training and inference time for large models running in Lazy Mode. HPU Graphs bypasses all op accumulations by recording a static version of the entire graph, then replaying it.
+The speedup achieved by using HPU Graphs depends on the underlying model. HPU Graphs reduce host overhead significantly, and can be used to speed up the process when it is host bound.</p>
+<p>For further details, refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html">Using HPU Graphs for Training</a> and <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_HPU_Graphs.html">Run Inference Using HPU Graphs</a></p>
+<section id="hpu-graphs-apis-for-training">
+<h3>HPU Graphs APIs for Training<a class="headerlink" href="#hpu-graphs-apis-for-training" title="Permalink to this heading">¶</a></h3>
+<p>The following section describes the usage of HPU Graph APIs in a training model.</p>
+<section id="capture-and-replay-training">
+<h4>Capture and Replay Training<a class="headerlink" href="#capture-and-replay-training" title="Permalink to this heading">¶</a></h4>
+<p>These are the APIs for manually capturing and replaying HPU Graphs. The capture phase involves recording all the forward and backward passes, then, replaying it again and again in the actual training phase.
+An optional warmup phase may be added before capture phase.</p>
+<p>Basic API usage:</p>
+<ol class="arabic simple">
+<li><p>Create a HPUGraph instance.</p></li>
+<li><p>Create placeholders for input and target. These have to be compliant with batch_size and input / target dimensions.</p></li>
+<li><p>Capture graph by wrapping the required portion of training step in HPUGraph ContextManager in first pass. Alternatively, <cite>HPUGraph.capture_begin()</cite> and <cite>HPUGraph.capture_end()</cite> can be used to wrap the module. A warmup pass may be used before capture begins.</p></li>
+<li><p>Finally replay the graph for remaining iterations.</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">HPUGraphsModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">_batch_size</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;init&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Create a HPUGraph instance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g</span> <span class="o">=</span> <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">HPUGraph</span><span class="p">()</span>
+        <span class="c1"># Placeholders for capture. Should be compliant with data and target dims</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;hpu&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;hpu&quot;</span><span class="p">)</span>
+        <span class="c1"># result is available in static_loss tensor after graph is replayed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># Set manual optimization training</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">automatic_optimization</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_with_capture_and_replay</span>
+
+    <span class="k">def</span> <span class="nf">train_with_capture_and_replay</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Manual optimization training step&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">batch_idx</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="c1"># Capture graphs using HPUGraph ContextManager.</span>
+            <span class="c1"># Alternatively, use HPUGraph.capture_begin() and HPUGraph.capture_end()</span>
+            <span class="k">with</span> <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="p">):</span>
+                <span class="n">static_y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_input</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">static_y_pred</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_target</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+                <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Replay the graph</span>
+            <span class="c1"># data must be copied to existing tensors that were used in the capture phase</span>
+            <span class="n">data</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">batch</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_input</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_target</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">replay</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;train_loss&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span>
+</pre></div>
+</div>
+</section>
+<section id="make-graphed-callables">
+<h4>make_graphed_callables<a class="headerlink" href="#make-graphed-callables" title="Permalink to this heading">¶</a></h4>
+<p>The <cite>make_graphed_callables</cite> API can be used to wrap a module into a standalone graph.
+It accepts a callable module, sample_args, and warmup steps as inputs.
+This API also requires the model to have only tuples for tensors as input and output. This is incompatible with workloads using data structures such as dicts and lists.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># model and sample_args as input to make_graphed_callables.</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">HPUGraphsModel</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">))</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">randn</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">make_graphed_callables</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="p">,))</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data_module</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="modulecacher">
+<h4>ModuleCacher<a class="headerlink" href="#modulecacher" title="Permalink to this heading">¶</a></h4>
+<p>This API provides another way of wrapping the model and handles dynamic inputs in a training model. <cite>ModuleCacher</cite> internally keeps track of whether an input shape has changed, and if so, creates a new HPU graph.
+<cite>ModuleCacher</cite> is the recommended method for using HPU Graphs in training.
+<cite>max_graphs</cite> specifies the number of graphs to cache. A larger amount will increase the number of cache hits but will result in higher memory usage.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># model is given an input to ModuleCacher.</span>
+<span class="n">model</span><span class="o">=</span> <span class="n">HPUGraphsModel</span><span class="p">()</span>
+<span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">ModuleCacher</span><span class="p">(</span><span class="n">max_graphs</span><span class="p">)(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data_module</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="hpu-graphs-apis-for-inference">
+<h3>HPU Graphs APIs for Inference<a class="headerlink" href="#hpu-graphs-apis-for-inference" title="Permalink to this heading">¶</a></h3>
+<p>The following section describes the usage of HPU Graph APIs in an inference model.</p>
+<section id="capture-and-replay-inference">
+<h4>Capture and Replay Inference<a class="headerlink" href="#capture-and-replay-inference" title="Permalink to this heading">¶</a></h4>
+<p>The implementation is similar to Capture and Replay in training.</p>
+<ol class="arabic simple">
+<li><p>Create a HPUGraph instance.</p></li>
+<li><p>Create placeholders for input, target and predictions.</p></li>
+<li><p>Capture graph by wrapping the required portion of test / validation step in HPUGraph ContextManager in first pass.</p></li>
+<li><p>Finally replay the graph for remaining iterations.</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">HPUGraphsModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">_batch_size</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;init&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Create a HPUGraph object</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g</span> <span class="o">=</span> <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">HPUGraph</span><span class="p">()</span>
+        <span class="c1"># Placeholders for capture. Should be compliant with data and target dims</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_input</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;hpu&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_target</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;hpu&quot;</span><span class="p">)</span>
+        <span class="c1"># Placeholder to store predictions after graph is replayed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_y_pred</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">device</span><span class="o">=</span><span class="s2">&quot;hpu&quot;</span><span class="p">)</span>
+        <span class="c1"># loss is available in static_loss tensor after graph is replayed</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">test_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test step&quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">batch</span>
+        <span class="k">if</span> <span class="n">batch_idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">graph</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="p">):</span>
+                <span class="n">static_y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_input</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">static_loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">static_y_pred</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_target</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_input</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_target</span><span class="o">.</span><span class="n">copy_</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="o">.</span><span class="n">replay</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="wrap-in-hpu-graph">
+<h4>wrap_in_hpu_graph<a class="headerlink" href="#wrap-in-hpu-graph" title="Permalink to this heading">¶</a></h4>
+<p>This is an alternative to manual capturing and replaying HPU Graphs.
+<cite>htorch.hpu.wrap_in_hpu_graph</cite> can be used to wrap module forward function with HPU Graphs.
+This wrapper captures, caches and replays the graph.
+Setting <cite>disasble_tensor_cache</cite> to <cite>True</cite> will release cached output tensor memory after every replay.
+<cite>asynchronous</cite> specifies whether the graph capture and replay should be asynchronous.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">NetHPUGraphs</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;hpu&quot;</span><span class="p">))</span>
+<span class="n">model</span> <span class="o">=</span>  <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">wrap_in_hpu_graph</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">asynchronous</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">disable_tensor_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">trainer</span><span class="o">.</span><span class="n">test</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data_module</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="hpu-graphs-and-dynamicity-in-models">
+<h3>HPU Graphs and Dynamicity in Models<a class="headerlink" href="#hpu-graphs-and-dynamicity-in-models" title="Permalink to this heading">¶</a></h3>
+<p>Dynamicity, resulting from changing input shapes or dynamic ops, can lead to multiple recompilations, causing longer training time and reducing performance.</p>
+<p>HPU Graphs do not support dynamicity in models. <cite>ModuleCacher</cite> can handle dynamic inputs automatically, but it does not handle dynamic control flow and dynamic ops.</p>
+<p>However, one can split the module into static and dynamic portions and use HPU Graphs in static regions.</p>
+<p>For further details, refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#dynamicity-in-models">Dynamicity in Models</a></p>
+<section id="dynamic-control-flow">
+<h4>Dynamic Control Flow<a class="headerlink" href="#dynamic-control-flow" title="Permalink to this heading">¶</a></h4>
+<p>When dynamic control flow is present, the model needs to be separated into different HPU Graphs.
+In the example below, the output of module1 feeds module2 or module3 depending on the dynamic control flow.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">HPUGraphsModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;init&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NetHPUGraphs</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Break Model into separate HPU Graphs for each control flow.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module1</span> <span class="o">=</span> <span class="n">NetHPUGraphs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module3</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">ModuleCacher</span><span class="p">(</span><span class="n">max_graphs</span><span class="p">)(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">module1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">ModuleCacher</span><span class="p">(</span><span class="n">max_graphs</span><span class="p">)(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">module2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">ModuleCacher</span><span class="p">(</span><span class="n">max_graphs</span><span class="p">)(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">module3</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">automatic_optimization</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_control_flow_training_step</span>
+
+    <span class="k">def</span> <span class="nf">dynamic_control_flow_training_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Training step with HPU Graphs and Dynamic control flow&quot;&quot;&quot;</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizers</span><span class="p">()</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">batch</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Train with HPU Graph</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module1</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># dynamic control flow</span>
+        <span class="k">if</span> <span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module2</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>  <span class="c1"># forward ops run as a graph</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module3</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>  <span class="c1"># forward ops run as a graph</span>
+
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;train_loss&quot;</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span>
+</pre></div>
+</div>
+</section>
+<section id="dynamic-ops">
+<h4>Dynamic Ops<a class="headerlink" href="#dynamic-ops" title="Permalink to this heading">¶</a></h4>
+<p>In this example we have module1 -&gt; dynamic boolean indexing -&gt; module2.
+Thus, both the static modules are placed into separate ModuleCacher and the dynamic op part is left out.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">HPUGraphsModel</span><span class="p">(</span><span class="n">LightningModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;init&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">NetHPUGraphs</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># Encapsulate dynamic ops between two separate HPU Graph modules,</span>
+        <span class="c1"># instead of using one single HPU Graph for whole model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module1</span> <span class="o">=</span> <span class="n">NetHPUGraphs</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Identity</span><span class="p">()</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">ModuleCacher</span><span class="p">(</span><span class="n">max_graphs</span><span class="p">)(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">module1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">hpu</span><span class="o">.</span><span class="n">ModuleCacher</span><span class="p">(</span><span class="n">max_graphs</span><span class="p">)(</span><span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">module2</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">automatic_optimization</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_step</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_ops_training_step</span>
+
+    <span class="k">def</span> <span class="nf">dynamic_ops_training_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch</span><span class="p">,</span> <span class="n">batch_idx</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Training step with HPU Graphs and Dynamic ops&quot;&quot;&quot;</span>
+        <span class="n">optimizer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizers</span><span class="p">()</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">batch</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">(</span><span class="n">set_to_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="c1"># Train with HPU graph module</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module1</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># Dynamic op</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">mark_step</span><span class="p">()</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="n">tmp</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">tmp</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)]</span>
+        <span class="n">htcore</span><span class="o">.</span><span class="n">mark_step</span><span class="p">()</span>
+
+        <span class="c1"># Resume training with HPU graph module</span>
+        <span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">module2</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">cross_entropy</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="s2">&quot;train_loss&quot;</span><span class="p">,</span> <span class="n">loss</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="limitations-of-hpu-graphs">
+<h3>Limitations of HPU Graphs<a class="headerlink" href="#limitations-of-hpu-graphs" title="Permalink to this heading">¶</a></h3>
+<p>Using HPU Graphs with <cite>torch.compile</cite> is not supported.</p>
+<p>Please refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/Model_Optimization_PyTorch/HPU_Graphs_Training.html#limitations-of-hpu-graph-apis">Limitations of HPU Graphs</a></p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="using-torch-compile">
+<h2>Using <code class="docutils literal notranslate"><span class="pre">torch.compile</span></code><a class="headerlink" href="#using-torch-compile" title="Permalink to this heading">¶</a></h2>
+<p>PyTorch Eager mode and Eager mode with <cite>torch.compile</cite> are available for early preview.
+The following compile backend is now available to support training &amp; inference on HPU: <cite>hpu_backend</cite> .</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">compiled_train_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">model_to_train</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;hpu_backend&quot;</span><span class="p">)</span>
+<span class="n">compiled_eval_model</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">model_to_eval</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;hpu_backend&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Please refer to <a class="reference external" href="https://docs.habana.ai/en/latest/Release_Notes/GAUDI_Release_Notes.html">GAUDI Release Notes</a></p>
+</section>
+<hr class="docutils" />
+<section id="support-for-multiple-tenants">
+<h2>Support for Multiple Tenants<a class="headerlink" href="#support-for-multiple-tenants" title="Permalink to this heading">¶</a></h2>
+<p>Running a workload with partial Gaudi processors can be enabled with a simple environment variable <cite>HABANA_VISIBLE_MODULES</cite>.
+In general, there are eight Gaudi processors on a node, so the module IDs would be in the range of 0 ~ 7.</p>
+<p>To run a 4-Gaudi workload, set this in environment before running the workload:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">HABANA_VISIBLE_MODULES</span><span class="o">=</span><span class="s2">&quot;0,1,2,3&quot;</span>
+</pre></div>
+</div>
+<p>To run another 4-Gaudi workload in parallel, set the modules as follows before running the second workload:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">HABANA_VISIBLE_MODULES</span><span class="o">=</span><span class="s2">&quot;4,5,6,7&quot;</span>
+</pre></div>
+</div>
+<p>In addition to setting <cite>HABANA_VISIBLE_MODULES</cite>, also set a unique <cite>MASTER_PORT</cite> as environment variable for each tenant instance.</p>
+<p>Please refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/Reference/PT_Multiple_Tenants_on_HPU/Multiple_Workloads_Single_Docker.html">Multiple Workloads on a Single Docker</a></p>
+</section>
+<hr class="docutils" />
+<section id="metric-apis">
+<h2>Metric APIs<a class="headerlink" href="#metric-apis" title="Permalink to this heading">¶</a></h2>
+<p>The Metric APIs provide various performance-related metrics, such as the number of graph compilations, the total time of graph compilations, and more.
+Please refer to <a class="reference external" href="https://docs.habana.ai/en/latest/PyTorch/Reference/Python_Packages.html#metric-apis">Metric APIs</a> for more information.</p>
+</section>
+</section>
+
+
+             </article>
+             
+            </div>
+            <footer>
+  
+
+  
+
+    <hr>
+
+  
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright Copyright (c) 2020-2023, Lightning-AI et al...
+
+    </p>
+  </div>
+    
+      <div>
+        Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+      </div>
+     
+
+</footer>
+          </div>
+        </div>
+
+        <div class="pytorch-content-right" id="pytorch-content-right">
+          <div class="pytorch-right-menu" id="pytorch-right-menu">
+            <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
+              <ul>
+<li><a class="reference internal" href="#">Accelerator: HPU Training</a><ul>
+<li><a class="reference internal" href="#using-hpuprofiler">Using HPUProfiler</a><ul>
+<li><a class="reference internal" href="#default-profiling">Default Profiling</a></li>
+<li><a class="reference internal" href="#distributed-profiling">Distributed Profiling</a></li>
+<li><a class="reference internal" href="#custom-profiling">Custom Profiling</a></li>
+<li><a class="reference internal" href="#visualizing-profiled-operations">Visualizing Profiled Operations</a><ul>
+<li><a class="reference internal" href="#using-pytorch-tensorboard-profiler">Using PyTorch TensorBoard Profiler</a></li>
+<li><a class="reference internal" href="#using-chrome">Using Chrome</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-intel-gaudi-profiler">Using Intel Gaudi Profiler</a></li>
+<li><a class="reference internal" href="#using-deepspeed">Using DeepSpeed</a><ul>
+<li><a class="reference internal" href="#installing-deepspeed-for-hpu">Installing DeepSpeed for HPU</a></li>
+<li><a class="reference internal" href="#using-deepspeed-on-hpu">Using DeepSpeed on HPU</a></li>
+<li><a class="reference internal" href="#deepspeed-configurations">DeepSpeed Configurations</a><ul>
+<li><a class="reference internal" href="#zero-1">ZeRO-1</a></li>
+<li><a class="reference internal" href="#zero-2">ZeRO-2</a></li>
+<li><a class="reference internal" href="#zero-3">ZeRO-3</a></li>
+<li><a class="reference internal" href="#zero-offload">ZeRO-Offload</a></li>
+<li><a class="reference internal" href="#zero-infinity">ZeRO-Infinity</a></li>
+<li><a class="reference internal" href="#bf16-precision">BF16 Precision</a></li>
+<li><a class="reference internal" href="#bf16-optimizer">BF16-Optimizer</a></li>
+<li><a class="reference internal" href="#activation-checkpointing">Activation Checkpointing</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#deepspeed-inference-on-hpu">DeepSpeed Inference on HPU</a><ul>
+<li><a class="reference internal" href="#using-arguments">Using Arguments</a></li>
+<li><a class="reference internal" href="#using-kwargs">Using Kwargs</a></li>
+<li><a class="reference internal" href="#using-configuration">Using Configuration</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#limitations-of-deepspeed-on-hpu">Limitations of DeepSpeed on HPU</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-fsdp-on-hpu">Using FSDP on HPU</a><ul>
+<li><a class="reference internal" href="#choosing-sharding-strategy">Choosing Sharding Strategy</a></li>
+<li><a class="reference internal" href="#limitations-of-fsdp-on-hpu">Limitations of FSDP on HPU</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-hpu-graphs">Using HPU Graphs</a><ul>
+<li><a class="reference internal" href="#hpu-graphs-apis-for-training">HPU Graphs APIs for Training</a><ul>
+<li><a class="reference internal" href="#capture-and-replay-training">Capture and Replay Training</a></li>
+<li><a class="reference internal" href="#make-graphed-callables">make_graphed_callables</a></li>
+<li><a class="reference internal" href="#modulecacher">ModuleCacher</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hpu-graphs-apis-for-inference">HPU Graphs APIs for Inference</a><ul>
+<li><a class="reference internal" href="#capture-and-replay-inference">Capture and Replay Inference</a></li>
+<li><a class="reference internal" href="#wrap-in-hpu-graph">wrap_in_hpu_graph</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hpu-graphs-and-dynamicity-in-models">HPU Graphs and Dynamicity in Models</a><ul>
+<li><a class="reference internal" href="#dynamic-control-flow">Dynamic Control Flow</a></li>
+<li><a class="reference internal" href="#dynamic-ops">Dynamic Ops</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#limitations-of-hpu-graphs">Limitations of HPU Graphs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#using-torch-compile">Using <code class="docutils literal notranslate"><span class="pre">torch.compile</span></code></a></li>
+<li><a class="reference internal" href="#support-for-multiple-tenants">Support for Multiple Tenants</a></li>
+<li><a class="reference internal" href="#metric-apis">Metric APIs</a></li>
+</ul>
+</li>
+</ul>
+
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  
+
+  
+
+     
+       <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+         <script src="_static/jquery.js"></script>
+         <script src="_static/underscore.js"></script>
+         <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+         <script src="_static/doctools.js"></script>
+         <script src="_static/sphinx_highlight.js"></script>
+         <script src="_static/copybutton.js"></script>
+     
+
+  
+
+  <script type="text/javascript" src="_static/js/vendor/popper.min.js"></script>
+  <script type="text/javascript" src="_static/js/vendor/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/1.5.0/list.min.js"></script>
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+  <!-- Begin Footer -->
+
+  <!-- <div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources"> -->
+    <!-- <div class="container"> -->
+      <!-- <div class="row"> -->
+        <!--
+        <div class="col-md-4 text-center">
+          <h2>Docs</h2>
+          <p>Access comprehensive developer documentation for PyTorch</p>
+          <a class="with-right-arrow" href="https://lightning-habana.rtfd.io/en/latest">View Docs</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Tutorials</h2>
+          <p>Get in-depth tutorials for beginners and advanced developers</p>
+          <a class="with-right-arrow" href="https://lightning-habana.readthedocs.io/en/latest/#tutorials">View Tutorials</a>
+        </div>
+
+        <div class="col-md-4 text-center">
+          <h2>Resources</h2>
+          <p>Find development resources and get your questions answered</p>
+          <a class="with-right-arrow" href="https://lightning-habana.readthedocs.io/en/latest/#community-examples">View Resources</a>
+        </div>
+        -->
+      <!-- </div> -->
+    <!-- </div> -->
+  <!-- </div> -->
+
+  <!--
+  <footer class="site-footer">
+    <div class="container footer-container">
+      <div class="footer-logo-wrapper">
+        <a href="https://lightning-habana.rtfd.io/en/latest/" class="footer-logo"></a>
+      </div>
+
+      <div class="footer-links-wrapper">
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://lightning-habana.rtfd.io/en/latest/">PyTorch</a></li>
+            <li><a href="https://lightning-habana.readthedocs.io/en/latest/introduction_guide.html">Get Started</a></li>
+            <li><a href="https://lightning-habana.rtfd.io/en/latest/">Features</a></li>
+            <li><a href="">Ecosystem</a></li>
+            <li><a href="https://www.Lightning-AI.ai/blog">Blog</a></li>
+            <li><a href="https://github.com/Lightning-AI/lightning/blob/master/CONTRIBUTING.md">Contributing</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col">
+          <ul>
+            <li class="list-title"><a href="https://lightning-habana.readthedocs.io/en/latest/#community-examples">Resources</a></li>
+            <li><a href="https://lightning-habana.readthedocs.io/en/latest/#tutorials">Tutorials</a></li>
+            <li><a href="https://lightning-habana.rtfd.io/en/latest">Docs</a></li>
+            <li><a href="https://pytorch-lightning.slack.com" target="_blank">Discuss</a></li>
+            <li><a href="https://github.com/Lightning-AI/lightning-habana/issues" target="_blank">Github Issues</a></li>
+            <li><a href="" target="_blank">Brand Guidelines</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links-col follow-us-col">
+          <ul>
+            <li class="list-title">Stay Connected</li>
+            <li>
+              <div id="mc_embed_signup">
+                <form
+                  action="https://twitter.us14.list-manage.com/subscribe/post?u=75419c71fe0a935e53dfa4a3f&id=91d0dccd39"
+                  method="post"
+                  id="mc-embedded-subscribe-form"
+                  name="mc-embedded-subscribe-form"
+                  class="email-subscribe-form validate"
+                  target="_blank"
+                  novalidate>
+                  <div id="mc_embed_signup_scroll" class="email-subscribe-form-fields-wrapper">
+                    <div class="mc-field-group">
+                      <label for="mce-EMAIL" style="display:none;">Email Address</label>
+                      <input type="email" value="" name="EMAIL" class="required email" id="mce-EMAIL" placeholder="Email Address">
+                    </div>
+
+                    <div id="mce-responses" class="clear">
+                      <div class="response" id="mce-error-response" style="display:none"></div>
+                      <div class="response" id="mce-success-response" style="display:none"></div>
+                    </div>
+
+                    <div style="position: absolute; left: -5000px;" aria-hidden="true"><input type="text" name="b_75419c71fe0a935e53dfa4a3f_91d0dccd39" tabindex="-1" value=""></div>
+
+                    <div class="clear">
+                      <input type="submit" value="" name="subscribe" id="mc-embedded-subscribe" class="button email-subscribe-button">
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </li>
+          </ul>
+
+          <div class="footer-social-icons">
+            <a href="" target="_blank" class="facebook"></a>
+            <a href="https://twitter.com/PyTorchLightnin" target="_blank" class="twitter"></a>
+            <a href="" target="_blank" class="youtube"></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+  -->
+
+  <div class="cookie-banner-wrapper">
+  <div class="container">
+    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. Read PyTorch Lightning's <a href="https://pytorchlightning.ai/privacy-policy">Privacy Policy</a>.</p>
+    <img class="close-button" src="_static/images/pytorch-x.svg">
+  </div>
+</div>
+
+  <!-- End Footer -->
+
+  <!-- Begin Mobile Menu -->
+
+  <div class="mobile-main-menu">
+    <div class="container-fluid">
+      <div class="container">
+        <div class="mobile-main-menu-header-container">
+          <a class="header-logo" href="https://lightning-habana.rtfd.io/en/latest/" aria-label="PyTorch Lightning"></a>
+          <a class="main-menu-close-button" href="#" data-behavior="close-mobile-menu"></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="mobile-main-menu-links-container">
+      <div class="main-menu">
+        <ul>
+          <li>
+            <a href="https://lightning-habana.readthedocs.io/en/latest/introduction_guide.html">Get Started</a>
+          </li>
+
+          <li>
+            <a href="https://www.Lightning-AI.ai/blog">Blog</a>
+          </li>
+
+          <li class="resources-mobile-menu-title">
+            Ecosystem
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://lightning.ai/docs/pytorch/stable/">PyTorch Lightning</a>
+            </li>
+
+            <li>
+              <a href="https://lightning.ai/docs/fabric/stable/">Lightning Fabric</a>
+            </li>
+
+            <li>
+              <a href="https://torchmetrics.readthedocs.io/en/stable/">TorchMetrics</a>
+            </li>
+
+            <li>
+              <a href="https://lightning.ai/docs/fabric/stable/">Fabric</a>
+            </li>
+          </ul>
+
+          <!--<li class="resources-mobile-menu-title">
+            Resources
+          </li>
+
+          <ul class="resources-mobile-menu-items">
+            <li>
+              <a href="https://lightning-habana.readthedocs.io/en/latest/#community-examples">Developer Resources</a>
+            </li>
+
+            <li>
+              <a href="https://lightning-habana.rtfd.io/en/latest/">About</a>
+            </li>
+
+            <li>
+              <a href="">Models (Beta)</a>
+            </li>
+
+            <li>
+              <a href="">Community</a>
+            </li>
+
+            <li>
+              <a href="">Forums</a>
+            </li>
+          </ul>-->
+
+          <li>
+            <a href="https://github.com/Lightning-AI/lightning-habana">Github</a>
+          </li>
+
+          <li>
+            <a href="https://www.lightning.ai/">Lightning.ai</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- End Mobile Menu -->
+
+  <script type="text/javascript" src="_static/js/vendor/anchor.min.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function() {
+      mobileMenu.bind();
+      mobileTOC.bind();
+      pytorchAnchors.bind();
+      sideMenus.bind();
+      scrollToAnchor.bind();
+      highlightNavigation.bind();
+      mainMenuDropdown.bind();
+      filterTags.bind();
+
+      // Add class to links that have code blocks, since we cannot create links in code blocks
+      $("article.pytorch-article a span.pre").each(function(e) {
+        $(this).closest("a").addClass("has-code");
+      });
+    })
+  </script>
+
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-PQBQ3CV"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
+ </body>
+</html>
