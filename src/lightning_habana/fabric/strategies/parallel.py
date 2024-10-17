@@ -91,7 +91,6 @@ class HPUParallelStrategy(ParallelStrategy):
         if not HPU_AVAILABLE:
             raise ValueError("`HPUParallelStrategy` requires HPU devices to run")
 
-        self._process_group_backend: Optional[str] = "hccl"
         super().__init__(
             accelerator=accelerator,
             parallel_devices=parallel_devices,
@@ -99,7 +98,7 @@ class HPUParallelStrategy(ParallelStrategy):
             checkpoint_io=checkpoint_io,
             precision=precision,
         )
-        self._process_group_backend = "hccl"
+        self._process_group_backend: Optional[str] = "hccl"
         self._timeout = default_pg_timeout
         self._num_nodes = 1
         self._start_method = "spawn" if self.strategy_name == "hpu_parallel" else None
@@ -116,11 +115,11 @@ class HPUParallelStrategy(ParallelStrategy):
         self._checkpoint_io = io  # type: ignore
 
     def setup_environment(self) -> None:
+        self.setup_hccl_env()
         super().setup_environment()
         if self.strategy_name == "hpu_parallel":
             # Strategies derived from this class should handle their own distributed setups.
             self.setup_distributed()
-        self.setup_hccl_env()
 
     def setup_hccl_env(self) -> None:
         assert self._process_group_backend == "hccl"
