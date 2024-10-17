@@ -24,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
--
+- Fixed device name retrieval without hlsmi  ([#240](https://github.com/Lightning-AI/lightning-Habana/pull/240))
 
 ### Removed
 

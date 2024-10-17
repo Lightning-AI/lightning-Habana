@@ -797,3 +797,12 @@ def test_hpu_fsdp_reduce(tmpdir, arg_hpus, reduce_op):
     )
     trainer.fit(_model)
     assert expected_value.item() == _model.reduced_value.item()
+
+
+def test_hpu_fsdp_strategy_device_not_hpu(tmpdir):
+    """Tests hpu required with HPUDeepSpeedStrategy."""
+    trainer = Trainer(
+        default_root_dir=tmpdir, accelerator="cpu", strategy=HPUFSDPStrategy(), devices=1, fast_dev_run=True
+    )
+    with pytest.raises(AssertionError, match="HPUFSDPStrategy requires HPUAccelerator"):
+        trainer.fit(BoringModel())
