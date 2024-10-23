@@ -33,6 +33,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
 
+import habana_frameworks.torch as htorch
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
@@ -264,8 +265,8 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
 
 @pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
 @pytest.mark.standalone()
+@pytest.mark.usefixtures("_check_distributed")
 def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if arg_hpus <= 1:
@@ -806,3 +807,54 @@ def test_hpu_fsdp_strategy_device_not_hpu(tmpdir):
     )
     with pytest.raises(AssertionError, match="HPUFSDPStrategy requires HPUAccelerator"):
         trainer.fit(BoringModel())
+
+
+@pytest.mark.standalone()
+@pytest.mark.usefixtures("_check_distributed")
+@pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="Requires Gaudi2 and above.")
+@pytest.mark.parametrize(
+    ("strategy", "expected_memory"),
+    [
+        ("NO_SHARD", 2.2),
+        ("SHARD_GRAD_OP", 1.76),
+        ("FULL_SHARD", 1.59),
+    ],
+)
+def test_fsdp_sharding_strategy_memory(strategy, expected_memory):
+    """Test FSDP memory with sharding strategies."""
+    seed_everything(42)
+
+    class TestBoringModelMemory(TestBoringModel):
+        def __init__(self):
+            super().__init__()
+            self.memory = None
+            self.current_step = 0
+            self.layer = torch.nn.Sequential(torch.nn.Linear(32, 1024000), torch.nn.ReLU(), torch.nn.Linear(1024000, 2))
+
+        def on_train_batch_start(self, batch, batch_idx):
+            htorch.hpu.reset_peak_memory_stats()
+
+        def on_train_batch_end(self, outputs, batch, batch_idx):
+            self.current_step += 1
+            if self.current_step <= 1:
+                return
+            self.memory = htorch.hpu.max_memory_allocated() / 1024**3
+            self.memory = self.trainer.strategy.reduce(
+                torch.tensor(self.memory, device=torch.device("hpu")), reduce_op="sum"
+            )
+
+    model = TestBoringModelMemory()
+    trainer = Trainer(
+        accelerator=HPUAccelerator(),
+        devices=2,
+        strategy=HPUFSDPStrategy(
+            parallel_devices=[torch.device("hpu")] * 2,
+            sharding_strategy=strategy,
+            precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+        ),
+        max_steps=2,
+    )
+
+    trainer.fit(model)
+    print(f"{model.memory=}")
+    assert torch.allclose(model.memory, torch.tensor(expected_memory), atol=0.1, rtol=0.1)
