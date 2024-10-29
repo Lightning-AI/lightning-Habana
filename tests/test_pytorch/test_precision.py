@@ -39,8 +39,8 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
-from lightning_habana.utils.resources import get_device_name_from_hlsmi
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_18_0
+from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 supported_precision = get_args(_PRECISION_INPUT)
 
