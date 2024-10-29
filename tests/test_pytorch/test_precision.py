@@ -255,6 +255,7 @@ def test_hpu_precision_convert_modules_precision_not_fp8():
 
 
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("clean_folder", [os.path.join(os.environ["HABANA_LOGS"], "inc_output")], indirect=True)
 @pytest.mark.parametrize("patch_path", ["tmpdir", None])
 @pytest.mark.parametrize(
     "fp8_config",
@@ -270,7 +271,7 @@ def test_hpu_precision_convert_modules_precision_not_fp8():
         ),
     ],
 )
-def test_hpu_precision_fp8_patch(patch_path, tmpdir, fp8_config):
+def test_hpu_precision_fp8_patch(patch_path, tmpdir, fp8_config, clean_folder):
     """Tests fp8 jsons are patched correctly."""
     model = BaseBM()
     plugin = HPUPrecisionPlugin(precision="fp8")
