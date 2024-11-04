@@ -41,3 +41,9 @@ def device_count(pytestconfig):
         return 1
     assert arg_hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
     return arg_hpus
+
+
+@pytest.fixture()
+def _check_distributed(device_count):
+    if device_count <= 1:
+        pytest.skip("Distributed test does not run on single HPU")

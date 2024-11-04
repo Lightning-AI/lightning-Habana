@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 
 import pytest
 import torch
@@ -21,11 +22,13 @@ from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.pytorch import LightningModule, Trainer
+    from lightning.pytorch.callbacks import ModelCheckpoint
     from lightning.pytorch.demos.boring_classes import BoringModel
     from lightning.pytorch.demos.mnist_datamodule import MNISTDataModule
     from lightning.pytorch.utilities.compile import from_compiled, to_uncompiled
 elif module_available("pytorch_lightning"):
     from pytorch_lightning import LightningModule, Trainer
+    from pytorch_lightning.callbacks import ModelCheckpoint
     from pytorch_lightning.demos.boring_classes import BoringModel
     from pytorch_lightning.demos.mnist_datamodule import MNISTDataModule
 
@@ -294,3 +297,69 @@ def test_hpu_compile_precision_plugin(tmpdir, precision, trainer_fn, params):
     )
     fn = getattr(trainer, trainer_fn)
     fn(compiled_model)
+
+
+@pytest.mark.usefixtures("_is_compile_allowed")
+def test_hpu_compile_checkpoint_save(tmpdir):
+    """Tests checkpoint files are created."""
+    model = torch.compile(BoringModel(), backend="hpu_backend")
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=SingleHPUStrategy(),
+        devices=1,
+        max_steps=1,
+    )
+    trainer.fit(model)
+    assert model.device.type == "cpu"
+
+    ckpt_file = os.path.join(tmpdir, "lightning_logs", "version_0", "checkpoints", "epoch=0-step=1.ckpt")
+    assert os.path.isfile(ckpt_file)
+    assert os.path.getsize(ckpt_file) > 0
+
+
+@pytest.mark.usefixtures("_is_compile_allowed")
+def test_hpu_compile_resume_training_from_checkpoint(tmpdir):
+    """Tests checkpoint save, load and resume training."""
+    model = torch.compile(BoringModel(), backend="hpu_backend")
+
+    # save checkpoint
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=SingleHPUStrategy(),
+        devices=1,
+        max_steps=1,
+    )
+    trainer.fit(model)
+
+    # load checkpoint and resume training
+    ckpt_file = os.path.join(tmpdir, "lightning_logs", "version_0", "checkpoints", "epoch=0-step=1.ckpt")
+    model = torch.compile(BoringModel.load_from_checkpoint(ckpt_file), backend="hpu_backend")
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=SingleHPUStrategy(),
+        devices=1,
+        max_steps=1,
+    )
+    trainer.fit(model)
+
+
+@pytest.mark.usefixtures("_is_compile_allowed")
+def test_hpu_compile_modelcheckpoint(tmpdir):
+    """Tests checkpoint created by ModelCheckpoint callback."""
+    model = torch.compile(BoringModel(), backend="hpu_backend")
+    trainer = Trainer(
+        default_root_dir=tmpdir,
+        accelerator=HPUAccelerator(),
+        strategy=SingleHPUStrategy(),
+        devices=1,
+        max_steps=1,
+        callbacks=ModelCheckpoint(dirpath=tmpdir, filename="callback-{epoch}-{step}"),
+    )
+    trainer.fit(model)
+
+    ckpt_file = os.path.join(tmpdir, "callback-epoch=0-step=1.ckpt")
+    assert os.path.isfile(ckpt_file)
+    assert os.path.getsize(ckpt_file) > 0
