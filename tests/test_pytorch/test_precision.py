@@ -39,7 +39,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
-from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_EQUAL_1_18_0
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_1_18_0
 from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 supported_precision = get_args(_PRECISION_INPUT)
@@ -165,7 +165,7 @@ def test_autocast_enable_disable(tmpdir, precision_plugin):
 
 
 @pytest.mark.xfail(strict=False, reason="Env needs to be set")
-@pytest.mark.skipif(_HPU_SYNAPSE_GREATER_EQUAL_1_18_0, reason="Will be fixed in a future synapse version.")
+@pytest.mark.skipif(_HPU_SYNAPSE_GREATER_1_18_0, reason="Test valid for Synapse version <= 1.18.0")
 def test_autocast_operators_override(tmpdir):
     """Tests operator dtype overriding with torch autocast."""
     # The override lists are set in cmdline
