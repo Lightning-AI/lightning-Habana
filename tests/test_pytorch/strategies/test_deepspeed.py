@@ -40,6 +40,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUDeepSpeedPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.deepspeed import _HPU_DEEPSPEED_AVAILABLE
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_1_18_0
 from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 if _HPU_DEEPSPEED_AVAILABLE:
@@ -810,6 +811,7 @@ def test_lightning_deepspeed_inference_config(device_count, dtype):
 
 @pytest.mark.parametrize("stage", [1, 2, 3])
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 / fp16 supported on Gaudi2 and above.")
+@pytest.mark.skipif(_HPU_SYNAPSE_GREATER_1_18_0, reason="Test not valid on Synapse>1.18.0")
 def test_hpu_deepspeed_training_accuracy(tmpdir, device_count, stage):
     """Test compare training accuracy between bf16 and fp8 precision for deepspeed."""
 
