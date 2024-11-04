@@ -40,8 +40,8 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUDeepSpeedPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDeepSpeedStrategy
 from lightning_habana.pytorch.strategies.deepspeed import _HPU_DEEPSPEED_AVAILABLE
-from lightning_habana.utils.resources import get_device_name_from_hlsmi
 from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_1_18_0
+from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 if _HPU_DEEPSPEED_AVAILABLE:
     from deepspeed.runtime.activation_checkpointing.checkpointing import checkpoint
