@@ -48,12 +48,6 @@ if _KINETO_AVAILABLE:
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
 
-@pytest.fixture()
-def _check_distributed(device_count):
-    if device_count <= 1:
-        pytest.skip("Distributed test does not run on single HPU")
-
-
 @pytest.mark.parametrize(
     ("profiler_str", "profiler_class", "expectation"),
     [
