@@ -284,7 +284,7 @@ INC uses configuration jsons for selecting between quant and measurement modes.
 This can be toggled via `quant` param in `HPUPrecisionPlugin.convert_modules()`.
 `quant` also accepts user defined config dictionary or a json path.
 
-Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information on supported json configs.
+Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/v1.19.0/PyTorch/Inference_on_PyTorch/Quantization/Inference_Using_FP8.html#supported-json-config-file-options>`__ for more information on supported json configs.
 
 
 .. note::
@@ -292,7 +292,7 @@ Refer to `Supported JSON Config File Options <https://docs.habana.ai/en/latest/P
     To enable fp8 inference with HPUDeepSpeedStrategy, use HPUDeepSpeedPrecisionPlugin, instead of HPUPrecisionPlugin, while keeping all other steps the same.
 
 
-For more details, refer to `Inference Using FP8 <https://docs.habana.ai/en/latest/PyTorch/Inference_on_PyTorch/Inference_Using_FP8.html>`__.
+For more details, refer to `Inference Using FP8 <https://docs.habana.ai/en/v1.19.0/PyTorch/Inference_on_PyTorch/Quantization/Inference_Using_FP8.html>`__.
 For a list of data types supported with HPU, refer to `PyTorch Support Matrix <https://docs.habana.ai/en/latest/PyTorch/Reference/PyTorch_Support_Matrix.html>`__.
 
 ----
