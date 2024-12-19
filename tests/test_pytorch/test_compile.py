@@ -35,6 +35,7 @@ from lightning_habana import HPUProfiler
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_1_18_0
 from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 
@@ -221,6 +222,7 @@ def test_ddp_strategy_with_compile(tmp_path, arg_hpus):
     assert _strategy._ddp_kwargs["find_unused_parameters"] is True
 
 
+@pytest.mark.skipif(_HPU_SYNAPSE_GREATER_1_18_0, reason="Test valid for Synapse version <= 1.18.0")
 @pytest.mark.usefixtures("_is_compile_allowed")
 @pytest.mark.parametrize(
     ("record_module_names", "expectation"),

@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -41,3 +43,37 @@ def device_count(pytestconfig):
         return 1
     assert arg_hpus <= HPUAccelerator.auto_device_count(), "More hpu devices asked than present"
     return arg_hpus
+
+
+@pytest.fixture()
+def _check_distributed(device_count):
+    if device_count <= 1:
+        pytest.skip("Distributed test does not run on single HPU")
+
+
+@pytest.fixture()
+def clean_folder(request):
+    """A pytest fixture that checks if a folder exists and removes it if it does.
+
+    Usage:
+    @pytest.mark.parametrize('folder_path', ['my_test_folder'])
+    def test_something(clean_folder):
+        # The folder will be clean before the test
+        # and removed after the test
+        pass
+
+    """
+    folder_path = request.param if hasattr(request, "param") else ""
+
+    # Clean up any existing folder
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)
+
+    # Create a fresh folder
+    os.makedirs(folder_path)
+
+    yield folder_path
+
+    # Clean up after the test
+    if os.path.exists(folder_path):
+        shutil.rmtree(folder_path)

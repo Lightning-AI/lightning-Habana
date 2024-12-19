@@ -47,6 +47,10 @@ elif module_available("pytorch_lightning"):
 if _KINETO_AVAILABLE:
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_1_18_0
+
+pytestmark = pytest.mark.skipif(_HPU_SYNAPSE_GREATER_1_18_0, reason="Tests valid for Synapse version <= 1.18.0")
+
 
 @pytest.fixture()
 def _check_distributed(device_count):

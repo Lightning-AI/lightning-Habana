@@ -39,6 +39,7 @@ from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.plugins.precision import _PRECISION_INPUT
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
+from lightning_habana.utils.imports import _HPU_SYNAPSE_GREATER_1_18_0
 from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 supported_precision = get_args(_PRECISION_INPUT)
@@ -164,6 +165,7 @@ def test_autocast_enable_disable(tmpdir, precision_plugin):
 
 
 @pytest.mark.xfail(strict=False, reason="Env needs to be set")
+@pytest.mark.skipif(_HPU_SYNAPSE_GREATER_1_18_0, reason="Test valid for Synapse version <= 1.18.0")
 def test_autocast_operators_override(tmpdir):
     """Tests operator dtype overriding with torch autocast."""
     # The override lists are set in cmdline
@@ -255,6 +257,7 @@ def test_hpu_precision_convert_modules_precision_not_fp8():
 
 
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
+@pytest.mark.parametrize("clean_folder", [os.path.join(os.environ["HABANA_LOGS"], "inc_output")], indirect=True)
 @pytest.mark.parametrize("patch_path", ["tmpdir", None])
 @pytest.mark.parametrize(
     "fp8_config",
@@ -270,7 +273,7 @@ def test_hpu_precision_convert_modules_precision_not_fp8():
         ),
     ],
 )
-def test_hpu_precision_fp8_patch(patch_path, tmpdir, fp8_config):
+def test_hpu_precision_fp8_patch(patch_path, tmpdir, fp8_config, clean_folder):
     """Tests fp8 jsons are patched correctly."""
     model = BaseBM()
     plugin = HPUPrecisionPlugin(precision="fp8")
