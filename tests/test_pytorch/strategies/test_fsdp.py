@@ -33,6 +33,7 @@ elif module_available("pytorch_lightning"):
     from pytorch_lightning import Trainer, seed_everything
     from pytorch_lightning.demos.boring_classes import BoringDataModule, BoringModel
 
+import habana_frameworks.torch as htorch
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins.fsdp_precision import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy
@@ -264,8 +265,8 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
 
 @pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
-@pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
 @pytest.mark.standalone()
+@pytest.mark.usefixtures("_check_distributed")
 def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if arg_hpus <= 1:
@@ -806,3 +807,62 @@ def test_hpu_fsdp_strategy_device_not_hpu(tmpdir):
     )
     with pytest.raises(AssertionError, match="HPUFSDPStrategy requires HPUAccelerator"):
         trainer.fit(BoringModel())
+
+
+@pytest.mark.standalone()
+@pytest.mark.usefixtures("_check_distributed")
+def test_fsdp_sharding_strategy_memory_comparison():
+    """Test that FSDP memory usage follows expected pattern: FULL_SHARD <= SHARD_GRAD_OP <= NO_SHARD."""
+
+    class MemoryMonitorModule(BoringModel):
+        """Module to monitor memory usage."""
+
+        def __init__(self):
+            super().__init__()
+            self.layer = torch.nn.Sequential(torch.nn.Linear(32, 512000), torch.nn.ReLU(), torch.nn.Linear(512000, 2))
+            self.memory = None
+            self.current_step = 0
+
+        def on_train_batch_start(self, batch, batch_idx):
+            htorch.hpu.reset_peak_memory_stats()
+
+        def on_train_batch_end(self, outputs, batch, batch_idx):
+            self.current_step += 1
+            if self.current_step <= 1:
+                return
+            self.memory = htorch.hpu.max_memory_allocated() / 1024**3
+            self.memory = self.trainer.strategy.reduce(
+                torch.tensor(self.memory, device=torch.device("hpu")), reduce_op="sum"
+            )
+
+    def measure_memory_usage(strategy_name):
+        """Measure memory for a given sharding strategy."""
+        seed_everything(42)
+        model = MemoryMonitorModule()
+        trainer = Trainer(
+            accelerator=HPUAccelerator(),
+            devices=2,
+            strategy=HPUFSDPStrategy(
+                parallel_devices=[torch.device("hpu")] * 2,
+                sharding_strategy=strategy_name,
+                precision_plugin=HPUFSDPPrecision("bf16-mixed"),
+            ),
+            max_steps=2,
+            limit_val_batches=0,
+        )
+
+        trainer.fit(model)
+        return model.memory
+
+    memory_usage = {
+        strategy: measure_memory_usage(strategy) for strategy in ["FULL_SHARD", "SHARD_GRAD_OP", "NO_SHARD"]
+    }
+
+    assert memory_usage["FULL_SHARD"] <= memory_usage["SHARD_GRAD_OP"], (
+        f"FULL_SHARD memory ({memory_usage['FULL_SHARD']:.2f} GB) should be less than or equal to "
+        f"SHARD_GRAD_OP memory ({memory_usage['SHARD_GRAD_OP']:.2f} GB)"
+    )
+    assert memory_usage["SHARD_GRAD_OP"] <= memory_usage["NO_SHARD"], (
+        f"SHARD_GRAD_OP memory ({memory_usage['SHARD_GRAD_OP']:.2f} GB) should be less than or equal to "
+        f"NO_SHARD memory ({memory_usage['NO_SHARD']:.2f} GB)"
+    )
