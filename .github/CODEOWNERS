@@ -2,13 +2,12 @@
 
 # These owners will be the default owners for everything in the repo. Unless a later match takes precedence,
 # @global-owner1 and @global-owner2 will be requested for review when someone opens a pull request.
-* @lantiga @borda @jerome-habana @awaelchli @justusschock
+* @lantiga @borda @justusschock
 
 # CI/CD and configs
-/.github/       @borda @jerome-habana @carmocca
-/.azure/        @borda @jerome-habana @carmocca
-*.yml           @borda @jerome-habana
-
+/.github/       @borda
+/.azure/        @borda
+*.yml           @borda
 # Releasing
-/README.md                              @jerome-habana @borda @lantiga
-/src/lightning_habana/__about__.py      @jerome-habana @borda @lantiga
+/README.md                              @lantiga @borda
+/src/lightning_habana/__about__.py      @lantiga @borda
