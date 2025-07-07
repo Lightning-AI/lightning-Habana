@@ -368,7 +368,7 @@ def test_hpu_precision_fp8_inference_with_quant_dict(tmpdir):
     trainer.test(model, dm)
 
 
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_inference_log_files(tmpdir):
     log_file = os.path.join(os.environ["HABANA_LOGS"], "inc_log.txt")
@@ -384,7 +384,7 @@ def test_hpu_precision_fp8_inference_log_files(tmpdir):
     assert os.path.getsize(log_file) > file_size
 
 
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_inference_measurement(tmpdir):
     """Tests inference measruement dumps with fp8_inference."""
@@ -464,7 +464,7 @@ def test_hpu_precision_fp8_inference_accuracy(tmpdir):
     assert torch.isclose(test_loss[0], test_loss[1], rtol=0.02, atol=0.01)
 
 
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_precision_fp8_with_ddp_strategy(tmpdir, arg_hpus):
     """Negative test for fp8 inference not supported with HPUDDPStrategy."""
@@ -815,7 +815,7 @@ def test_hpu_precision_active_with_te_module(tmpdir, precision):
 
 
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="Native int64 supported on Gaudi2 and above.")
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.parametrize(
     ("int64_support", "expectation"),
     [

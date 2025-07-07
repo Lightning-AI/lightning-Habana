@@ -87,7 +87,7 @@ class ModelParallelBoringModelManualOptim(BoringModel):
         return False
 
 
-@pytest.fixture()
+@pytest.fixture
 def deepspeed_base_config():
     return {
         "train_batch_size": 2,
@@ -144,7 +144,7 @@ def config_generator(
     return deepspeed_config
 
 
-@pytest.fixture()
+@pytest.fixture
 def deepspeed_config():
     return {
         "optimizer": {"type": "SGD", "params": {"lr": 3e-5}},
@@ -155,12 +155,12 @@ def deepspeed_config():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def deepspeed_zero_config(deepspeed_config):
     return {**deepspeed_config, "zero_allow_untested_optimizer": True, "zero_optimization": {"stage": 2}}
 
 
-@pytest.fixture()
+@pytest.fixture
 def deepspeed_zero_autotuning_config():
     return {
         "bf16": {"enabled": True},
@@ -518,9 +518,9 @@ def test_lightning_model(
     trainer.fit(model)
     expected = torch.tensor([0.0164])
     current_loss = trainer.callback_metrics["train_loss"].detach().to("cpu")
-    assert torch.allclose(
-        current_loss, expected, atol=4e-4
-    ), f"incorrect loss value {current_loss}, expected {expected}"
+    assert torch.allclose(current_loss, expected, atol=4e-4), (
+        f"incorrect loss value {current_loss}, expected {expected}"
+    )
 
 
 @pytest.mark.parametrize("zero_stage", [1, 2, 3])
@@ -732,9 +732,9 @@ def test_lightning_deepspeed_inference_kwargs(enable_cuda_graph, device_count):
     )
     preds = trainer.predict(model)
     expected = torch.tensor([32768.0, 32768.0])
-    assert torch.allclose(
-        preds[0].detach().to(torch.float), expected
-    ), f"incorrect result value {preds}, expected {expected}"
+    assert torch.allclose(preds[0].detach().to(torch.float), expected), (
+        f"incorrect result value {preds}, expected {expected}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -765,9 +765,9 @@ def test_lightning_deepspeed_inference_params(device_count, dtype):
     )
     preds = trainer.predict(model)
     expected = torch.tensor([32768.0, 32768.0])
-    assert torch.allclose(
-        preds[0].detach().to(torch.float), expected
-    ), f"incorrect result value {preds}, expected {expected}"
+    assert torch.allclose(preds[0].detach().to(torch.float), expected), (
+        f"incorrect result value {preds}, expected {expected}"
+    )
 
 
 @pytest.mark.parametrize(
@@ -803,9 +803,9 @@ def test_lightning_deepspeed_inference_config(device_count, dtype):
     )
     preds = trainer.predict(model)
     expected = torch.tensor([32768.0, 32768.0])
-    assert torch.allclose(
-        preds[0].detach().to(torch.float), expected
-    ), f"incorrect result value {preds}, expected {expected}"
+    assert torch.allclose(preds[0].detach().to(torch.float), expected), (
+        f"incorrect result value {preds}, expected {expected}"
+    )
 
 
 @pytest.mark.parametrize("stage", [1, 2, 3])
@@ -873,7 +873,7 @@ def test_hpu_deepspeed_training_accuracy(tmpdir, device_count, stage):
     assert torch.allclose(torch.tensor(loss_list[0][1]), torch.tensor(loss_list[1][1]), rtol=1e-2, atol=1e-2)
 
 
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="Accessory test for fp8 inference.")
 def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, device_count):
     """Test maintain bf16 test loss used in fp8 inference accuracy test using deepspeed."""
@@ -908,7 +908,7 @@ def test_hpu_deepspeed_bf16_inference_accuracy(tmpdir, device_count):
     assert torch.allclose(bf16_test_loss, bf16_loss, rtol=1e-4, atol=1e-4)
 
 
-@pytest.mark.standalone_only()  # HQT cannot be reconfigured in same process
+@pytest.mark.standalone_only  # HQT cannot be reconfigured in same process
 @pytest.mark.parametrize("quant", [False, True])
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="fp8 supported on Gaudi2 and above.")
 def test_hpu_deepspeed_fp8_inference_accuracy(tmpdir, device_count, quant):

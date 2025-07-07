@@ -34,7 +34,6 @@ from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.plugins.fsdp_precision import HPUFSDPPrecision
 from lightning_habana.fabric.strategies.fsdp import HPUFSDPStrategy
 from lightning_habana.utils.imports import _LIGHTNING_GREATER_EQUAL_2_3_0
-
 from tests.test_fabric.fabric_helpers import RandomDataset
 
 if not _LIGHTNING_GREATER_EQUAL_2_3_0:
@@ -129,7 +128,7 @@ class _TrainerManualWrapping(_Trainer):
         return model
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 def test_fsdp_train(arg_hpus):
     """Test FSDP training loop."""
     strategy = HPUFSDPStrategy(
@@ -256,7 +255,7 @@ def test_setup_with_orig_params_and_multiple_param_groups(arg_hpus):
         assert not isinstance(layer.weight, FlatParameter)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize("move_to_device", [True, False])
 def test_setup_module_move_to_device(arg_hpus, move_to_device):

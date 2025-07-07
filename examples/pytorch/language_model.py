@@ -32,6 +32,7 @@ elif module_available("pytorch_lightning"):
 
 
 import habana_frameworks.torch as htorch
+
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUFSDPPrecision, HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUFSDPStrategy

@@ -19,8 +19,9 @@ import pytest
 import torch
 from habana_frameworks.torch.hpu.metrics import metric_global
 from habana_frameworks.torch.utils.experimental import detect_recompilation_auto_model
-from lightning_habana import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 from lightning_utilities import module_available
+
+from lightning_habana import HPUAccelerator, HPUDDPStrategy, SingleHPUStrategy
 
 if module_available("lightning"):
     from lightning.pytorch import Trainer, seed_everything
@@ -79,7 +80,7 @@ def test_dynamic_shapes_graph_compiler(tmpdir, arg_hpus, monkeypatch):
     assert cached_compiles[0] <= default_compiles[0]
 
 
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 def test_dynamic_shapes_auto_detect_recompilations(tmpdir):
     """Test auto_detect_recompilations tool."""
 

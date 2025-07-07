@@ -105,9 +105,9 @@ class HPUProfiler(PyTorchProfiler):
         )
         self.profiler: Optional[_PROFILER] = None
         self._profiler_kwargs["activities"] = self.profile_hpu_activities(self._profiler_kwargs.get("activities", None))
-        assert self._activities_patched(
-            self._profiler_kwargs["activities"]
-        ), "lightning_habana should be imported before lightning to use HPUProfiler."
+        assert self._activities_patched(self._profiler_kwargs["activities"]), (
+            "lightning_habana should be imported before lightning to use HPUProfiler."
+        )
 
     def _activities_patched(self, activities: List["ProfilerActivity"]) -> bool:
         """Checks ProfilerActivity is patched by habana_frameworks."""

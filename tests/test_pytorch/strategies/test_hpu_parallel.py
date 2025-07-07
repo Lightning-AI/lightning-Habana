@@ -73,7 +73,7 @@ def test_hpu_parallel_parallel_devices():
     assert all(device.type == "hpu" for device in strategy.parallel_devices)
 
 
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 def test_hpu_parallel_broadcast():
     """Broadcasting an object."""
     strategy = HPUParallelStrategy(
@@ -143,7 +143,7 @@ def test_hpu_parallel_setup_environment(strategy_class_name):
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.parametrize("stage", ["fit", "validate", "test", "predict"])
 def test_hpu_parallel_strategy_trainer_stages(tmpdir, stage):
     """Test trainer stages with hpu_parallel_strategy."""
@@ -178,7 +178,7 @@ class BaseBM(BoringModel):
 
 
 @pytest.mark.filterwarnings("ignore::FutureWarning")
-@pytest.mark.standalone_only()
+@pytest.mark.standalone_only
 @pytest.mark.parametrize(
     "reduce_op",
     [

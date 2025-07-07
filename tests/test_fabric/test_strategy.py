@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import torch
+
 from lightning_habana.fabric.accelerator import HPUAccelerator
 from lightning_habana.fabric.strategies.ddp import HPUDDPStrategy
 from lightning_habana.fabric.strategies.single import SingleHPUStrategy

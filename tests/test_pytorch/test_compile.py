@@ -38,7 +38,7 @@ from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrateg
 from lightning_habana.utils.resources import get_device_name_from_hlsmi
 
 
-@pytest.fixture()
+@pytest.fixture
 def _is_compile_allowed():
     if HPUAccelerator.is_lazy():
         pytest.skip("Test requires lazy mode to be disabled")
@@ -190,7 +190,7 @@ def test_all_stages_with_compile(tmpdir, hpus):
     trainer.predict(compiled_eval_model)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices")
 @pytest.mark.usefixtures("_is_compile_allowed")
 def test_ddp_strategy_with_compile(tmp_path, arg_hpus):

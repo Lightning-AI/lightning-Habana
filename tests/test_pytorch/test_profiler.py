@@ -21,9 +21,10 @@ from subprocess import run
 
 import pytest
 import torch
+from lightning_utilities import module_available
+
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, SingleHPUStrategy
-from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning import Callback
@@ -48,7 +49,7 @@ if _KINETO_AVAILABLE:
     from lightning_habana.pytorch.profiler.profiler import HPUProfiler
 
 
-@pytest.fixture()
+@pytest.fixture
 def _check_distributed(device_count):
     if device_count <= 1:
         pytest.skip("Distributed test does not run on single HPU")
@@ -110,7 +111,7 @@ def test_hpu_profiler_trainer_stages(tmpdir, profiler):
         assert os.path.getsize(os.path.join(trainer.profiler.dirpath, file)) > 0
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.usefixtures("_check_distributed")
 @pytest.mark.parametrize(("profiler"), [(SimpleProfiler), (AdvancedProfiler)])
 def test_profiler_trainer_stages_distributed(tmpdir, profiler, device_count):

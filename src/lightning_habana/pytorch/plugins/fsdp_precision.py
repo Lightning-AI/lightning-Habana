@@ -55,7 +55,7 @@ class HPUFSDPPrecision(FSDPPrecision, HPUPrecisionPlugin):
         supported_precision = get_args(_PRECISION_INPUT)
         if precision not in supported_precision:
             raise ValueError(
-                f"`precision={precision!r}` is not supported." f" `precision` must be one of: {supported_precision}."
+                f"`precision={precision!r}` is not supported. `precision` must be one of: {supported_precision}."
             )
         self.precision = precision
         super().__init__(precision)
