@@ -227,7 +227,7 @@ class HPUPrecisionPlugin(Precision):
                 raise OSError("FP8 inference on HPU requires SynapsesAI >= 1.17.0")
             if not _INTEL_NEURAL_COMPRESSOR_AVAILABLE:
                 raise ModuleNotFoundError(
-                    "Intel neural compressor not found. " "Install it using `pip install neural-compressor`"
+                    "Intel neural compressor not found. Install it using `pip install neural-compressor`"
                 )
             if self.fp8_inference_available:
                 self._enable_fp8_inference(module, quant, fp8_data_path)

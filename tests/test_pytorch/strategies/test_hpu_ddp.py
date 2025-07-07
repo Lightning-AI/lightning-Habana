@@ -107,7 +107,7 @@ def test_hpu_ddp_tensor_init_context():
     assert module.weight.device.type == module.bias.device.type == "hpu"
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.parametrize("stage", ["fit", "validate", "test", "predict"])
 def test_hpu_ddp_strategy_trainer_stages(tmpdir, stage, arg_hpus):
     """Test trainer stages with hpu_parallel_strategy."""
@@ -124,7 +124,7 @@ def test_hpu_ddp_strategy_trainer_stages(tmpdir, stage, arg_hpus):
         trainer_fn(model)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.parametrize(
     "reduce_op",
     [

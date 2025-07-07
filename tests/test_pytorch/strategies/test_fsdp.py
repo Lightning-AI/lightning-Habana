@@ -265,7 +265,7 @@ def test_fsdp_simple_model_activation_cp_mixed_precision(strategy, arg_hpus):
 
 @pytest.mark.xfail(run=False, reason="To be fixed.Failure post 1.17 upgrade.")
 @pytest.mark.skipif(HPUAccelerator.auto_device_count() <= 1, reason="Test requires multiple HPU devices.")
-@pytest.mark.standalone()
+@pytest.mark.standalone
 def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     """Test to ensure that sync_batchnorm works when using FSDP and HPU."""
     if arg_hpus <= 1:
@@ -291,7 +291,7 @@ def test_fsdp_strategy_simple_model_compile(tmpdir, arg_hpus):
     trainer.fit(compiled_model)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
     """Test that TorchMetrics get moved to the device despite not having any parameters."""
 
@@ -327,7 +327,7 @@ def test_fsdp_modules_without_parameters(tmpdir, arg_hpus):
 
 
 @pytest.mark.parametrize("state_dict_type", ["sharded", "full"])
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
     """Test to ensure that checkpoint is saved and loaded correctly when using a HPU."""
@@ -360,7 +360,7 @@ def test_fsdp_strategy_checkpoint(tmpdir, arg_hpus, state_dict_type):
     trainer.fit(model, ckpt_path=os.path.join(tmpdir, "last.ckpt"))
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.parametrize("wrap_min_params", [1024])
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_full_state_dict(tmpdir, wrap_min_params, arg_hpus):
@@ -530,7 +530,7 @@ def test_fsdp_precision_config(precision, expected):
 
 
 @pytest.mark.parametrize("wrap_min_params", [1024])
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     """Test to ensure that the full state dict and optimizer states is saved when using FSDP strategy.
@@ -598,7 +598,7 @@ def test_fsdp_strategy_save_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
 
 
 @pytest.mark.parametrize("wrap_min_params", [2, 1024, 100000000])
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(get_device_name_from_hlsmi() == "GAUDI", reason="The tests requires Gaudi2 and above.")
 def test_fsdp_strategy_load_optimizer_states(tmpdir, wrap_min_params, arg_hpus):
     """Test to ensure that the full state dict and optimizer states can be load when using FSDP strategy.
@@ -714,7 +714,7 @@ def run_training(root_dir, model, dm, strategy, arg_hpus):
     return trainer.callback_metrics["val_loss"], trainer.callback_metrics["train_loss"]
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 def test_hpu_parallel_precision_accuracy(tmpdir, arg_hpus):
     parallel_hpus = [torch.device("hpu")] * arg_hpus
     val_loss, train_loss = run_training(
@@ -730,7 +730,7 @@ def test_hpu_parallel_precision_accuracy(tmpdir, arg_hpus):
     assert torch.allclose(val_loss, expected_val_loss, rtol=1e-4, atol=1e-4)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 def test_hpu_fsdp_precision_accuracy(tmpdir, arg_hpus):
     fsdp_strategy = HPUFSDPStrategy(
         parallel_devices=[torch.device("hpu")] * arg_hpus,
@@ -748,7 +748,7 @@ def test_hpu_fsdp_precision_accuracy(tmpdir, arg_hpus):
     assert torch.allclose(val_loss, expected_val_loss, rtol=1e-2, atol=1e-2)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.parametrize(
     "reduce_op",
     [

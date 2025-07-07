@@ -14,6 +14,7 @@
 
 import pytest
 import torch
+
 from lightning_habana.fabric.accelerator import HPUAccelerator
 
 

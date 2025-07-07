@@ -14,8 +14,8 @@
 from pathlib import Path
 
 import pytest
-from lightning_habana import HPUAccelerator
 
+from lightning_habana import HPUAccelerator
 from tests import _PATH_DATASETS
 
 
@@ -28,12 +28,12 @@ def pytest_addoption(parser):
     parser.addoption("--hpus", action="store", type=int, default=1, help="Number of hpus 1-8")
 
 
-@pytest.fixture()
+@pytest.fixture
 def arg_hpus(request):
     return request.config.getoption("--hpus")
 
 
-@pytest.fixture()
+@pytest.fixture
 def device_count(pytestconfig):
     arg_hpus = int(pytestconfig.getoption("hpus"))
     if not arg_hpus:

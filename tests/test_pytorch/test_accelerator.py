@@ -18,9 +18,10 @@ from unittest import mock
 
 import pytest
 import torch
+from lightning_utilities import module_available
+
 from lightning_habana.utils.hpu_distributed import supported_reduce_ops
 from lightning_habana.utils.resources import device_count, get_device_name_from_hlsmi
-from lightning_utilities import module_available
 
 if module_available("lightning"):
     from lightning.fabric.utilities.types import ReduceOp
@@ -36,7 +37,6 @@ elif module_available("pytorch_lightning"):
 from lightning_habana.pytorch.accelerator import HPUAccelerator
 from lightning_habana.pytorch.plugins import HPUPrecisionPlugin
 from lightning_habana.pytorch.strategies import HPUDDPStrategy, HPUParallelStrategy, SingleHPUStrategy
-
 from tests.helpers import ClassifDataModule, ClassificationModel
 
 
@@ -44,7 +44,7 @@ def test_availability():
     assert HPUAccelerator.is_available()
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 def test_all_stages(tmpdir, arg_hpus):
     """Tests all the model stages using BoringModel on HPU."""
     model = BoringModel()
@@ -322,7 +322,7 @@ class MockHPUDDPStrategy(HPUDDPStrategy):
         return super().reduce(tensor, group, self.reduce_op)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "expectation"),
@@ -382,7 +382,7 @@ def test_hpu_supported_reduce_op(tmpdir, arg_hpus, reduce_op, expectation):
         trainer.fit(_model)
 
 
-@pytest.mark.standalone()
+@pytest.mark.standalone
 @pytest.mark.skipif(device_count() < 2, reason="Test requires multiple HPU devices")
 @pytest.mark.parametrize(
     ("reduce_op", "logged_value_epoch", "logged_value_step"),

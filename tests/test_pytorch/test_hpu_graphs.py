@@ -254,9 +254,9 @@ def test_hpu_graph_accuracy_train(tmpdir, train_modes):
         rtol=0.05,
         atol=0.05,
     ), loss_metrics  # Compare train loss
-    assert torch.allclose(
-        loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.05, atol=0.05
-    ), loss_metrics  # Compare val acc
+    assert torch.allclose(loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.05, atol=0.05), (
+        loss_metrics
+    )  # Compare val acc
 
 
 @pytest.mark.parametrize(
@@ -279,9 +279,9 @@ def test_hpu_graph_accuracy_inference(tmpdir, train_modes):
         loss_metrics.append(
             train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, mode="test", profiler=None)
         )
-    assert torch.allclose(
-        loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.05, atol=0.05
-    ), loss_metrics  # Compare val acc
+    assert torch.allclose(loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.05, atol=0.05), (
+        loss_metrics
+    )  # Compare val acc
 
 
 def test_automatic_optimization_graph_capture(tmpdir):
@@ -341,9 +341,9 @@ def test_automatic_optimization_graph_capture(tmpdir):
     data_module = MNISTDataModule(batch_size=200)
     loss_metrics.append(train_model(tmpdir, 1, model=hpu_graph_model, data_module=data_module, profiler=None))
 
-    assert torch.allclose(
-        loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05
-    ), loss_metrics  # Compare train loss
-    assert torch.allclose(
-        loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.01
-    ), loss_metrics  # Compare val acc
+    assert torch.allclose(loss_metrics[0]["train_loss"], loss_metrics[1]["train_loss"], rtol=0.05), (
+        loss_metrics
+    )  # Compare train loss
+    assert torch.allclose(loss_metrics[0]["val_acc"], loss_metrics[1]["val_acc"], rtol=0.01), (
+        loss_metrics
+    )  # Compare val acc

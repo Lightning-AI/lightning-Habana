@@ -124,9 +124,9 @@ class HPUParallelStrategy(ParallelStrategy):
     def setup_hccl_env(self) -> None:
         """Initializes the HCCL environment for distributed training on HPU devices."""
         assert self._get_process_group_backend() == "hccl"
-        assert isinstance(
-            self.accelerator, HPUAccelerator
-        ), f"{self.__class__.__name__} requires HPUAccelerator. Found {self.accelerator}"
+        assert isinstance(self.accelerator, HPUAccelerator), (
+            f"{self.__class__.__name__} requires HPUAccelerator. Found {self.accelerator}"
+        )
         _ws = self.cluster_environment.world_size()
         _grank = self.cluster_environment.global_rank()
         _lrank = self.cluster_environment.local_rank()
